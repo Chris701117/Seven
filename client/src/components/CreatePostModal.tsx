@@ -324,75 +324,196 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>{post ? "編輯貼文" : "建立新貼文"}</DialogTitle>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="mb-4">
-              <div className="flex items-center mb-3">
-                <img 
-                  src={activePage?.picture || "https://via.placeholder.com/40"} 
-                  alt="Page profile" 
-                  className="w-10 h-10 rounded-full mr-3" 
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+        <div className="bg-white rounded-t-lg">
+          <div className="p-4 border-b">
+            <h3 className="text-xl font-bold text-center">
+              {post ? "編輯貼文" : "建立新貼文"}
+            </h3>
+          </div>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <div className="p-4">
+                <div className="flex items-center mb-4">
+                  <img 
+                    src={activePage?.picture || "https://via.placeholder.com/40"} 
+                    alt="Page profile" 
+                    className="w-10 h-10 rounded-full mr-3" 
+                  />
+                  <div className="flex flex-col">
+                    <div className="font-semibold text-[15px]">{activePage?.name || "選擇粉絲頁"}</div>
+                    {form.watch("schedulePost") && (
+                      <div className="text-xs flex items-center text-gray-600 mt-0.5">
+                        <Clock className="h-3 w-3 mr-1" />
+                        <span>排程: {form.watch("scheduleDate")} {form.watch("scheduleTime")}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea 
+                          placeholder={`${activePage?.name || "你"}在想什麼？`}
+                          className="resize-none min-h-[120px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <div className="font-medium text-gray-900">{activePage?.name || "選擇粉絲頁"}</div>
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="你想要分享什麼？" 
-                        className="resize-none min-h-[120px]"
-                        {...field}
+                
+                {/* Media Preview Section - Simplified UI similar to Facebook */}
+                {mediaPreview && (
+                  <div className="mt-3 relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <div className="absolute top-2 right-2 z-10">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-gray-800/60 hover:bg-gray-800/80 text-white"
+                        onClick={() => {
+                          form.setValue("imageUrl", "");
+                          form.setValue("hasImage", false);
+                          setMediaPreview(null);
+                          setUploadedMediaType(null);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {uploadedMediaType === "image" ? (
+                      <img 
+                        src={mediaPreview} 
+                        alt="Preview" 
+                        className="w-full h-auto max-h-[300px] object-contain"
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                    ) : (
+                      <video 
+                        src={mediaPreview} 
+                        className="w-full h-auto max-h-[300px] object-contain"
+                        controls
+                      />
+                    )}
+                  </div>
                 )}
-              />
-            </div>
-            
-            <div className="border border-gray-200 rounded-md p-3 mb-4">
-              <div className="flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-700">添加到你的貼文</div>
-              </div>
-              <div className="flex mt-2 space-x-2">
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`rounded-full ${form.watch("hasImage") ? "bg-blue-50 text-blue-600" : "text-gray-500"}`}
-                  onClick={() => form.setValue("hasImage", !form.watch("hasImage"))}
-                >
-                  <ImageIcon className="h-5 w-5" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`rounded-full ${form.watch("hasLink") ? "bg-blue-50 text-blue-600" : "text-gray-500"}`}
-                  onClick={() => form.setValue("hasLink", !form.watch("hasLink"))}
-                >
-                  <LinkIcon className="h-5 w-5" />
-                </Button>
-                <Button type="button" variant="ghost" size="sm" className="rounded-full text-gray-500">
-                  <Smile className="h-5 w-5" />
-                </Button>
-                <Button type="button" variant="ghost" size="sm" className="rounded-full text-gray-500">
-                  <MapPin className="h-5 w-5" />
-                </Button>
+                
+                {/* Link Preview */}
+                {form.watch("hasLink") && form.watch("linkUrl") && (
+                  <div className="mt-3 border border-gray-200 rounded-md overflow-hidden">
+                    <div className="absolute top-2 right-2 z-10">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-gray-800/60 hover:bg-gray-800/80 text-white"
+                        onClick={() => {
+                          form.setValue("hasLink", false);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {form.watch("linkImageUrl") && (
+                      <img 
+                        src={form.watch("linkImageUrl") || ''} 
+                        alt="連結預覽" 
+                        className="w-full h-[160px] object-cover" 
+                      />
+                    )}
+                    <div className="p-3">
+                      <div className="text-xs uppercase text-gray-500 mb-1">
+                        {new URL(form.watch("linkUrl") || "https://example.com").hostname}
+                      </div>
+                      <div className="font-medium line-clamp-1">{form.watch("linkTitle") || "連結標題"}</div>
+                      {form.watch("linkDescription") && (
+                        <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          {form.watch("linkDescription")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {/* Image/Media section */}
-              {form.watch("hasImage") && (
-                <div className="mt-3 space-y-3">
+              {/* Color Background Options (similar to Facebook) */}
+              <div className="hidden px-4">
+                <div className="flex space-x-2 overflow-x-auto py-2">
+                  {["bg-white", "bg-gradient-to-br from-pink-500 to-orange-400", "bg-gradient-to-br from-purple-500 to-blue-500", "bg-gradient-to-br from-yellow-400 to-orange-500", "bg-gradient-to-br from-green-400 to-blue-500"].map((bgColor, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`w-12 h-12 rounded-lg border-2 ${index === 0 ? 'border-blue-500' : 'border-transparent'} flex-shrink-0 ${bgColor}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              {/* Tools Section - Facebook style */}
+              <div className="px-4">
+                <div className="border border-gray-200 rounded-lg p-1">
+                  <div className="text-sm font-medium text-gray-600 mb-2 px-2">添加到你的貼文</div>
+                  <div className="flex flex-wrap">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`flex items-center justify-start rounded-md h-10 px-3 ${form.watch("hasImage") ? "text-green-600" : "text-gray-700"}`}
+                      onClick={() => {
+                        if (!form.watch("hasImage")) {
+                          form.setValue("hasImage", true);
+                          setTimeout(() => {
+                            if (fileInputRef.current) {
+                              fileInputRef.current.click();
+                            }
+                          }, 100);
+                        } else {
+                          form.setValue("hasImage", false);
+                        }
+                      }}
+                    >
+                      <ImageIcon className="h-5 w-5 mr-2" />
+                      <span>照片/影片</span>
+                    </Button>
+                    
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm"
+                      className={`flex items-center justify-start rounded-md h-10 px-3 ${form.watch("hasLink") ? "text-blue-600" : "text-gray-700"}`}
+                      onClick={() => form.setValue("hasLink", !form.watch("hasLink"))}
+                    >
+                      <LinkIcon className="h-5 w-5 mr-2" />
+                      <span>連結</span>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center justify-start rounded-md h-10 px-3 text-yellow-600"
+                      onClick={() => {
+                        form.setValue("schedulePost", !form.watch("schedulePost"));
+                        if (!form.watch("schedulePost") && !form.watch("scheduleDate")) {
+                          // Set default date to tomorrow
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          form.setValue("scheduleDate", tomorrow.toISOString().split('T')[0]);
+                          form.setValue("scheduleTime", "12:00");
+                        }
+                      }}
+                    >
+                      <Calendar className="h-5 w-5 mr-2" />
+                      <span>排程</span>
+                    </Button>
+                  </div>
+                  
                   <input
                     type="file"
                     id="media-upload"
@@ -401,265 +522,185 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     onChange={handleFileChange}
                     ref={fileInputRef}
                   />
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <FormLabel className="text-sm font-medium">上傳媒體</FormLabel>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={triggerFileUpload}
-                        disabled={isUploading}
-                        className="flex items-center"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            上傳中...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4 mr-2" />
-                            上傳
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    
-                    {isUploading && (
-                      <div className="w-full space-y-1">
-                        <Progress value={uploadProgress} className="h-2 w-full" />
-                        <p className="text-xs text-gray-500 text-right">{uploadProgress}%</p>
-                      </div>
-                    )}
-                    
-                    {mediaPreview && (
-                      <div className="border rounded-md p-2 mt-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            {uploadedMediaType === "image" ? (
-                              <FileImage className="h-4 w-4 mr-2 text-blue-500" />
-                            ) : (
-                              <FileVideo className="h-4 w-4 mr-2 text-red-500" />
-                            )}
-                            <span className="text-sm">{uploadedMediaType === "image" ? "圖片" : "影片"}</span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 rounded-full"
-                            onClick={() => {
-                              form.setValue("imageUrl", "");
-                              setMediaPreview(null);
-                              setUploadedMediaType(null);
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {uploadedMediaType === "image" ? (
-                          <img 
-                            src={mediaPreview} 
-                            alt="Preview" 
-                            className="w-full h-auto max-h-[200px] object-contain rounded"
-                          />
-                        ) : (
-                          <video 
-                            src={mediaPreview} 
-                            className="w-full h-auto max-h-[200px] object-contain rounded"
-                            controls
-                          />
-                        )}
-                      </div>
-                    )}
+                </div>
+              </div>
+              
+              {/* Upload Progress */}
+              {isUploading && (
+                <div className="px-4">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                    <span className="text-sm font-medium">正在上傳媒體...</span>
                   </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="imageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>媒體網址</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://..." 
-                            {...field} 
-                            value={field.value || ''} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              // If URL is filled manually, clear the preview
-                              if (mediaPreview && e.target.value !== mediaPreview) {
-                                setMediaPreview(null);
-                                setUploadedMediaType(null);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          上傳媒體或直接輸入網址
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <Progress value={uploadProgress} className="h-1 w-full" />
                 </div>
               )}
               
-              {/* Link inputs */}
-              {form.watch("hasLink") && (
-                <div className="mt-3 space-y-3">
-                  <FormField
-                    control={form.control}
-                    name="linkUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>連結網址</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="linkTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>連結標題</FormLabel>
-                        <FormControl>
-                          <Input placeholder="標題..." {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="linkDescription"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>連結描述</FormLabel>
-                        <FormControl>
-                          <Input placeholder="描述..." {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="linkImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>連結圖片網址</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <div className="border border-gray-200 rounded-md p-3 mb-4">
-              <FormField
-                control={form.control}
-                name="schedulePost"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">排程貼文</FormLabel>
-                      <FormDescription>
-                        設定特定的日期和時間發佈
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              {/* Hidden Forms */}
+              <div className="hidden">
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <Input {...field} value={field.value || ''} />
+                  )}
+                />
+              </div>
               
+              {/* Schedule Panel */}
               {form.watch("schedulePost") && (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <FormField
-                    control={form.control}
-                    name="scheduleDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                          <FormLabel>日期</FormLabel>
-                        </div>
-                        <FormControl>
-                          <Input type="date" {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="scheduleTime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                          <FormLabel>時間</FormLabel>
-                        </div>
-                        <FormControl>
-                          <Input type="time" {...field} value={field.value || ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="flex items-center mb-2">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                    <h4 className="font-medium">設定發佈時間</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="scheduleDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div className="relative">
+                              <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                              <Input 
+                                type="date" 
+                                {...field} 
+                                value={field.value || ''} 
+                                className="pl-9"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="scheduleTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <div className="relative">
+                              <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                              <Input 
+                                type="time" 
+                                {...field} 
+                                value={field.value || ''} 
+                                className="pl-9"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               )}
-            </div>
-            
-            <DialogFooter className="pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose}
-                disabled={createPostMutation.isPending || updatePostMutation.isPending}
-              >
-                取消
-              </Button>
               
-              {post?.status === "draft" ? (
-                <>
+              {/* Link Panel */}
+              {form.watch("hasLink") && (
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="flex items-center mb-2">
+                    <LinkIcon className="h-5 w-5 mr-2 text-blue-500" />
+                    <h4 className="font-medium">添加連結</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="linkUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} value={field.value || ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="linkTitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="連結標題..." {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="linkImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="圖片網址..." {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="linkDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="連結描述..." {...field} value={field.value || ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Footer Actions */}
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <div className="flex justify-end space-x-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={onClose}
+                    disabled={createPostMutation.isPending || updatePostMutation.isPending}
+                    className="text-gray-700 hover:text-gray-900"
+                  >
+                    取消
+                  </Button>
+                  
                   <Button 
                     type="submit" 
-                    disabled={createPostMutation.isPending || updatePostMutation.isPending}
+                    disabled={createPostMutation.isPending || updatePostMutation.isPending || !form.watch("content")}
+                    className={`${form.watch("schedulePost") ? "bg-blue-600 hover:bg-blue-700" : (post?.status === "draft" ? "bg-gray-600 hover:bg-gray-700" : "bg-blue-600 hover:bg-blue-700")}`}
                   >
-                    {form.watch("schedulePost") ? "排程" : "儲存草稿"}
+                    {createPostMutation.isPending || updatePostMutation.isPending ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        處理中...
+                      </div>
+                    ) : (
+                      post 
+                        ? "更新貼文" 
+                        : (form.watch("schedulePost") 
+                          ? "排程發佈" 
+                          : (form.watch("status") === "draft" ? "儲存草稿" : "立即發佈"))
+                    )}
                   </Button>
-                </>
-              ) : (
-                <Button 
-                  type="submit" 
-                  disabled={createPostMutation.isPending || updatePostMutation.isPending}
-                >
-                  {post ? "更新" : (form.watch("schedulePost") ? "排程" : "立即發佈")}
-                </Button>
-              )}
-            </DialogFooter>
-          </form>
-        </Form>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
