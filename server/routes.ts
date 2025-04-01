@@ -1,10 +1,12 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPostSchema, insertPageSchema, insertUserSchema } from "@shared/schema";
 import session from "express-session";
 import { WebSocketServer } from "ws";
 import { z } from "zod";
+import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
+import path from "path";
 
 declare module "express-session" {
   interface SessionData {
@@ -206,6 +208,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // File upload route for posts
+  app.post("/api/upload", upload.single("media"), async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Cloudinary automatically uploads the file and returns the result
+      const mediaUrl = (req.file as any).path || (req.file as Express.Multer.File).filename;
+      
+      // Determine if it's an image or video based on the mimetype
+      const fileType = (req.file as Express.Multer.File).mimetype.startsWith("image/") 
+        ? "image" 
+        : "video";
+      
+      res.json({ 
+        mediaUrl, 
+        fileType,
+        success: true 
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ message: "Failed to upload file", error: String(error) });
+    }
+  });
+  
+  // Upload media URL route (for external URLs)
+  app.post("/api/upload-url", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+      
+      // Upload the image from URL to Cloudinary
+      const mediaUrl = await uploadFromUrl(url);
+      
+      // Determine if it's an image or video based on the file extension
+      const fileExtension = path.extname(url).toLowerCase();
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.webm'];
+      const fileType = videoExtensions.includes(fileExtension) ? "video" : "image";
+      
+      res.json({ 
+        mediaUrl, 
+        fileType,
+        success: true 
+      });
+    } catch (error) {
+      console.error("Upload URL error:", error);
+      res.status(500).json({ message: "Failed to upload from URL", error: String(error) });
+    }
+  });
+  
   app.post("/api/pages/:pageId/posts", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -381,6 +445,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      // If the image URL changed, delete the old image from Cloudinary
+      if (post.imageUrl && post.imageUrl !== req.body.imageUrl) {
+        try {
+          const publicId = getPublicIdFromUrl(post.imageUrl);
+          if (publicId) {
+            await deleteFile(publicId);
+          }
+        } catch (cloudinaryError) {
+          console.error("Failed to delete old media from Cloudinary:", cloudinaryError);
+          // Continue with post update even if old media deletion fails
+        }
+      }
+      
       const updatedPost = await storage.updatePost(postId, req.body);
       res.json(updatedPost);
     } catch (error) {
@@ -404,6 +481,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = await storage.getPageByPageId(post.pageId);
       if (!page || page.userId !== req.session.userId) {
         return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Delete image from Cloudinary if it exists
+      if (post.imageUrl) {
+        try {
+          const publicId = getPublicIdFromUrl(post.imageUrl);
+          if (publicId) {
+            await deleteFile(publicId);
+          }
+        } catch (cloudinaryError) {
+          console.error("Failed to delete media from Cloudinary:", cloudinaryError);
+          // Continue with post deletion even if media deletion fails
+        }
       }
       
       await storage.deletePost(postId);

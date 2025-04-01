@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,7 +27,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { X, Image, Link, Smile, MapPin, Calendar, Clock } from "lucide-react";
+import { 
+  X, 
+  Image as ImageIcon, 
+  Link as LinkIcon, 
+  Smile, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Upload, 
+  Loader2, 
+  FilePlus,
+  FileVideo,
+  FileImage 
+} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import PostEditor from "./PostEditor";
 
 // Extended schema for the form
@@ -68,6 +83,11 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"write" | "preview">("write");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedMediaType, setUploadedMediaType] = useState<"image" | "video" | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get active page
   const { data: pages = [] } = useQuery<any[]>({
@@ -75,6 +95,114 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   });
   
   const activePage = pages.length > 0 ? pages[0] : null;
+  
+  // Function to upload media to Cloudinary
+  const uploadMedia = async (file: File) => {
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      const formData = new FormData();
+      formData.append("media", file);
+      
+      // Create a custom fetch with upload progress
+      const xhr = new XMLHttpRequest();
+      
+      // Set up progress monitoring
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      });
+      
+      // Return a promise that resolves when the upload is complete
+      const response = await new Promise<any>((resolve, reject) => {
+        xhr.open("POST", "/api/upload");
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Upload failed with status: ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(formData);
+      });
+      
+      // Handle successful upload
+      if (response.success) {
+        toast({
+          title: "Upload successful",
+          description: "Media uploaded successfully",
+        });
+        
+        // Set the uploaded media URL in the form
+        form.setValue("imageUrl", response.mediaUrl);
+        form.setValue("hasImage", true);
+        
+        // Set media preview
+        setMediaPreview(response.mediaUrl);
+        setUploadedMediaType(response.fileType);
+        
+        return response.mediaUrl;
+      } else {
+        throw new Error(response.message || "Upload failed");
+      }
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload media",
+        variant: "destructive",
+      });
+      console.error("Upload error:", error);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  // Handler for file input change
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // Check file type and size
+      const isImage = file.type.startsWith("image/");
+      const isVideo = file.type.startsWith("video/");
+      
+      if (!isImage && !isVideo) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image or video file",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (limit to 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Please upload a file smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Upload the file
+      await uploadMedia(file);
+    }
+  };
+  
+  // Function to trigger file input click
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
   
   // Form setup
   const form = useForm<FormValues>({
@@ -103,6 +231,17 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       form.setValue("pageId", activePage.pageId);
     }
   }, [activePage, form]);
+  
+  // Initialize media preview if post has an image
+  useEffect(() => {
+    if (post?.imageUrl) {
+      setMediaPreview(post.imageUrl);
+      // Try to determine if it's an image or video based on file extension
+      const fileExtension = post.imageUrl.split('.').pop()?.toLowerCase();
+      const videoExtensions = ['mp4', 'mov', 'avi', 'webm'];
+      setUploadedMediaType(videoExtensions.includes(fileExtension || '') ? 'video' : 'image');
+    }
+  }, [post]);
 
   // Create post mutation
   const createPostMutation = useMutation({
@@ -232,7 +371,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   className={`rounded-full ${form.watch("hasImage") ? "bg-blue-50 text-blue-600" : "text-gray-500"}`}
                   onClick={() => form.setValue("hasImage", !form.watch("hasImage"))}
                 >
-                  <Image className="h-5 w-5" />
+                  <ImageIcon className="h-5 w-5" />
                 </Button>
                 <Button 
                   type="button" 
@@ -241,7 +380,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   className={`rounded-full ${form.watch("hasLink") ? "bg-blue-50 text-blue-600" : "text-gray-500"}`}
                   onClick={() => form.setValue("hasLink", !form.watch("hasLink"))}
                 >
-                  <Link className="h-5 w-5" />
+                  <LinkIcon className="h-5 w-5" />
                 </Button>
                 <Button type="button" variant="ghost" size="sm" className="rounded-full text-gray-500">
                   <Smile className="h-5 w-5" />
@@ -251,18 +390,116 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                 </Button>
               </div>
               
-              {/* Image URL input */}
+              {/* Image/Media section */}
               {form.watch("hasImage") && (
-                <div className="mt-3">
+                <div className="mt-3 space-y-3">
+                  <input
+                    type="file"
+                    id="media-upload"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                  />
+                  
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex justify-between items-center">
+                      <FormLabel className="text-sm font-medium">Upload Media</FormLabel>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={triggerFileUpload}
+                        disabled={isUploading}
+                        className="flex items-center"
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {isUploading && (
+                      <div className="w-full space-y-1">
+                        <Progress value={uploadProgress} className="h-2 w-full" />
+                        <p className="text-xs text-gray-500 text-right">{uploadProgress}%</p>
+                      </div>
+                    )}
+                    
+                    {mediaPreview && (
+                      <div className="border rounded-md p-2 mt-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            {uploadedMediaType === "image" ? (
+                              <FileImage className="h-4 w-4 mr-2 text-blue-500" />
+                            ) : (
+                              <FileVideo className="h-4 w-4 mr-2 text-red-500" />
+                            )}
+                            <span className="text-sm">{uploadedMediaType === "image" ? "Image" : "Video"}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 rounded-full"
+                            onClick={() => {
+                              form.setValue("imageUrl", "");
+                              setMediaPreview(null);
+                              setUploadedMediaType(null);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {uploadedMediaType === "image" ? (
+                          <img 
+                            src={mediaPreview} 
+                            alt="Preview" 
+                            className="w-full h-auto max-h-[200px] object-contain rounded"
+                          />
+                        ) : (
+                          <video 
+                            src={mediaPreview} 
+                            className="w-full h-auto max-h-[200px] object-contain rounded"
+                            controls
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
                   <FormField
                     control={form.control}
                     name="imageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Image URL</FormLabel>
+                        <FormLabel>Media URL</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://..." {...field} value={field.value || ''} />
+                          <Input 
+                            placeholder="https://..." 
+                            {...field} 
+                            value={field.value || ''} 
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // If URL is filled manually, clear the preview
+                              if (mediaPreview && e.target.value !== mediaPreview) {
+                                setMediaPreview(null);
+                                setUploadedMediaType(null);
+                              }
+                            }}
+                          />
                         </FormControl>
+                        <FormDescription>
+                          Upload media or enter URL directly
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
