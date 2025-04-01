@@ -81,6 +81,10 @@ export const facebookApi = {
     // 確保我們有 App ID
     await facebookApi.getAppId();
     
+    // 顯示當前網域，便於調試
+    console.log('當前網域:', window.location.origin);
+    console.log('當前完整URL:', window.location.href);
+    
     // 檢查 SDK 是否已經加載
     if (window.FB) {
       console.log('Facebook SDK 已經加載，直接初始化');
@@ -98,7 +102,7 @@ export const facebookApi = {
       // 設置超時處理
       const timeoutId = setTimeout(() => {
         reject(new Error('Facebook SDK 加載超時，請檢查網絡連接或網域設置'));
-      }, 10000); // 10秒超時
+      }, 20000); // 增加到20秒超時，給較慢的連接更多時間
       
       window.fbAsyncInit = function() {
         clearTimeout(timeoutId);
