@@ -1,10 +1,15 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -36,6 +41,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add a simple health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -44,7 +54,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
   // importantly only setup vite in development and after
@@ -58,7 +68,7 @@ app.use((req, res, next) => {
 
   // ALWAYS serve the app on port 5000 for Replit
   // this serves both the API and the client
-  const port = 5000;
+  const port = parseInt(process.env.PORT || '5000');
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
