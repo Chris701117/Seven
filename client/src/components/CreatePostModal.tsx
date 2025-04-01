@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   X, 
   Image as ImageIcon, 
@@ -39,7 +40,8 @@ import {
   Loader2, 
   FilePlus,
   FileVideo,
-  FileImage 
+  FileImage,
+  FileBadge 
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -52,6 +54,7 @@ const formSchema = insertPostSchema.extend({
   scheduleTime: z.string().optional(),
   hasImage: z.boolean().default(false),
   hasLink: z.boolean().default(false),
+  category: z.enum(["promotion", "event", "announcement"]).optional(),
 }).superRefine((data, ctx) => {
   if (data.schedulePost) {
     if (!data.scheduleDate) {
@@ -222,6 +225,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       scheduleTime: post?.scheduledTime ? new Date(post.scheduledTime).toTimeString().split(' ')[0].substring(0, 5) : "",
       hasImage: !!post?.imageUrl,
       hasLink: !!post?.linkUrl,
+      category: post?.category as "promotion" | "event" | "announcement" | undefined,
     },
   });
   
@@ -250,6 +254,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         pageId: values.pageId,
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
+        category: values.category || null,
         scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
@@ -286,6 +291,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       const postData = {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
+        category: values.category || null,
         scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
@@ -497,6 +503,22 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       type="button"
                       variant="ghost"
                       size="sm"
+                      className="flex items-center justify-start rounded-md h-10 px-3 text-purple-600"
+                      onClick={() => {
+                        const dialog = document.getElementById('post-category-dialog');
+                        if (dialog) {
+                          dialog.classList.toggle('hidden');
+                        }
+                      }}
+                    >
+                      <FileBadge className="h-5 w-5 mr-2" />
+                      <span>貼文類別</span>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
                       className="flex items-center justify-start rounded-md h-10 px-3 text-yellow-600"
                       onClick={() => {
                         form.setValue("schedulePost", !form.watch("schedulePost"));
@@ -599,6 +621,43 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </div>
                 </div>
               )}
+              
+              {/* Category Panel */}
+              <div className="px-4 py-2 border-t border-gray-200">
+                <div className="flex items-center mb-2">
+                  <FileBadge className="h-5 w-5 mr-2 text-purple-500" />
+                  <h4 className="font-medium">貼文類別</h4>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="promotion" id="promotion" />
+                            <Label htmlFor="promotion" className="text-sm font-medium">宣傳</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="event" id="event" />
+                            <Label htmlFor="event" className="text-sm font-medium">活動</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="announcement" id="announcement" />
+                            <Label htmlFor="announcement" className="text-sm font-medium">公告</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               {/* Link Panel */}
               {form.watch("hasLink") && (

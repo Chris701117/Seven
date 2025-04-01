@@ -37,6 +37,7 @@ export const posts = pgTable("posts", {
   pageId: text("page_id").notNull(),
   content: text("content").notNull(),
   status: text("status").notNull(), // published, scheduled, draft, completed
+  category: text("category"), // 宣傳、活動、公告
   scheduledTime: timestamp("scheduled_time"),
   imageUrl: text("image_url"),
   videoUrl: text("video_url"), // Added to support video uploads
