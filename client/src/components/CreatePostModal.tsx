@@ -133,8 +133,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       // Handle successful upload
       if (response.success) {
         toast({
-          title: "Upload successful",
-          description: "Media uploaded successfully",
+          title: "上傳成功",
+          description: "媒體上傳成功",
         });
         
         // Set the uploaded media URL in the form
@@ -147,12 +147,12 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         
         return response.mediaUrl;
       } else {
-        throw new Error(response.message || "Upload failed");
+        throw new Error(response.message || "上傳失敗");
       }
     } catch (error) {
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload media",
+        title: "上傳失敗",
+        description: error instanceof Error ? error.message : "媒體上傳失敗",
         variant: "destructive",
       });
       console.error("Upload error:", error);
@@ -174,8 +174,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       
       if (!isImage && !isVideo) {
         toast({
-          title: "Invalid file type",
-          description: "Please upload an image or video file",
+          title: "檔案類型無效",
+          description: "請上傳圖片或視頻檔案",
           variant: "destructive",
         });
         return;
@@ -185,8 +185,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
         toast({
-          title: "File too large",
-          description: "Please upload a file smaller than 10MB",
+          title: "檔案太大",
+          description: "請上傳小於 10MB 的檔案",
           variant: "destructive",
         });
         return;
@@ -262,16 +262,16 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Post created successfully!",
+        title: "成功",
+        description: "成功創建貼文！",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/pages/${form.getValues().pageId}/posts`] });
       onClose();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to create post. Please try again.",
+        title: "錯誤",
+        description: "創建貼文失敗。請再試一次。",
         variant: "destructive",
       });
       console.error("Failed to create post:", error);
@@ -298,16 +298,16 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Post updated successfully!",
+        title: "成功",
+        description: "成功更新貼文！",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/pages/${post?.pageId}/posts`] });
       onClose();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to update post. Please try again.",
+        title: "錯誤",
+        description: "更新貼文失敗。請再試一次。",
         variant: "destructive",
       });
       console.error("Failed to update post:", error);
@@ -326,7 +326,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{post ? "Edit Post" : "Create New Post"}</DialogTitle>
+          <DialogTitle>{post ? "編輯貼文" : "建立新貼文"}</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -338,7 +338,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   alt="Page profile" 
                   className="w-10 h-10 rounded-full mr-3" 
                 />
-                <div className="font-medium text-gray-900">{activePage?.name || "Select a page"}</div>
+                <div className="font-medium text-gray-900">{activePage?.name || "選擇粉絲頁"}</div>
               </div>
               
               <FormField
@@ -348,7 +348,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   <FormItem>
                     <FormControl>
                       <Textarea 
-                        placeholder="What would you like to share?" 
+                        placeholder="你想要分享什麼？" 
                         className="resize-none min-h-[120px]"
                         {...field}
                       />
@@ -361,7 +361,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
             
             <div className="border border-gray-200 rounded-md p-3 mb-4">
               <div className="flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-700">Add to Your Post</div>
+                <div className="text-sm font-medium text-gray-700">添加到你的貼文</div>
               </div>
               <div className="flex mt-2 space-x-2">
                 <Button 
@@ -404,7 +404,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   
                   <div className="flex flex-col space-y-2">
                     <div className="flex justify-between items-center">
-                      <FormLabel className="text-sm font-medium">Upload Media</FormLabel>
+                      <FormLabel className="text-sm font-medium">上傳媒體</FormLabel>
                       <Button
                         type="button"
                         size="sm"
@@ -416,12 +416,12 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                         {isUploading ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Uploading...
+                            上傳中...
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload
+                            上傳
                           </>
                         )}
                       </Button>
@@ -443,7 +443,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                             ) : (
                               <FileVideo className="h-4 w-4 mr-2 text-red-500" />
                             )}
-                            <span className="text-sm">{uploadedMediaType === "image" ? "Image" : "Video"}</span>
+                            <span className="text-sm">{uploadedMediaType === "image" ? "圖片" : "影片"}</span>
                           </div>
                           <Button
                             type="button"
@@ -481,7 +481,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     name="imageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Media URL</FormLabel>
+                        <FormLabel>媒體網址</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="https://..." 
@@ -498,7 +498,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Upload media or enter URL directly
+                          上傳媒體或直接輸入網址
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -515,7 +515,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     name="linkUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Link URL</FormLabel>
+                        <FormLabel>連結網址</FormLabel>
                         <FormControl>
                           <Input placeholder="https://..." {...field} value={field.value || ''} />
                         </FormControl>
@@ -529,9 +529,9 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     name="linkTitle"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Link Title</FormLabel>
+                        <FormLabel>連結標題</FormLabel>
                         <FormControl>
-                          <Input placeholder="Title..." {...field} value={field.value || ''} />
+                          <Input placeholder="標題..." {...field} value={field.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -543,9 +543,9 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     name="linkDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Link Description</FormLabel>
+                        <FormLabel>連結描述</FormLabel>
                         <FormControl>
-                          <Input placeholder="Description..." {...field} value={field.value || ''} />
+                          <Input placeholder="描述..." {...field} value={field.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -557,7 +557,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     name="linkImageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Link Image URL</FormLabel>
+                        <FormLabel>連結圖片網址</FormLabel>
                         <FormControl>
                           <Input placeholder="https://..." {...field} value={field.value || ''} />
                         </FormControl>
@@ -576,9 +576,9 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Schedule Post</FormLabel>
+                      <FormLabel className="text-base">排程貼文</FormLabel>
                       <FormDescription>
-                        Set a specific date and time to publish
+                        設定特定的日期和時間發佈
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -600,7 +600,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <FormItem>
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                          <FormLabel>Date</FormLabel>
+                          <FormLabel>日期</FormLabel>
                         </div>
                         <FormControl>
                           <Input type="date" {...field} value={field.value || ''} />
@@ -617,7 +617,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <FormItem>
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                          <FormLabel>Time</FormLabel>
+                          <FormLabel>時間</FormLabel>
                         </div>
                         <FormControl>
                           <Input type="time" {...field} value={field.value || ''} />
@@ -637,7 +637,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                 onClick={onClose}
                 disabled={createPostMutation.isPending || updatePostMutation.isPending}
               >
-                Cancel
+                取消
               </Button>
               
               {post?.status === "draft" ? (
@@ -646,7 +646,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     type="submit" 
                     disabled={createPostMutation.isPending || updatePostMutation.isPending}
                   >
-                    {form.watch("schedulePost") ? "Schedule" : "Save Draft"}
+                    {form.watch("schedulePost") ? "排程" : "儲存草稿"}
                   </Button>
                 </>
               ) : (
@@ -654,7 +654,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   type="submit" 
                   disabled={createPostMutation.isPending || updatePostMutation.isPending}
                 >
-                  {post ? "Update" : (form.watch("schedulePost") ? "Schedule" : "Publish Now")}
+                  {post ? "更新" : (form.watch("schedulePost") ? "排程" : "立即發佈")}
                 </Button>
               )}
             </DialogFooter>

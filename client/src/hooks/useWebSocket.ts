@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { Bell } from 'lucide-react';
 
 type WebSocketStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -32,7 +31,7 @@ export const useWebSocket = (userId: number | null) => {
       setStatus('connecting');
       
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket 已連接');
         setStatus('connected');
         
         // Send authentication message
@@ -52,26 +51,35 @@ export const useWebSocket = (userId: number | null) => {
             // Add to notifications state
             setNotifications(prev => [notification, ...prev]);
             
+            // Translate notification type to Chinese
+            let typeInChinese = '通知';
+            if (notification.type === 'reminder') {
+              typeInChinese = '提醒';
+            } else if (notification.type === 'completion') {
+              typeInChinese = '完成';
+            } else if (notification.type === 'publishing') {
+              typeInChinese = '發佈';
+            }
+            
             // Show toast notification
             toast({
-              title: notification.type.charAt(0).toUpperCase() + notification.type.slice(1),
+              title: typeInChinese,
               description: notification.message,
-              icon: <Bell className="h-4 w-4" />,
               duration: 10000 // 10 seconds
             });
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          console.error('解析 WebSocket 訊息失敗:', error);
         }
       };
       
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket 錯誤:', error);
         setStatus('disconnected');
       };
       
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log('WebSocket 已斷線');
         setStatus('disconnected');
         wsRef.current = null;
         
@@ -85,7 +93,7 @@ export const useWebSocket = (userId: number | null) => {
         }, 5000); // Reconnect after 5 seconds
       };
     } catch (error) {
-      console.error('Failed to connect to WebSocket:', error);
+      console.error('連接 WebSocket 失敗:', error);
       setStatus('disconnected');
     }
   }, [userId]);
