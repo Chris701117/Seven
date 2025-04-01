@@ -11,6 +11,14 @@ declare global {
   }
 }
 
+// Facebook SDK 配置 - 使用更寬鬆的安全設置，便於開發環境使用
+const FB_CONFIG = {
+  cookie: false,      // 禁用 cookie 以減少跨域問題
+  xfbml: false,       // 不嚴格檢查網域
+  version: 'v18.0',   // 使用 v18.0 版本的 Graph API
+  status: false,      // 禁止自動檢查登錄狀態
+}
+
 interface FacebookPost {
   id: string;
   message: string;
@@ -90,10 +98,8 @@ export const facebookApi = {
       console.log('Facebook SDK 已經加載，直接初始化');
       window.FB.init({
         appId: FACEBOOK_APP_ID,
-        cookie: true,
-        xfbml: true,
-        version: 'v18.0',
-        status: true  // 檢查登錄狀態
+        ...FB_CONFIG,
+        frictionlessRequests: true  // 減少跨域請求摩擦
       });
       return Promise.resolve();
     }
@@ -110,10 +116,8 @@ export const facebookApi = {
         try {
           window.FB.init({
             appId: FACEBOOK_APP_ID,
-            cookie: true,
-            xfbml: true,
-            version: 'v18.0',
-            status: true  // 檢查登錄狀態
+            ...FB_CONFIG,
+            frictionlessRequests: true  // 減少跨域請求摩擦
           });
           console.log('Facebook SDK 初始化成功');
           resolve();
