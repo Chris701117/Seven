@@ -248,6 +248,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a page and all associated content
+  app.delete("/api/pages/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const pageId = parseInt(req.params.id);
+      const page = await storage.getPageById(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ message: "Page not found" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Delete the page
+      const deleted = await storage.deletePage(pageId);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete page" });
+      }
+      
+      res.json({ message: "Page deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting page:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Posts routes
   app.get("/api/pages/:pageId/posts", async (req, res) => {
     if (!req.session.userId) {

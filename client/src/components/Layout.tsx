@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useQuery } from "@tanstack/react-query";
-import { Page, User } from "@shared/schema";
+import { User } from "@shared/schema";
 import { WebSocketProvider } from "./WebSocketProvider";
 import { Toaster } from "@/components/ui/toaster";
+import { usePageContext } from "../contexts/PageContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,24 +14,13 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  // 使用 Page Context
+  const { pages, isLoading: isLoadingPages, activePage, setActivePage } = usePageContext();
+  
   const { data: user, isLoading: isLoadingUser } = useQuery<User>({
     queryKey: ['/api/auth/me'],
     retry: false,
   });
-
-  const { data: pages = [], isLoading: isLoadingPages } = useQuery<Page[]>({
-    queryKey: ['/api/pages'],
-    enabled: !!user,
-  });
-
-  const [activePage, setActivePage] = useState<string | null>(null);
-
-  // Set the first page as active when pages are loaded
-  useEffect(() => {
-    if (pages.length > 0 && !activePage) {
-      setActivePage(pages[0].pageId);
-    }
-  }, [pages, activePage]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -42,7 +32,7 @@ const Layout = ({ children }: LayoutProps) => {
         {/* Sidebar */}
         <Sidebar 
           isOpen={isSidebarOpen} 
-          pages={pages || []} 
+          pages={pages} 
           activePage={activePage}
           onPageChange={setActivePage}
           isLoading={isLoadingPages}

@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, FileText, Bell, Key, User, LogOut, Trash2 } from "lucide-react";
+import { Facebook, Bell, User, LogOut, Trash2, ListFilter } from "lucide-react";
 import FacebookConnect from "../components/FacebookConnect";
+import PageManagement from "../components/PageManagement";
 import { facebookApi } from "../lib/facebookApi";
+import { usePageContext } from "../contexts/PageContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +31,9 @@ const Settings = () => {
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   
+  // 使用 Page Context
+  const { activePage, setActivePage } = usePageContext();
+  
   // 獲取用戶資料
   const { data: user } = useQuery({
     queryKey: ['/api/auth/me']
@@ -41,10 +46,11 @@ const Settings = () => {
     }
   }, [user]);
   
-  // 獲取頁面列表
-  const { data: pages } = useQuery({
-    queryKey: ['/api/pages']
-  });
+  // 處理頁面選擇
+  const handlePageSelected = (pageId: string) => {
+    setActivePage(pageId);
+    queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+  };
   
   // 處理 Facebook 連接成功
   const handleFacebookConnect = () => {
@@ -111,7 +117,7 @@ const Settings = () => {
       </div>
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-3">
+        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-4">
           <TabsTrigger value="account" className="flex items-center">
             <User className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">帳戶</span>
@@ -119,6 +125,10 @@ const Settings = () => {
           <TabsTrigger value="connections" className="flex items-center">
             <Facebook className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">連接</span>
+          </TabsTrigger>
+          <TabsTrigger value="pages" className="flex items-center">
+            <ListFilter className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">粉絲專頁</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center">
             <Bell className="h-4 w-4 mr-2" />
@@ -256,51 +266,10 @@ const Settings = () => {
               )}
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>已連接的粉絲專頁</CardTitle>
-              <CardDescription>
-                管理您連接的 Facebook 粉絲專頁
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pages && Array.isArray(pages) && pages.length > 0 ? (
-                <div className="space-y-4">
-                  {pages.map((page: any) => (
-                    <div key={page.pageId} className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={page.picture || "https://via.placeholder.com/40"} 
-                          alt={page.name} 
-                          className="h-10 w-10 rounded-full" 
-                        />
-                        <div>
-                          <p className="font-medium">{page.name}</p>
-                          <p className="text-xs text-gray-500">頁面 ID: {page.pageId}</p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">管理</Button>
-                    </div>
-                  ))}
-                  
-                  <Button variant="outline" className="mt-4">
-                    <Facebook className="h-4 w-4 mr-2" />
-                    添加其他專頁
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Facebook className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">尚未連接任何粉絲專頁</h3>
-                  <p className="text-gray-500 mb-4">連接您的 Facebook 帳號以管理您的粉絲專頁。</p>
-                  <Button disabled={!isConnected}>
-                    添加 Facebook 粉絲專頁
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        </TabsContent>
+        
+        <TabsContent value="pages" className="space-y-4">
+          <PageManagement onPageSelected={handlePageSelected} activePage={activePage} />
         </TabsContent>
         
         <TabsContent value="notifications" className="space-y-4">

@@ -7,6 +7,7 @@ import ContentCalendar from "./pages/ContentCalendar";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
+import { PageProvider } from "./contexts/PageContext";
 
 function Router() {
   return (
@@ -23,9 +24,11 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Layout>
-        <Router />
-      </Layout>
+      <PageProvider>
+        <Layout>
+          <Router />
+        </Layout>
+      </PageProvider>
     </QueryClientProvider>
   );
 }
