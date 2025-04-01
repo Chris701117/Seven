@@ -3,34 +3,83 @@ import { useQuery } from "@tanstack/react-query";
 import AnalyticsOverview from "@/components/AnalyticsOverview";
 import PostList from "@/components/PostList";
 import CalendarPreview from "@/components/CalendarPreview";
-import { Page } from "@shared/schema";
+import { Page, Post } from "@shared/schema";
+import PostCard from "@/components/PostCard";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import CreatePostModal from "@/components/CreatePostModal";
 
 const Dashboard = () => {
-  const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [activePageId, setActivePageId] = useState<string | null>("page_123456");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
-  // Get all pages for the user
-  const { data: pages, isLoading: isLoadingPages } = useQuery<Page[]>({
-    queryKey: ['/api/pages'],
-  });
-  
-  // Set the first page as active when pages are loaded
-  useEffect(() => {
-    if (pages && pages.length > 0 && !activePageId) {
-      setActivePageId(pages[0].pageId);
+  // Sample posts for preview
+  const [samplePosts, setSamplePosts] = useState<Post[]>([
+    {
+      id: 1,
+      pageId: "page_123456",
+      postId: "post_123456",
+      content: "這是一個已發佈的貼文示例。這裡展示了我們新設計的Facebook風格貼文界面。您可以看到這個界面非常接近Facebook的設計，包括頭像、名稱、時間戳以及貼文內容。",
+      status: "published",
+      publishedTime: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      imageUrl: "https://images.unsplash.com/photo-1705849336823-6fa967941b42?q=80&w=2662&auto=format&fit=crop",
+    },
+    {
+      id: 2,
+      pageId: "page_123456",
+      postId: null,
+      content: "這是一個排程貼文的示例。我們可以設定特定的時間來發佈這個貼文。這個界面展示了排程貼文的狀態和操作按鈕。",
+      status: "scheduled",
+      scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 3,
+      pageId: "page_123456",
+      postId: null,
+      content: "這是一個連結貼文的示例。您可以在Facebook風格的界面中看到連結的預覽效果。",
+      status: "draft",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      linkUrl: "https://replit.com",
+      linkTitle: "Replit - 在瀏覽器中寫程式碼",
+      linkDescription: "Replit 是一個協作瀏覽器IDE，可以讓您在任何地方用任何設備寫程式碼。",
+      linkImageUrl: "https://replit.com/public/images/ogBanner.png",
     }
-  }, [pages, activePageId]);
+  ]);
+  
+  const handleDeletePost = (postId: number) => {
+    setSamplePosts(samplePosts.filter(post => post.id !== postId));
+  };
   
   return (
-    <>
-      {/* Analytics Overview */}
-      <AnalyticsOverview pageId={activePageId || ""} />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">測試頁面動態消息</h2>
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="mr-2 h-4 w-4" /> 建立貼文
+        </Button>
+      </div>
       
-      {/* Posts Management Section */}
-      <PostList pageId={activePageId || ""} />
+      {/* Sample Posts to Showcase UI */}
+      <div className="space-y-4">
+        {samplePosts.map((post) => (
+          <PostCard key={post.id} post={post} onPostDeleted={handleDeletePost} />
+        ))}
+      </div>
       
-      {/* Content Calendar Preview */}
-      <CalendarPreview pageId={activePageId || ""} />
-    </>
+      {/* Add Create Post Modal */}
+      <CreatePostModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
+    </div>
   );
 };
 
