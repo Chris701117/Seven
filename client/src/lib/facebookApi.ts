@@ -1,5 +1,16 @@
 import { apiRequest } from "./queryClient";
 
+// 我們將通過 API 請求獲取 Facebook App ID
+let FACEBOOK_APP_ID: string | null = null;
+
+// 擴展 Window 接口以支持 Facebook SDK
+declare global {
+  interface Window {
+    FB: any;
+    fbAsyncInit: () => void;
+  }
+}
+
 interface FacebookPost {
   id: string;
   message: string;
@@ -50,6 +61,61 @@ interface FacebookAudienceData {
 }
 
 export const facebookApi = {
+  // 獲取 Facebook App ID
+  getAppId: async () => {
+    if (!FACEBOOK_APP_ID) {
+      try {
+        const response = await fetch('/api/config/facebook');
+        const data = await response.json();
+        FACEBOOK_APP_ID = data.appId;
+      } catch (error) {
+        console.error('無法獲取 Facebook App ID:', error);
+        throw new Error('無法獲取 Facebook App ID');
+      }
+    }
+    return FACEBOOK_APP_ID;
+  },
+  
+  // 初始化 Facebook SDK
+  initSDK: async () => {
+    // 確保我們有 App ID
+    await facebookApi.getAppId();
+    return new Promise<void>((resolve) => {
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          appId: FACEBOOK_APP_ID,
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+        resolve();
+      };
+      
+      // 加載 Facebook SDK
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s) as HTMLScriptElement;
+        js.id = id;
+        js.src = "https://connect.facebook.net/zh_TW/sdk.js";
+        fjs.parentNode?.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    });
+  },
+  
+  // 使用 Facebook 登入
+  login: () => {
+    return new Promise((resolve, reject) => {
+      window.FB.login((response: any) => {
+        if (response.authResponse) {
+          resolve(response);
+        } else {
+          reject(new Error('用戶取消登入或登入失敗'));
+        }
+      }, { scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content' });
+    });
+  },
+  
   // Auth related functions
   saveAccessToken: async (accessToken: string, fbUserId: string) => {
     return apiRequest("POST", "/api/auth/facebook", { accessToken, fbUserId });
