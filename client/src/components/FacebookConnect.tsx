@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Facebook } from "lucide-react";
+import { CheckCircle, AlertCircle, Facebook, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { facebookApi } from "../lib/facebookApi";
 
@@ -14,14 +14,25 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appId, setAppId] = useState<string | null>(null);
+  const [sdkStatus, setSdkStatus] = useState<'未初始化' | '初始化中' | '已初始化' | '初始化失敗'>('未初始化');
   const { toast } = useToast();
 
+  // 檢查 App ID 並初始化 SDK
   useEffect(() => {
     const initFacebook = async () => {
       try {
+        setSdkStatus('初始化中');
+        // 獲取 App ID
+        const id = await facebookApi.getAppId();
+        setAppId(id);
+        
+        // 初始化 SDK
         await facebookApi.initSDK();
+        setSdkStatus('已初始化');
       } catch (error) {
         console.error('Facebook SDK 初始化失敗:', error);
+        setSdkStatus('初始化失敗');
         setError('無法初始化 Facebook API，請稍後再試。');
       }
     };
@@ -58,14 +69,49 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       }
     } catch (error) {
       console.error('Facebook 連接失敗:', error);
-      setError('連接 Facebook 失敗，請確保您已允許必要的權限。');
+      let errorMessage = '連接 Facebook 失敗，請確保您已允許必要的權限。';
+      
+      // 提供更詳細的錯誤訊息
+      if (error instanceof Error) {
+        if (error.message.includes('domain')) {
+          errorMessage = 'Facebook 應用程序設置錯誤：JSSDK 網域未正確配置。請聯繫管理員設置允許的網域。';
+        } else {
+          errorMessage = `連接失敗：${error.message}`;
+        }
+      }
+      
+      setError(errorMessage);
       toast({
         title: "連接失敗",
-        description: "Facebook 連接失敗，請稍後再試。",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 重新初始化 Facebook SDK
+  const handleReinitializeSDK = async () => {
+    try {
+      setSdkStatus('初始化中');
+      setError(null);
+      await facebookApi.initSDK();
+      setSdkStatus('已初始化');
+      toast({
+        title: "重新初始化成功",
+        description: "Facebook SDK 已成功重新初始化。",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Facebook SDK 重新初始化失敗:', error);
+      setSdkStatus('初始化失敗');
+      setError(`無法初始化 Facebook SDK: ${error instanceof Error ? error.message : '未知錯誤'}`);
+      toast({
+        title: "重新初始化失敗",
+        description: "Facebook SDK 重新初始化失敗，請檢查控制台獲取更多信息。",
+        variant: "destructive",
+      });
     }
   };
 
@@ -98,6 +144,37 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
           </Alert>
         )}
         
+        {/* SDK 和 App ID 狀態顯示 */}
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-xs font-mono">
+          <p className="flex justify-between">
+            <span>SDK 狀態:</span> 
+            <span className={
+              sdkStatus === '已初始化' ? 'text-green-600 font-bold' : 
+              sdkStatus === '初始化中' ? 'text-blue-600 font-bold' : 
+              'text-red-600 font-bold'
+            }>
+              {sdkStatus}
+            </span>
+          </p>
+          <p className="flex justify-between mt-1">
+            <span>App ID:</span> 
+            <span className={appId ? 'text-black' : 'text-red-600'}>
+              {appId || '未設置'}
+            </span>
+          </p>
+          <div className="mt-2 flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleReinitializeSDK}
+              className="text-xs h-7 px-2"
+            >
+              <RefreshCcw className="mr-1 h-3 w-3" />
+              重新初始化
+            </Button>
+          </div>
+        </div>
+        
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
             點擊下方按鈕以連接您的 Facebook 帳戶。此操作需要您授權我們的應用程式存取您的 Facebook 頁面。
@@ -116,7 +193,7 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       <CardFooter>
         <Button 
           onClick={handleConnectFacebook} 
-          disabled={isLoading || isConnected}
+          disabled={isLoading || isConnected || sdkStatus !== '已初始化'}
           className="w-full bg-blue-600 hover:bg-blue-700"
         >
           <Facebook className="mr-2 h-4 w-4" />

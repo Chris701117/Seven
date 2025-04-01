@@ -80,26 +80,70 @@ export const facebookApi = {
   initSDK: async () => {
     // 確保我們有 App ID
     await facebookApi.getAppId();
-    return new Promise<void>((resolve) => {
+    
+    // 檢查 SDK 是否已經加載
+    if (window.FB) {
+      console.log('Facebook SDK 已經加載，直接初始化');
+      window.FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v18.0',
+        status: true  // 檢查登錄狀態
+      });
+      return Promise.resolve();
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      // 設置超時處理
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Facebook SDK 加載超時，請檢查網絡連接或網域設置'));
+      }, 10000); // 10秒超時
+      
       window.fbAsyncInit = function() {
-        window.FB.init({
-          appId: FACEBOOK_APP_ID,
-          cookie: true,
-          xfbml: true,
-          version: 'v18.0'
-        });
-        resolve();
+        clearTimeout(timeoutId);
+        
+        try {
+          window.FB.init({
+            appId: FACEBOOK_APP_ID,
+            cookie: true,
+            xfbml: true,
+            version: 'v18.0',
+            status: true  // 檢查登錄狀態
+          });
+          console.log('Facebook SDK 初始化成功');
+          resolve();
+        } catch (error) {
+          console.error('Facebook SDK 初始化失敗:', error);
+          reject(error);
+        }
       };
       
       // 加載 Facebook SDK
-      (function(d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s) as HTMLScriptElement;
-        js.id = id;
-        js.src = "https://connect.facebook.net/zh_TW/sdk.js";
-        fjs.parentNode?.insertBefore(js, fjs);
-      }(document, 'script', 'facebook-jssdk'));
+      try {
+        (function(d, s, id) {
+          var js, fjs = d.getElementsByTagName(s)[0];
+          if (d.getElementById(id)) {
+            console.log('Facebook SDK 已存在，跳過加載');
+            return;
+          }
+          
+          console.log('正在加載 Facebook SDK...');
+          js = d.createElement(s) as HTMLScriptElement;
+          js.id = id;
+          js.src = "https://connect.facebook.net/zh_TW/sdk.js";
+          js.crossOrigin = "anonymous"; // 添加跨域支持
+          js.onerror = function(error) {
+            console.error('Facebook SDK 加載失敗', error);
+            clearTimeout(timeoutId);
+            reject(new Error('無法加載 Facebook SDK，請檢查網絡連接'));
+          };
+          fjs.parentNode?.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+      } catch (error) {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
     });
   },
   
@@ -111,13 +155,40 @@ export const facebookApi = {
         userID: string;
       }
     }>((resolve, reject) => {
-      window.FB.login((response: any) => {
-        if (response.authResponse) {
-          resolve(response);
-        } else {
-          reject(new Error('用戶取消登入或登入失敗'));
-        }
-      }, { scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content' });
+      // 檢查 FB SDK 是否已經加載
+      if (!window.FB) {
+        console.error('Facebook SDK 尚未加載，嘗試重新初始化');
+        facebookApi.initSDK()
+          .then(() => {
+            // SDK 加載成功後重試登入
+            facebookApi.login()
+              .then(resolve)
+              .catch(reject);
+          })
+          .catch(error => {
+            reject(new Error(`Facebook SDK 初始化失敗: ${error.message}`));
+          });
+        return;
+      }
+      
+      try {
+        window.FB.login((response: any) => {
+          if (response && response.authResponse) {
+            console.log('Facebook 登入成功');
+            resolve(response);
+          } else {
+            console.warn('Facebook 登入取消或失敗', response);
+            reject(new Error('用戶取消登入或登入失敗'));
+          }
+        }, { 
+          scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content',
+          return_scopes: true, // 返回授權的權限列表
+          auth_type: 'rerequest' // 確保重新詢問權限
+        });
+      } catch (error) {
+        console.error('Facebook 登入過程發生異常:', error);
+        reject(new Error(`Facebook 登入過程發生異常: ${error instanceof Error ? error.message : '未知錯誤'}`));
+      }
     });
   },
   
