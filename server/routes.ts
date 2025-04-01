@@ -607,6 +607,309 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook Graph API integration routes
+  app.post("/api/pages/:pageId/sync", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { pageId } = req.params;
+      const { source } = req.body;
+      
+      const page = await storage.getPageByPageId(pageId);
+      if (!page) {
+        return res.status(404).json({ message: "找不到頁面" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      // 在實際實現中，這裡會調用Facebook Graph API來獲取最新數據
+      // 然後更新我們的數據庫
+      
+      // 模擬延遲，表示正在處理同步
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 更新頁面分析數據，增加一些隨機值以模擬數據變化
+      let analytics = await storage.getPageAnalytics(pageId);
+      if (!analytics) {
+        // 如果不存在，則創建一個新的分析記錄
+        analytics = await storage.createPageAnalytics({
+          pageId,
+          totalLikes: Math.floor(Math.random() * 500) + 100,
+          totalComments: Math.floor(Math.random() * 200) + 50,
+          totalShares: Math.floor(Math.random() * 100) + 20,
+          pageViews: Math.floor(Math.random() * 1000) + 500,
+          reachCount: Math.floor(Math.random() * 3000) + 1000,
+          engagementRate: (Math.random() * 5 + 1).toFixed(2),
+          demographicsData: JSON.stringify({
+            ageGroups: {
+              "18-24": Math.floor(Math.random() * 20) + 10,
+              "25-34": Math.floor(Math.random() * 30) + 20,
+              "35-44": Math.floor(Math.random() * 25) + 15,
+              "45-54": Math.floor(Math.random() * 15) + 5,
+              "55+": Math.floor(Math.random() * 10) + 5
+            },
+            gender: {
+              male: Math.floor(Math.random() * 60) + 40,
+              female: Math.floor(Math.random() * 60) + 40
+            },
+            locations: {
+              "台北": Math.floor(Math.random() * 30) + 20,
+              "高雄": Math.floor(Math.random() * 20) + 10,
+              "台中": Math.floor(Math.random() * 15) + 5,
+              "其他": Math.floor(Math.random() * 35) + 15
+            }
+          })
+        });
+      } else {
+        // 更新現有的分析數據
+        analytics = await storage.updatePageAnalytics(pageId, {
+          totalLikes: analytics.totalLikes + Math.floor(Math.random() * 50) + 10,
+          totalComments: analytics.totalComments + Math.floor(Math.random() * 20) + 5,
+          totalShares: analytics.totalShares + Math.floor(Math.random() * 10) + 2,
+          pageViews: analytics.pageViews + Math.floor(Math.random() * 100) + 50,
+        });
+      }
+      
+      // 也更新帖子的分析數據
+      const posts = await storage.getPosts(pageId);
+      for (const post of posts) {
+        if (post.postId) {
+          let postAnalytics = await storage.getPostAnalytics(post.postId);
+          if (!postAnalytics) {
+            await storage.createPostAnalytics({
+              postId: post.postId,
+              likes: Math.floor(Math.random() * 200) + 50,
+              comments: Math.floor(Math.random() * 50) + 10,
+              shares: Math.floor(Math.random() * 30) + 5,
+              reach: Math.floor(Math.random() * 500) + 100,
+              engagementRate: (Math.random() * 10 + 1).toFixed(2),
+              clickCount: Math.floor(Math.random() * 50) + 10
+            });
+          } else {
+            await storage.updatePostAnalytics(post.postId, {
+              likes: postAnalytics.likes + Math.floor(Math.random() * 20) + 5,
+              comments: postAnalytics.comments + Math.floor(Math.random() * 5) + 1,
+              shares: postAnalytics.shares + Math.floor(Math.random() * 3) + 1,
+            });
+          }
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "同步成功",
+        timestamp: new Date().toISOString(),
+        source
+      });
+    } catch (error) {
+      console.error("Facebook Graph API 同步錯誤:", error);
+      res.status(500).json({ message: "伺服器錯誤", error: String(error) });
+    }
+  });
+  
+  app.get("/api/pages/:pageId/audience", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { pageId } = req.params;
+      
+      const page = await storage.getPageByPageId(pageId);
+      if (!page) {
+        return res.status(404).json({ message: "找不到頁面" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      const analytics = await storage.getPageAnalytics(pageId);
+      if (!analytics) {
+        return res.status(404).json({ message: "沒有可用的分析數據" });
+      }
+      
+      // 解析存儲的人口統計數據
+      let demographicsData = {};
+      try {
+        demographicsData = JSON.parse(analytics.demographicsData || "{}");
+      } catch (e) {
+        demographicsData = {};
+      }
+      
+      res.json({
+        ageGroups: demographicsData.ageGroups || {},
+        gender: demographicsData.gender || {},
+        locations: demographicsData.locations || {},
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  app.get("/api/pages/:pageId/engagement-time", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { pageId } = req.params;
+      
+      const page = await storage.getPageByPageId(pageId);
+      if (!page) {
+        return res.status(404).json({ message: "找不到頁面" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      // 在實際實現中，這些數據會來自Facebook Graph API
+      // 這裡我們返回模擬數據
+      const weekdays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+      const times = ["09:00", "12:00", "15:00", "18:00", "21:00"];
+      
+      const engagementData = weekdays.map(day => {
+        const result: any = { day };
+        times.forEach(time => {
+          // 假設週末和晚上有更高的互動率
+          let baseValue = 30;
+          if (day === "週六" || day === "週日") {
+            baseValue += 20;
+          }
+          if (time === "18:00" || time === "21:00") {
+            baseValue += 15;
+          }
+          result[time] = baseValue + Math.floor(Math.random() * 30);
+        });
+        return result;
+      });
+      
+      res.json({
+        data: engagementData,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  app.get("/api/posts/:postId/performance", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { postId } = req.params;
+      
+      const post = await storage.getPostByPostId(postId);
+      if (!post) {
+        return res.status(404).json({ message: "找不到貼文" });
+      }
+      
+      const page = await storage.getPageByPageId(post.pageId);
+      if (!page || page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      const analytics = await storage.getPostAnalytics(postId);
+      if (!analytics) {
+        return res.status(404).json({ message: "沒有可用的分析數據" });
+      }
+      
+      // 在實際實現中，這些數據會來自Facebook Graph API
+      // 增加更多詳細的性能指標
+      const hourlyData = [];
+      const now = new Date();
+      
+      // 生成過去24小時的每小時數據
+      for (let i = 0; i < 24; i++) {
+        const hour = new Date(now);
+        hour.setHours(now.getHours() - 23 + i);
+        
+        // 確定基準值 - 假設發佈後快速增長，然後慢慢減少
+        let factor = 1;
+        if (i < 6) {
+          factor = 2.5 - (i * 0.2); // 較高的初始互動
+        } else {
+          factor = 1 - ((i - 6) * 0.03); // 逐漸減少
+        }
+        
+        if (factor < 0.1) factor = 0.1;
+        
+        hourlyData.push({
+          hour: hour.toISOString(),
+          likes: Math.round((analytics.likes / 24) * factor * (0.8 + Math.random() * 0.4)),
+          comments: Math.round((analytics.comments / 24) * factor * (0.8 + Math.random() * 0.4)),
+          shares: Math.round((analytics.shares / 24) * factor * (0.8 + Math.random() * 0.4)),
+          reach: Math.round((analytics.reach / 24) * factor * (0.8 + Math.random() * 0.4))
+        });
+      }
+      
+      res.json({
+        overall: {
+          likes: analytics.likes,
+          comments: analytics.comments,
+          shares: analytics.shares,
+          reach: analytics.reach,
+          engagementRate: analytics.engagementRate,
+          clickCount: analytics.clickCount
+        },
+        hourlyData,
+        demographics: {
+          ageGroups: {
+            "18-24": Math.floor(Math.random() * 30) + 10,
+            "25-34": Math.floor(Math.random() * 40) + 20,
+            "35-44": Math.floor(Math.random() * 20) + 10,
+            "45+": Math.floor(Math.random() * 10) + 5
+          },
+          gender: {
+            male: Math.floor(Math.random() * 60) + 40,
+            female: Math.floor(Math.random() * 60) + 40
+          }
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  app.post("/api/pages/:pageId/sync/schedule", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { pageId } = req.params;
+      const { frequency } = req.body;
+      
+      const page = await storage.getPageByPageId(pageId);
+      if (!page) {
+        return res.status(404).json({ message: "找不到頁面" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      // 在實際實現中，我們會在數據庫中存儲同步設置，並創建一個定時任務
+      // 這裡我們只返回成功響應
+      res.json({ 
+        success: true, 
+        message: `已設置${frequency === 'daily' ? '每日' : '每週'}同步`,
+        nextSync: new Date(Date.now() + (frequency === 'daily' ? 24 : 168) * 60 * 60 * 1000).toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
   // Set up HTTP server
   const httpServer = createServer(app);
   
