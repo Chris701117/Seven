@@ -141,25 +141,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 處理開發模式連接
       if (isDevelopmentMode) {
-        console.log('使用開發模式 Facebook 連接');
+        console.log('使用開發模式 Facebook 連接:', req.session.userId);
         
-        // 使用一個假的但穩定的令牌，方便識別
-        const devAccessToken = 'DEV_MODE_ACCESS_TOKEN_' + req.session.userId;
-        const devFbUserId = 'DEV_MODE_USER_' + req.session.userId;
-        
-        const updatedUser = await storage.updateUserAccessToken(
-          req.session.userId,
-          devAccessToken,
-          devFbUserId
-        );
-        
-        const { password, ...userWithoutPassword } = updatedUser;
-        res.json({ 
-          message: "開發模式已啟用，使用模擬數據", 
-          user: userWithoutPassword,
-          devMode: true
-        });
-        return;
+        try {
+          // 使用一個假的但穩定的令牌，方便識別
+          const devAccessToken = 'DEV_MODE_ACCESS_TOKEN_' + req.session.userId;
+          const devFbUserId = 'DEV_MODE_USER_' + req.session.userId;
+          
+          const updatedUser = await storage.updateUserAccessToken(
+            req.session.userId,
+            devAccessToken,
+            devFbUserId
+          );
+          
+          const { password, ...userWithoutPassword } = updatedUser;
+          return res.json({ 
+            message: "開發模式已啟用，使用模擬數據", 
+            user: userWithoutPassword,
+            devMode: true
+          });
+        } catch (devModeError) {
+          console.error('開發模式處理錯誤:', devModeError);
+          return res.status(500).json({ 
+            message: "開發模式設置失敗", 
+            error: devModeError instanceof Error ? devModeError.message : "未知錯誤",
+            devMode: false
+          });
+        }
       }
       
       // 正常 Facebook 連接處理
@@ -170,10 +178,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       const { password, ...userWithoutPassword } = updatedUser;
-      res.json({ message: "Facebook credentials updated", user: userWithoutPassword });
+      return res.json({ 
+        message: "Facebook credentials updated", 
+        user: userWithoutPassword
+      });
     } catch (error) {
       console.error('Facebook auth error:', error);
-      res.status(500).json({ message: "Server error: " + (error instanceof Error ? error.message : "Unknown error") });
+      return res.status(500).json({ 
+        message: "Server error", 
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
