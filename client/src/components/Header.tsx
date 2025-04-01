@@ -5,25 +5,27 @@ import { Button } from "@/components/ui/button";
 import CreatePostModal from "./CreatePostModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationsMenu } from "./NotificationsMenu";
+import { User } from "@shared/schema";
 
 interface HeaderProps {
   toggleSidebar: () => void;
-  user: any;
+  user: User | undefined;
   isLoading: boolean;
 }
 
 const getPageTitle = (path: string) => {
   switch (path) {
     case "/":
-      return "Dashboard";
+      return "儀表板";
     case "/calendar":
-      return "Content Calendar";
+      return "內容日曆";
     case "/analytics":
-      return "Analytics";
+      return "分析報表";
     case "/settings":
-      return "Settings";
+      return "設定";
     default:
-      return "Dashboard";
+      return "儀表板";
   }
 };
 
@@ -53,8 +55,12 @@ const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
               onClick={() => setIsCreateModalOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Post
+              建立貼文
             </Button>
+            {/* 通知菜單 */}
+            {user && <div className="ml-3">
+              <NotificationsMenu />
+            </div>}
             <div className="ml-4 relative flex-shrink-0">
               <div>
                 {isLoading ? (
@@ -75,16 +81,16 @@ const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
           <div className="flex space-x-2">
             <div className="relative">
               <select className="pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary">
-                <option>All Posts</option>
-                <option>Published</option>
-                <option>Scheduled</option>
-                <option>Drafts</option>
+                <option>所有貼文</option>
+                <option>已發佈</option>
+                <option>已排程</option>
+                <option>草稿</option>
               </select>
             </div>
             <div className="relative">
               <input 
                 type="text" 
-                placeholder="Search posts..." 
+                placeholder="搜尋貼文..." 
                 className="pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -99,13 +105,13 @@ const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              Filter
+              篩選
             </Button>
             <Button variant="outline" size="sm" className="text-gray-700">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
-              Sort
+              排序
             </Button>
           </div>
         </div>

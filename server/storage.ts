@@ -211,6 +211,31 @@ export class MemStorage implements IStorage {
     };
     this.posts.set(scheduledPost.id, scheduledPost);
 
+    // Add a scheduled post for tomorrow that needs a reminder today
+    const upcomingScheduledPost: Post = {
+      id: this.postId++,
+      postId: null,
+      pageId: page.pageId,
+      content: "明天就是我們的大型活動！不要錯過這個與我們互動的機會，我們將提供獨家優惠和免費禮品。快來參加吧！ #特別活動 #限時優惠",
+      status: "scheduled",
+      category: "event",
+      scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72",
+      videoUrl: null,
+      linkUrl: null,
+      linkTitle: null,
+      linkDescription: null,
+      linkImageUrl: null,
+      reminderSent: false,
+      reminderTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago (to trigger immediate reminder)
+      isCompleted: false,
+      completedTime: null,
+      createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // Created 2 days ago
+      publishedTime: null,
+      updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000)
+    };
+    this.posts.set(upcomingScheduledPost.id, upcomingScheduledPost);
+
     // Add a draft post
     const draftPost: Post = {
       id: this.postId++,
