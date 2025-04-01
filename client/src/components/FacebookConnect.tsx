@@ -38,8 +38,9 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       const response = await facebookApi.login();
       
       // 從登入回應中獲取訪問令牌
-      const accessToken = response.authResponse.accessToken;
-      const fbUserId = response.authResponse.userID;
+      const authResponse = response.authResponse as { accessToken: string; userID: string };
+      const accessToken = authResponse.accessToken;
+      const fbUserId = authResponse.userID;
       
       // 儲存令牌到我們的系統
       await facebookApi.saveAccessToken(accessToken, fbUserId);

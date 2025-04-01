@@ -48,6 +48,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cookie: { secure: process.env.NODE_ENV === "production" },
     })
   );
+  
+  // Configuration routes
+  app.get("/api/config/facebook", (req, res) => {
+    const appId = process.env.FACEBOOK_APP_ID || "";
+    res.json({ appId });
+  });
 
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
