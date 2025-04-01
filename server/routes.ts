@@ -33,6 +33,11 @@ declare module "express-session" {
   }
 }
 
+// Define notification functions at module scope
+let sendNotification: (userId: number, notification: Notification) => void;
+let sendReminderNotification: (post: Post) => Promise<boolean>;
+let sendCompletionNotification: (post: Post) => Promise<boolean>;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session setup
   app.use(
@@ -607,8 +612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up WebSocket server for real-time updates with better error handling
   try {
-    // Function to send notification to a user
-    const sendNotification = (userId: number, notification: Notification) => {
+    // Function to send notification to a user - assign to the module-scoped variable
+    sendNotification = (userId: number, notification: Notification) => {
       const userClients = clients.get(userId);
       if (userClients && userClients.length > 0) {
         const message = JSON.stringify({ type: 'notification', data: notification });
@@ -620,42 +625,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     };
     
-    // Utility function to send a reminder notification
-    const sendReminderNotification = async (post: Post) => {
+    // Utility function to send a reminder notification - assign to the module-scoped variable
+    sendReminderNotification = async (post: Post) => {
       try {
         const page = await storage.getPageByPageId(post.pageId);
         if (page) {
           const notification: Notification = {
             type: 'reminder',
             post,
-            message: `Reminder: Your post "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" is scheduled for publishing ${post.scheduledTime ? new Date(post.scheduledTime).toLocaleString() : 'soon'}.`,
+            message: `提醒：您的貼文 "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" 已排程在 ${post.scheduledTime ? new Date(post.scheduledTime).toLocaleString() : '即將'} 發布。`,
             timestamp: new Date().toISOString()
           };
           sendNotification(page.userId, notification);
           return true;
         }
       } catch (error) {
-        console.error("Error sending reminder notification:", error);
+        console.error("發送提醒通知時出錯:", error);
       }
       return false;
     };
     
-    // Utility function to send a completion notification
-    const sendCompletionNotification = async (post: Post) => {
+    // Utility function to send a completion notification - assign to the module-scoped variable
+    sendCompletionNotification = async (post: Post) => {
       try {
         const page = await storage.getPageByPageId(post.pageId);
         if (page) {
           const notification: Notification = {
             type: 'completion',
             post,
-            message: `Post "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" has been marked as completed.`,
+            message: `完成：貼文 "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" 已標記為完成。`,
             timestamp: new Date().toISOString()
           };
           sendNotification(page.userId, notification);
           return true;
         }
       } catch (error) {
-        console.error("Error sending completion notification:", error);
+        console.error("發送完成通知時出錯:", error);
       }
       return false;
     };
@@ -671,9 +676,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } catch (error) {
-        console.error("Error checking reminders:", error);
+        console.error("檢查提醒時出錯:", error);
       }
-    }, 60000); // Check every minute in production
+    }, 60000); // 在生產環境中每分鐘檢查一次
     
     // Setup WebSocket server
     const wss = new WebSocketServer({ 
@@ -683,10 +688,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     wss.on("connection", (ws: ExtendedWebSocket) => {
-      console.log("WebSocket client connected");
+      console.log("WebSocket 客戶端已連接");
       ws.isAlive = true;
       
-      // Setup ping interval for this client
+      // 為此客戶端設置 ping 間隔
       const pingInterval = setInterval(() => {
         if (ws.isAlive === false) {
           clearInterval(pingInterval);
@@ -702,13 +707,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       ws.on("error", (error) => {
-        console.error("WebSocket client error:", error);
+        console.error("WebSocket 客戶端錯誤:", error);
       });
       
       ws.on("close", () => {
         clearInterval(pingInterval);
         
-        // Remove client from clients map if it exists
+        // 從客戶端映射中移除客戶端（如果存在）
         if (ws.userId) {
           const userClients = clients.get(ws.userId);
           if (userClients) {
@@ -717,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               userClients.splice(index, 1);
             }
             
-            // Remove the empty array if there are no more clients for this user
+            // 如果此用戶沒有更多客戶端連接，則移除空數組
             if (userClients.length === 0) {
               clients.delete(ws.userId);
             }
@@ -732,52 +737,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (data.type === 'auth' && data.userId) {
             ws.userId = data.userId;
             
-            // Store client connection
+            // 儲存客戶端連接
             if (!clients.has(data.userId)) {
               clients.set(data.userId, []);
             }
             clients.get(data.userId)?.push(ws);
             
-            // Send confirmation
+            // 發送確認訊息
             ws.send(JSON.stringify({ 
               type: 'auth',
               success: true,
-              message: 'Authentication successful'
+              message: '認證成功'
             }));
             
-            console.log(`Client authenticated for user ${data.userId}`);
+            console.log(`用戶 ${data.userId} 的客戶端已認證`);
           }
         } catch (error) {
-          console.error("WebSocket message error:", error);
+          console.error("WebSocket 訊息錯誤:", error);
           
-          // Send error back to client
+          // 向客戶端發送錯誤
           ws.send(JSON.stringify({ 
             type: 'error',
-            message: 'Invalid message format'
+            message: '無效的訊息格式'
           }));
         }
       });
       
-      // Send initial connection confirmation
+      // 發送初始連接確認
       ws.send(JSON.stringify({ 
         type: 'connection',
         success: true,
-        message: 'Connected to WebSocket server'
+        message: '已連接到 WebSocket 伺服器'
       }));
     });
     
     wss.on("error", (error) => {
-      console.error("WebSocket server error:", error);
+      console.error("WebSocket 伺服器錯誤:", error);
     });
     
-    // Make sure to clean up intervals on server shutdown
+    // 確保在伺服器關閉時清理間隔
     httpServer.on('close', () => {
       clearInterval(checkRemindersInterval);
     });
     
-    console.log("WebSocket server initialized");
+    console.log("WebSocket 伺服器已初始化");
   } catch (error) {
-    console.error("Failed to initialize WebSocket server:", error);
+    console.error("初始化 WebSocket 伺服器失敗:", error);
   }
 
   return httpServer;

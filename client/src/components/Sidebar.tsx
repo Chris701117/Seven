@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
         <div className="flex items-center justify-center h-16 border-b border-neutral-200">
           <h1 className="text-xl font-semibold text-gray-800">
             <Facebook className="inline-block mr-2 text-primary" />
-            FB Post Manager
+            FB 粉絲團管理
           </h1>
         </div>
         <div className="h-0 flex-1 flex flex-col overflow-y-auto">
@@ -35,32 +35,32 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
             <Link href="/">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Home className="h-5 w-5 mr-3" />
-                <span>Dashboard</span>
+                <span>儀表板</span>
               </a>
             </Link>
             <Link href="/calendar">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/calendar' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Calendar className="h-5 w-5 mr-3" />
-                <span>Content Calendar</span>
+                <span>內容日曆</span>
               </a>
             </Link>
             <Link href="/analytics">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/analytics' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <BarChart2 className="h-5 w-5 mr-3" />
-                <span>Analytics</span>
+                <span>數據分析</span>
               </a>
             </Link>
             <Link href="/settings">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/settings' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Settings className="h-5 w-5 mr-3" />
-                <span>Settings</span>
+                <span>設定</span>
               </a>
             </Link>
           </nav>
           
           {/* Page selector */}
           <div className="p-4 border-t border-neutral-200">
-            <div className="mb-2 text-sm font-medium text-gray-500">Manage Pages</div>
+            <div className="mb-2 text-sm font-medium text-gray-500">管理粉絲頁</div>
             
             {isLoading ? (
               <div className="px-3 py-2">
@@ -79,14 +79,14 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
                     <>
                       <img 
                         src={getActivePage()?.picture || "https://via.placeholder.com/32"} 
-                        alt="Page profile" 
+                        alt="粉絲頁頭像" 
                         className="w-8 h-8 rounded-full" 
                       />
                       <div className="ml-2 text-sm font-medium text-gray-700">{getActivePage()?.name}</div>
                       <ChevronDown className="ml-auto text-gray-400 h-4 w-4" />
                     </>
                   ) : (
-                    <div className="text-sm text-gray-500">No pages available</div>
+                    <div className="text-sm text-gray-500">沒有可用的粉絲頁</div>
                   )}
                 </div>
                 
