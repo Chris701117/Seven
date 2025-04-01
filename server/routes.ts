@@ -1,12 +1,31 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPostSchema, insertPageSchema, insertUserSchema } from "@shared/schema";
+import { insertPostSchema, insertPageSchema, insertUserSchema, type Post } from "@shared/schema";
 import session from "express-session";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
 import path from "path";
+
+// WebSocket client tracking
+interface ExtendedWebSocket extends WebSocket {
+  userId?: number;
+  isAlive: boolean;
+}
+
+// WebSocket notification types
+type NotificationType = 'reminder' | 'completion' | 'publishing';
+
+interface Notification {
+  type: NotificationType;
+  post: Post;
+  message: string;
+  timestamp: string;
+}
+
+// Active connections
+const clients: Map<number, ExtendedWebSocket[]> = new Map();
 
 declare module "express-session" {
   interface SessionData {
@@ -372,6 +391,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedPost = await storage.markReminderSent(postId);
+      
+      // Send reminder notification via WebSocket if in the same request context
+      if (sendReminderNotification && typeof sendReminderNotification === 'function') {
+        try {
+          await sendReminderNotification(updatedPost);
+        } catch (wsError) {
+          console.error("Failed to send WebSocket notification:", wsError);
+          // Continue execution even if notification fails
+        }
+      }
+      
       res.json(updatedPost);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
@@ -398,6 +428,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedPost = await storage.markPostAsCompleted(postId);
+      
+      // Send completion notification via WebSocket if in the same request context
+      if (sendCompletionNotification && typeof sendCompletionNotification === 'function') {
+        try {
+          await sendCompletionNotification(updatedPost);
+        } catch (wsError) {
+          console.error("Failed to send WebSocket notification:", wsError);
+          // Continue execution even if notification fails
+        }
+      }
+      
       res.json(updatedPost);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
@@ -566,34 +607,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up WebSocket server for real-time updates with better error handling
   try {
+    // Function to send notification to a user
+    const sendNotification = (userId: number, notification: Notification) => {
+      const userClients = clients.get(userId);
+      if (userClients && userClients.length > 0) {
+        const message = JSON.stringify({ type: 'notification', data: notification });
+        userClients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+          }
+        });
+      }
+    };
+    
+    // Utility function to send a reminder notification
+    const sendReminderNotification = async (post: Post) => {
+      try {
+        const page = await storage.getPageByPageId(post.pageId);
+        if (page) {
+          const notification: Notification = {
+            type: 'reminder',
+            post,
+            message: `Reminder: Your post "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" is scheduled for publishing ${post.scheduledTime ? new Date(post.scheduledTime).toLocaleString() : 'soon'}.`,
+            timestamp: new Date().toISOString()
+          };
+          sendNotification(page.userId, notification);
+          return true;
+        }
+      } catch (error) {
+        console.error("Error sending reminder notification:", error);
+      }
+      return false;
+    };
+    
+    // Utility function to send a completion notification
+    const sendCompletionNotification = async (post: Post) => {
+      try {
+        const page = await storage.getPageByPageId(post.pageId);
+        if (page) {
+          const notification: Notification = {
+            type: 'completion',
+            post,
+            message: `Post "${post.content.substring(0, 50)}${post.content.length > 50 ? '...' : ''}" has been marked as completed.`,
+            timestamp: new Date().toISOString()
+          };
+          sendNotification(page.userId, notification);
+          return true;
+        }
+      } catch (error) {
+        console.error("Error sending completion notification:", error);
+      }
+      return false;
+    };
+    
+    // Setup intervals for checking posts that need reminders or are due for publishing
+    const checkRemindersInterval = setInterval(async () => {
+      try {
+        const posts = await storage.getPostsNeedingReminders();
+        for (const post of posts) {
+          const notificationSent = await sendReminderNotification(post);
+          if (notificationSent) {
+            await storage.markReminderSent(post.id);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking reminders:", error);
+      }
+    }, 60000); // Check every minute in production
+    
+    // Setup WebSocket server
     const wss = new WebSocketServer({ 
       server: httpServer,
       path: '/ws',
       perMessageDeflate: false // Disable per-message deflate to avoid issues
     });
     
-    wss.on("connection", (ws) => {
+    wss.on("connection", (ws: ExtendedWebSocket) => {
       console.log("WebSocket client connected");
+      ws.isAlive = true;
+      
+      // Setup ping interval for this client
+      const pingInterval = setInterval(() => {
+        if (ws.isAlive === false) {
+          clearInterval(pingInterval);
+          return ws.terminate();
+        }
+        
+        ws.isAlive = false;
+        ws.ping();
+      }, 30000);
+      
+      ws.on("pong", () => {
+        ws.isAlive = true;
+      });
       
       ws.on("error", (error) => {
         console.error("WebSocket client error:", error);
       });
       
+      ws.on("close", () => {
+        clearInterval(pingInterval);
+        
+        // Remove client from clients map if it exists
+        if (ws.userId) {
+          const userClients = clients.get(ws.userId);
+          if (userClients) {
+            const index = userClients.indexOf(ws);
+            if (index !== -1) {
+              userClients.splice(index, 1);
+            }
+            
+            // Remove the empty array if there are no more clients for this user
+            if (userClients.length === 0) {
+              clients.delete(ws.userId);
+            }
+          }
+        }
+      });
+      
       ws.on("message", (message) => {
         try {
-          // Echo back for now, implement real-time updates later
-          ws.send(JSON.stringify({ message: "Received" }));
+          const data = JSON.parse(message.toString());
+          
+          if (data.type === 'auth' && data.userId) {
+            ws.userId = data.userId;
+            
+            // Store client connection
+            if (!clients.has(data.userId)) {
+              clients.set(data.userId, []);
+            }
+            clients.get(data.userId)?.push(ws);
+            
+            // Send confirmation
+            ws.send(JSON.stringify({ 
+              type: 'auth',
+              success: true,
+              message: 'Authentication successful'
+            }));
+            
+            console.log(`Client authenticated for user ${data.userId}`);
+          }
         } catch (error) {
           console.error("WebSocket message error:", error);
+          
+          // Send error back to client
+          ws.send(JSON.stringify({ 
+            type: 'error',
+            message: 'Invalid message format'
+          }));
         }
       });
       
       // Send initial connection confirmation
-      ws.send(JSON.stringify({ connected: true }));
+      ws.send(JSON.stringify({ 
+        type: 'connection',
+        success: true,
+        message: 'Connected to WebSocket server'
+      }));
     });
     
     wss.on("error", (error) => {
       console.error("WebSocket server error:", error);
+    });
+    
+    // Make sure to clean up intervals on server shutdown
+    httpServer.on('close', () => {
+      clearInterval(checkRemindersInterval);
     });
     
     console.log("WebSocket server initialized");
