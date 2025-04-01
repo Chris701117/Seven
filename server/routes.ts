@@ -474,19 +474,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up HTTP server
   const httpServer = createServer(app);
   
-  // Set up WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer });
-  
-  wss.on("connection", (ws) => {
-    ws.on("message", (message) => {
-      try {
-        // Echo back for now, implement real-time updates later
-        ws.send(JSON.stringify({ message: "Received" }));
-      } catch (error) {
-        console.error("WebSocket error:", error);
-      }
+  // Set up WebSocket server for real-time updates with better error handling
+  try {
+    const wss = new WebSocketServer({ 
+      server: httpServer,
+      path: '/ws',
+      perMessageDeflate: false // Disable per-message deflate to avoid issues
     });
-  });
+    
+    wss.on("connection", (ws) => {
+      console.log("WebSocket client connected");
+      
+      ws.on("error", (error) => {
+        console.error("WebSocket client error:", error);
+      });
+      
+      ws.on("message", (message) => {
+        try {
+          // Echo back for now, implement real-time updates later
+          ws.send(JSON.stringify({ message: "Received" }));
+        } catch (error) {
+          console.error("WebSocket message error:", error);
+        }
+      });
+      
+      // Send initial connection confirmation
+      ws.send(JSON.stringify({ connected: true }));
+    });
+    
+    wss.on("error", (error) => {
+      console.error("WebSocket server error:", error);
+    });
+    
+    console.log("WebSocket server initialized");
+  } catch (error) {
+    console.error("Failed to initialize WebSocket server:", error);
+  }
 
   return httpServer;
 }
