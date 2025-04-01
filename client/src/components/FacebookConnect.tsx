@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Facebook, RefreshCcw } from "lucide-react";
+import { CheckCircle, AlertCircle, Facebook, RefreshCcw, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { facebookApi } from "../lib/facebookApi";
 
@@ -114,6 +114,24 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       });
     }
   };
+  
+  // 用於測試的 App ID 檢查和網域檢查功能
+  const checkEnvironment = () => {
+    // 顯示當前網域信息
+    const currentDomain = window.location.origin;
+    const fullUrl = window.location.href;
+    
+    // 記錄到控制台同時更新UI
+    console.log('環境檢查 - 當前網域:', currentDomain);
+    console.log('環境檢查 - 當前完整URL:', fullUrl);
+    console.log('環境檢查 - App ID:', appId);
+    
+    toast({
+      title: "環境信息",
+      description: `網域: ${currentDomain}，App ID: ${appId || '未設置'}`,
+      variant: "default",
+    });
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -162,7 +180,16 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
               {appId || '未設置'}
             </span>
           </p>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={checkEnvironment}
+              className="text-xs h-7 px-2"
+            >
+              <Info className="mr-1 h-3 w-3" />
+              檢查環境
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -179,6 +206,7 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
           <p className="text-sm text-gray-500">
             點擊下方按鈕以連接您的 Facebook 帳戶。此操作需要您授權我們的應用程式存取您的 Facebook 頁面。
           </p>
+          
           <p className="text-sm text-gray-500">
             我們需要以下權限：
           </p>
@@ -188,6 +216,18 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
             <li>管理頁面貼文</li>
             <li>查看頁面內容</li>
           </ul>
+          
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm font-medium text-blue-700 mb-2">Facebook 應用程序設置須知</p>
+            <ul className="text-xs text-blue-600 space-y-1">
+              <li>1. 在 Facebook 開發者平台中，確保添加以下網域：</li>
+              <li className="pl-4">• 點擊「檢查環境」並複製顯示的完整網域</li>
+              <li className="pl-4">• 在「網域管理員」處添加該網域為「完全相符」</li>
+              <li className="pl-4">• 添加 *.replit.dev 和 *.picard.replit.dev 為「前置詞:相符」</li>
+              <li>2. 確保「OAuth 重定向 URI」中也包含您的 Replit 網域</li>
+              <li>3. 設置後，請點擊「重新初始化」按鈕</li>
+            </ul>
+          </div>
         </div>
       </CardContent>
       <CardFooter>
