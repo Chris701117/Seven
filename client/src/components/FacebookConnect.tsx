@@ -145,22 +145,41 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       const fbUserId = "DEV_MODE_USER_" + Date.now();
       
       // 儲存令牌到我們的系統
-      await facebookApi.saveAccessToken(accessToken, fbUserId);
+      const response = await facebookApi.saveAccessToken(accessToken, fbUserId);
+      console.log('開發模式連接響應:', response);
       
-      setIsConnected(true);
-      toast({
-        title: "開發模式連接成功",
-        description: "您已成功連接開發模式。系統將使用樣本資料。",
-        variant: "default",
-      });
-
-      // 通知父組件連接成功
-      if (onConnect) {
-        onConnect();
+      // response 現在是已解析的 JSON 對象
+      if (response && response.devMode) {
+        setIsConnected(true);
+        toast({
+          title: "開發模式連接成功",
+          description: "您已成功連接開發模式。系統將使用樣本資料。",
+          variant: "default",
+        });
+  
+        // 通知父組件連接成功
+        if (onConnect) {
+          onConnect();
+        }
+      } else {
+        throw new Error('伺服器未返回有效的開發模式回應');
       }
     } catch (error) {
       console.error('開發模式連接失敗:', error);
-      setError(`開發模式連接失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
+      let errorMessage = '開發模式連接失敗';
+      
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage += `: ${JSON.stringify(error)}`;
+      }
+      
+      setError(errorMessage);
+      toast({
+        title: "開發模式連接失敗",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
