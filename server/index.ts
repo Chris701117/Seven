@@ -46,6 +46,13 @@ app.get('/api/test', (req, res) => {
   res.status(200).json({ message: 'API is working properly' });
 });
 
+// 提供 Facebook App ID 給前端使用
+app.get('/api/config/facebook', (req, res) => {
+  res.status(200).json({ 
+    appId: process.env.FACEBOOK_APP_ID 
+  });
+});
+
 (async () => {
   try {
     const server = await registerRoutes(app);
