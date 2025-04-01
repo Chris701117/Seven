@@ -311,12 +311,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
+      // Parse basic post data
       const postData = await insertPostSchema.parse({
         ...req.body,
         pageId
       });
       
-      const post = await storage.createPost(postData);
+      // Calculate reminder time (1 day before scheduled time) if post is scheduled
+      let reminderTime = null;
+      if (postData.status === "scheduled" && postData.scheduledTime) {
+        const scheduledDate = new Date(postData.scheduledTime);
+        reminderTime = new Date(scheduledDate);
+        reminderTime.setDate(scheduledDate.getDate() - 1); // Set to 1 day before
+        // Set to the same time of day
+        reminderTime.setHours(scheduledDate.getHours());
+        reminderTime.setMinutes(scheduledDate.getMinutes());
+        reminderTime.setSeconds(scheduledDate.getSeconds());
+      }
+      
+      // Create post with reminder time
+      const post = await storage.createPost({
+        ...postData,
+        reminderTime,
+        reminderSent: false
+      });
+      
       res.status(201).json(post);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -504,7 +523,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const updatedPost = await storage.updatePost(postId, req.body);
+      // Calculate new reminder time if scheduled time has changed
+      let updateData = { ...req.body };
+      
+      if (
+        // If this is a scheduled post
+        (updateData.status === "scheduled" || 
+        (post.status === "scheduled" && updateData.status === undefined)) && 
+        // And has a scheduled time 
+        (updateData.scheduledTime || post.scheduledTime)
+      ) {
+        // Get the current scheduled time if it exists
+        const scheduledDate = new Date(updateData.scheduledTime || post.scheduledTime);
+        
+        // Set reminder time to 1 day before
+        const reminderTime = new Date(scheduledDate);
+        reminderTime.setDate(scheduledDate.getDate() - 1);
+        // Keep the same time of day
+        reminderTime.setHours(scheduledDate.getHours());
+        reminderTime.setMinutes(scheduledDate.getMinutes());
+        reminderTime.setSeconds(scheduledDate.getSeconds());
+        
+        // If the scheduled time has changed, we need to reset the reminder flag
+        if (updateData.scheduledTime && 
+            post.scheduledTime && 
+            new Date(updateData.scheduledTime).getTime() !== new Date(post.scheduledTime).getTime()) {
+          updateData.reminderSent = false;
+        }
+        
+        // Add reminder time to the update data
+        updateData.reminderTime = reminderTime;
+      }
+      
+      const updatedPost = await storage.updatePost(postId, updateData);
       res.json(updatedPost);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
@@ -981,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("檢查提醒時出錯:", error);
       }
-    }, 60000); // 在生產環境中每分鐘檢查一次
+    }, 30000); // 每30秒檢查一次，以便在開發測試中更快看到效果
     
     // Setup WebSocket server
     const wss = new WebSocketServer({ 
