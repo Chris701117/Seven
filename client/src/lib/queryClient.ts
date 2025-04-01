@@ -11,16 +11,30 @@ const getBaseUrl = () => {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorData;
+    try {
+      // 嘗試解析錯誤響應為 JSON
+      errorData = await res.json();
+    } catch (e) {
+      // 如果無法解析為 JSON，則使用文本
+      const text = (await res.text()) || res.statusText;
+      throw new Error(`${res.status}: ${text}`);
+    }
+    
+    // 如果有詳細的錯誤信息，則使用它
+    if (errorData && errorData.message) {
+      throw new Error(`${res.status}: ${errorData.message}`);
+    } else {
+      throw new Error(`${res.status}: ${JSON.stringify(errorData)}`);
+    }
   }
 }
 
-export async function apiRequest(
+export async function apiRequest<T = any>(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<T> {
   // Make sure we have a properly formed URL (especially in Replit environment)
   const apiUrl = url.startsWith('http') ? url : 
                 url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
@@ -35,7 +49,19 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // 對於 204 No Content 響應，返回空對象
+  if (res.status === 204) {
+    return {} as T;
+  }
+  
+  // 解析 JSON 響應
+  try {
+    return await res.json() as T;
+  } catch (error) {
+    console.error('無法解析 API 響應為 JSON:', error);
+    throw new Error(`API 響應無法解析為 JSON: ${error instanceof Error ? error.message : '未知錯誤'}`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -136,6 +136,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Access token and user ID are required" });
       }
       
+      // 檢查是否為開發模式
+      const isDevelopmentMode = accessToken.startsWith('DEV_MODE_TOKEN_');
+      
+      // 處理開發模式連接
+      if (isDevelopmentMode) {
+        console.log('使用開發模式 Facebook 連接');
+        
+        // 使用一個假的但穩定的令牌，方便識別
+        const devAccessToken = 'DEV_MODE_ACCESS_TOKEN_' + req.session.userId;
+        const devFbUserId = 'DEV_MODE_USER_' + req.session.userId;
+        
+        const updatedUser = await storage.updateUserAccessToken(
+          req.session.userId,
+          devAccessToken,
+          devFbUserId
+        );
+        
+        const { password, ...userWithoutPassword } = updatedUser;
+        res.json({ 
+          message: "開發模式已啟用，使用模擬數據", 
+          user: userWithoutPassword,
+          devMode: true
+        });
+        return;
+      }
+      
+      // 正常 Facebook 連接處理
       const updatedUser = await storage.updateUserAccessToken(
         req.session.userId,
         accessToken,
@@ -145,7 +172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = updatedUser;
       res.json({ message: "Facebook credentials updated", user: userWithoutPassword });
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      console.error('Facebook auth error:', error);
+      res.status(500).json({ message: "Server error: " + (error instanceof Error ? error.message : "Unknown error") });
     }
   });
 
