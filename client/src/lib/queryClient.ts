@@ -1,5 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Helper to get the base URL for API requests in Replit environment
+const getBaseUrl = () => {
+  // For Replit environment
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,8 +21,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Make sure paths are relative in Replit environment
-  const apiUrl = url.startsWith('http') ? url : url;
+  // Make sure we have a properly formed URL (especially in Replit environment)
+  const apiUrl = url.startsWith('http') ? url : 
+                url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+  
+  console.log(`Making ${method} request to: ${apiUrl}`);
   
   const res = await fetch(apiUrl, {
     method,
@@ -32,9 +44,12 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Make sure paths are relative in Replit environment
+    // Make sure we have a properly formed URL (especially in Replit environment)
     const url = queryKey[0] as string;
-    const apiUrl = url.startsWith('http') ? url : url;
+    const apiUrl = url.startsWith('http') ? url : 
+                  url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+    
+    console.log(`Fetching data from: ${apiUrl}`);
     
     const res = await fetch(apiUrl, {
       credentials: "include",
@@ -54,11 +69,11 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 60000, // 1 minute
+      retry: 1,
     },
     mutations: {
-      retry: false,
+      retry: 1,
     },
   },
 });
