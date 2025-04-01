@@ -1,0 +1,123 @@
+import { Link, useLocation } from "wouter";
+import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown } from "lucide-react";
+import { Page } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+
+interface SidebarProps {
+  isOpen: boolean;
+  pages: Page[];
+  activePage: string | null;
+  onPageChange: (pageId: string) => void;
+  isLoading: boolean;
+}
+
+const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: SidebarProps) => {
+  const [location] = useLocation();
+  const [isPageSelectorOpen, setIsPageSelectorOpen] = useState(false);
+
+  const getActivePage = () => {
+    if (!activePage || !pages.length) return null;
+    return pages.find(page => page.pageId === activePage);
+  };
+
+  return (
+    <div className={`${isOpen ? 'block' : 'hidden'} md:flex md:flex-shrink-0`}>
+      <div className="flex flex-col w-64 border-r border-neutral-200 bg-white">
+        <div className="flex items-center justify-center h-16 border-b border-neutral-200">
+          <h1 className="text-xl font-semibold text-gray-800">
+            <Facebook className="inline-block mr-2 text-primary" />
+            FB Post Manager
+          </h1>
+        </div>
+        <div className="h-0 flex-1 flex flex-col overflow-y-auto">
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            <Link href="/">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Home className="h-5 w-5 mr-3" />
+                <span>Dashboard</span>
+              </a>
+            </Link>
+            <Link href="/calendar">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/calendar' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Calendar className="h-5 w-5 mr-3" />
+                <span>Content Calendar</span>
+              </a>
+            </Link>
+            <Link href="/analytics">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/analytics' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <BarChart2 className="h-5 w-5 mr-3" />
+                <span>Analytics</span>
+              </a>
+            </Link>
+            <Link href="/settings">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/settings' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Settings className="h-5 w-5 mr-3" />
+                <span>Settings</span>
+              </a>
+            </Link>
+          </nav>
+          
+          {/* Page selector */}
+          <div className="p-4 border-t border-neutral-200">
+            <div className="mb-2 text-sm font-medium text-gray-500">Manage Pages</div>
+            
+            {isLoading ? (
+              <div className="px-3 py-2">
+                <div className="flex items-center">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-4 w-32 ml-2" />
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <div 
+                  className="flex items-center px-3 py-2 bg-white border rounded-md cursor-pointer hover:bg-gray-50"
+                  onClick={() => setIsPageSelectorOpen(!isPageSelectorOpen)}
+                >
+                  {getActivePage() ? (
+                    <>
+                      <img 
+                        src={getActivePage()?.picture || "https://via.placeholder.com/32"} 
+                        alt="Page profile" 
+                        className="w-8 h-8 rounded-full" 
+                      />
+                      <div className="ml-2 text-sm font-medium text-gray-700">{getActivePage()?.name}</div>
+                      <ChevronDown className="ml-auto text-gray-400 h-4 w-4" />
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-500">No pages available</div>
+                  )}
+                </div>
+                
+                {isPageSelectorOpen && pages.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border rounded-md shadow-lg z-10">
+                    {pages.map(page => (
+                      <div 
+                        key={page.pageId}
+                        className={`flex items-center px-3 py-2 cursor-pointer hover:bg-gray-50 ${page.pageId === activePage ? 'bg-blue-50' : ''}`}
+                        onClick={() => {
+                          onPageChange(page.pageId);
+                          setIsPageSelectorOpen(false);
+                        }}
+                      >
+                        <img 
+                          src={page.picture || "https://via.placeholder.com/32"} 
+                          alt={page.name} 
+                          className="w-8 h-8 rounded-full" 
+                        />
+                        <div className="ml-2 text-sm font-medium text-gray-700">{page.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
