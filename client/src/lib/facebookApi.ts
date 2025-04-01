@@ -105,7 +105,12 @@ export const facebookApi = {
   
   // 使用 Facebook 登入
   login: () => {
-    return new Promise((resolve, reject) => {
+    return new Promise<{
+      authResponse: {
+        accessToken: string;
+        userID: string;
+      }
+    }>((resolve, reject) => {
       window.FB.login((response: any) => {
         if (response.authResponse) {
           resolve(response);
