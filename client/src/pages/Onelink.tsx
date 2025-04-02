@@ -734,16 +734,16 @@ export default function OnelinkPage() {
                       <SelectValue placeholder="選擇平台" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Facebook">Facebook</SelectItem>
-                      <SelectItem value="Instagram">Instagram</SelectItem>
-                      <SelectItem value="Google">Google</SelectItem>
-                      <SelectItem value="TikTok">TikTok</SelectItem>
-                      <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                      <SelectItem value="Line">Line</SelectItem>
-                      <SelectItem value="Yahoo">Yahoo</SelectItem>
-                      <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="SMS">SMS</SelectItem>
-                      <SelectItem value="QRcode">QR Code</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="line">Line</SelectItem>
+                      <SelectItem value="yahoo">Yahoo</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="sms">SMS</SelectItem>
+                      <SelectItem value="qrcode">QR Code</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
