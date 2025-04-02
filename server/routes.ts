@@ -74,20 +74,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { username, password } = await insertUserSchema.parse(req.body);
+      // 只需要用戶名和密碼的基本驗證
+      const loginSchema = z.object({
+        username: z.string().min(1, "請輸入用戶名"),
+        password: z.string().min(1, "請輸入密碼"),
+      });
+      
+      const { username, password } = await loginSchema.parse(req.body);
       const user = await storage.getUserByUsername(username);
 
       if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
 
       req.session.userId = user.id;
-      res.json({ message: "Login successful", userId: user.id });
+      res.json({ message: "登入成功", userId: user.id });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "伺服器錯誤" });
     }
   });
 
@@ -95,47 +101,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userData = await insertUserSchema.parse(req.body);
       
-      // Check if user already exists
+      // 檢查用戶是否已存在
       const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
-        return res.status(409).json({ message: "Username already exists" });
+        return res.status(409).json({ message: "用戶名已被使用" });
       }
       
       const user = await storage.createUser(userData);
       req.session.userId = user.id;
-      res.status(201).json({ message: "User registered successfully", userId: user.id });
+      res.status(201).json({ message: "註冊成功", userId: user.id });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "伺服器錯誤" });
     }
   });
 
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.status(401).json({ message: "未認證" });
     }
     
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: "找不到用戶" });
       }
       
       const { password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "伺服器錯誤" });
     }
   });
 
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: "Failed to logout" });
+        return res.status(500).json({ message: "登出失敗" });
       }
-      res.json({ message: "Logged out successfully" });
+      res.json({ message: "登出成功" });
     });
   });
 
