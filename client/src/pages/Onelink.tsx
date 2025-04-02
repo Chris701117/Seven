@@ -39,6 +39,15 @@ export default function OnelinkPage() {
   const [generatedUrl, setGeneratedUrl] = useState('');
   const [batchUrls, setBatchUrls] = useState<Array<{url: string, params: Record<string, string>}>>([]);
   
+  // 記錄所有已產出的 URL（單個和批量）
+  const [generatedUrls, setGeneratedUrls] = useState<Array<{
+    id: string;
+    url: string;
+    timestamp: Date;
+    type: 'single' | 'batch';
+    params?: Record<string, string>;
+  }>>([]);
+  
   // 批量生成相關
   const [batchCount, setBatchCount] = useState(5);
   const [batchStartNumber, setBatchStartNumber] = useState(1);
@@ -161,6 +170,17 @@ export default function OnelinkPage() {
     },
     onSuccess: (data) => {
       setGeneratedUrl(data.url);
+      
+      // 添加到已產出 URL 列表
+      const newUrlEntry = {
+        id: `single-${Date.now()}`,
+        url: data.url,
+        timestamp: new Date(),
+        type: 'single' as const,
+        params: {...customParams}
+      };
+      setGeneratedUrls(prev => [newUrlEntry, ...prev]);
+      
       toast({
         title: 'URL 生成成功',
         description: '已成功生成 Onelink URL',
@@ -330,6 +350,16 @@ export default function OnelinkPage() {
         });
         
         urls.push(response);
+        
+        // 添加到已產出 URL 列表
+        const newUrlEntry = {
+          id: `batch-${Date.now()}-${i}`,
+          url: response.url,
+          timestamp: new Date(),
+          type: 'batch' as const,
+          params: {...allCustomParams}
+        };
+        setGeneratedUrls(prev => [newUrlEntry, ...prev]);
       }
       
       setBatchUrls(urls);
@@ -580,6 +610,48 @@ export default function OnelinkPage() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* 已產出 URL 列表 */}
+          {generatedUrls.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>已產出 URL 列表</CardTitle>
+                <CardDescription>
+                  所有已產出的 Onelink URL，總共 {generatedUrls.length} 個
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>時間</TableHead>
+                      <TableHead>類型</TableHead>
+                      <TableHead>URL</TableHead>
+                      <TableHead className="w-[50px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {generatedUrls.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="whitespace-nowrap">{item.timestamp.toLocaleString('zh-TW')}</TableCell>
+                        <TableCell>{item.type === 'single' ? '單個' : '批量'}</TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="truncate">
+                            <code className="text-xs font-mono">{item.url}</code>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => copyToClipboard(item.url)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* 管理參數設定的標籤內容 */}
