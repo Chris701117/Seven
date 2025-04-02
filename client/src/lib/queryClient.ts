@@ -67,13 +67,18 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest<T = any>(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options?: {
+    method?: string;
+    data?: any;
+  }
 ): Promise<T> {
   // Make sure we have a properly formed URL (especially in Replit environment)
   const apiUrl = url.startsWith('http') ? url : 
                 url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+  
+  const method = options?.method || 'GET';
+  const data = options?.data;
   
   console.log(`Making ${method} request to: ${apiUrl}`);
   

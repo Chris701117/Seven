@@ -1093,10 +1093,11 @@ export class MemStorage implements IStorage {
     // 建立範例營運任務
     const operationTask1: OperationTask = {
       id: this.operationTaskId++,
-      title: "系統更新維護",
-      status: "排程中",
-      content: "計畫進行服務器和系統的定期維護",
-      category: "系統維護",
+      title: "伺服器系統更新維護",
+      status: "待處理",
+      content: "計畫進行服務器和系統的定期維護，包括系統更新、安全補丁安裝和效能優化",
+      category: "設備維護",
+      priority: "高",
       startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       reminderSent: false,
@@ -1108,33 +1109,83 @@ export class MemStorage implements IStorage {
 
     const operationTask2: OperationTask = {
       id: this.operationTaskId++,
-      title: "客戶服務培訓",
+      title: "新進人員招募面試",
       status: "進行中",
-      content: "為客服團隊組織季度培訓和產品更新講解",
-      category: "培訓",
+      content: "招募市場行銷部門新進人員，安排面試和能力測試",
+      category: "人員調度",
+      priority: "中",
       startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       reminderSent: true,
       createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      createdBy: "客服主管"
+      createdBy: "人資部門"
     };
     this.operationTasks.set(operationTask2.id, operationTask2);
 
     const operationTask3: OperationTask = {
       id: this.operationTaskId++,
-      title: "庫存管理審查",
+      title: "辦公設備採購",
       status: "已完成",
-      content: "進行月度庫存審查並更新物流系統",
-      category: "庫存管理",
-      startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      content: "採購新辦公設備，包括電腦、顯示器和辦公桌椅",
+      category: "物資管理",
+      priority: "低",
+      startTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 27 * 24 * 60 * 60 * 1000),
       reminderSent: true,
-      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      createdBy: "物流主管"
+      createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      createdBy: "行政部門"
     };
     this.operationTasks.set(operationTask3.id, operationTask3);
+    
+    const operationTask4: OperationTask = {
+      id: this.operationTaskId++,
+      title: "網路系統升級",
+      status: "已延遲",
+      content: "升級公司內部網路系統，提高連線穩定性和速度",
+      category: "設備維護",
+      priority: "高",
+      startTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      createdBy: "IT部門"
+    };
+    this.operationTasks.set(operationTask4.id, operationTask4);
+    
+    const operationTask5: OperationTask = {
+      id: this.operationTaskId++,
+      title: "季度團隊活動安排",
+      status: "待處理",
+      content: "規劃並安排季度員工團隊建設活動，包括地點選擇和行程規劃",
+      category: "一般",
+      priority: "中",
+      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      updatedAt: null,
+      createdBy: "人資部門"
+    };
+    this.operationTasks.set(operationTask5.id, operationTask5);
+    
+    const operationTask6: OperationTask = {
+      id: this.operationTaskId++,
+      title: "災難恢復演練",
+      status: "已取消",
+      content: "進行年度災難恢復和業務連續性計劃演練",
+      category: "一般",
+      priority: "低",
+      startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      createdBy: "營運部門"
+    };
+    this.operationTasks.set(operationTask6.id, operationTask6);
   }
 
   private initSampleOnelinkFields() {

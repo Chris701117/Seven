@@ -1741,6 +1741,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "伺服器錯誤" });
     }
   });
+  
+  // 營運模組 API 路由
+  // 獲取所有營運任務
+  app.get("/api/operation/tasks", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const tasks = await storage.getOperationTasks();
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取營運任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據 ID 獲取營運任務
+  app.get("/api/operation/tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getOperationTaskById(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      console.error("獲取營運任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 創建營運任務
+  app.post("/api/operation/tasks", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const insertOperationTaskSchema = z.object({
+        title: z.string().min(2).max(100),
+        content: z.string().optional().nullable(),
+        status: z.string(),
+        category: z.string(),
+        priority: z.string(),
+        startTime: z.coerce.date(),
+        endTime: z.coerce.date(),
+        createdBy: z.string().optional(),
+      });
+      
+      const validatedData = insertOperationTaskSchema.parse(req.body);
+      
+      const newTask = await storage.createOperationTask({
+        ...validatedData,
+        createdAt: new Date(),
+      });
+      
+      res.status(201).json(newTask);
+    } catch (error) {
+      console.error("創建營運任務失敗:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "數據驗證失敗", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "伺服器錯誤" });
+      }
+    }
+  });
+  
+  // 更新營運任務
+  app.patch("/api/operation/tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getOperationTaskById(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      const updateOperationTaskSchema = z.object({
+        title: z.string().min(2).max(100).optional(),
+        content: z.string().optional().nullable(),
+        status: z.string().optional(),
+        category: z.string().optional(),
+        priority: z.string().optional(),
+        startTime: z.coerce.date().optional(),
+        endTime: z.coerce.date().optional(),
+        createdBy: z.string().optional(),
+      });
+      
+      const validatedData = updateOperationTaskSchema.parse(req.body);
+      
+      const updatedTask = await storage.updateOperationTask(taskId, {
+        ...validatedData,
+        updatedAt: new Date(),
+      });
+      
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("更新營運任務失敗:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "數據驗證失敗", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "伺服器錯誤" });
+      }
+    }
+  });
+  
+  // 刪除營運任務
+  app.delete("/api/operation/tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getOperationTaskById(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      const success = await storage.deleteOperationTask(taskId);
+      
+      if (success) {
+        res.status(204).end();
+      } else {
+        res.status(500).json({ message: "刪除任務失敗" });
+      }
+    } catch (error) {
+      console.error("刪除營運任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據狀態獲取營運任務
+  app.get("/api/operation/tasks/status/:status", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const status = req.params.status;
+      const tasks = await storage.getOperationTasksByStatus(status);
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取營運任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據類別獲取營運任務
+  app.get("/api/operation/tasks/category/:category", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const category = req.params.category;
+      const tasks = await storage.getOperationTasksByCategory(category);
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取營運任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
 
   return httpServer;
 }
