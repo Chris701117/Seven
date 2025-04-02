@@ -8,10 +8,13 @@ import PostCard from "@/components/PostCard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import CreatePostModal from "@/components/CreatePostModal";
+import { usePageContext } from "@/contexts/PageContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const [activePageId, setActivePageId] = useState<string | null>("page_123456");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { activePageData } = usePageContext();
+  const { toast } = useToast();
   
   // Sample posts for preview
   const [samplePosts, setSamplePosts] = useState<Post[]>([
@@ -90,10 +93,21 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">測試頁面動態消息</h2>
+        <h2 className="text-2xl font-bold">{activePageData ? `${activePageData.pageName} 動態消息` : '請選擇粉絲專頁'}</h2>
         <Button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            if (!activePageData) {
+              toast({
+                title: "無法建立貼文",
+                description: "請先選擇一個粉絲專頁",
+                variant: "destructive",
+              });
+              return;
+            }
+            setIsCreateModalOpen(true);
+          }}
           className="bg-blue-600 hover:bg-blue-700"
+          disabled={!activePageData}
         >
           <Plus className="mr-2 h-4 w-4" /> 建立貼文
         </Button>
@@ -107,10 +121,12 @@ const Dashboard = () => {
       </div>
       
       {/* Add Create Post Modal */}
-      <CreatePostModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-      />
+      {activePageData && (
+        <CreatePostModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+        />
+      )}
     </div>
   );
 };
