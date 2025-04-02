@@ -8,6 +8,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { zhTW } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { facebookApi } from "@/lib/facebookApi";
 import { Button } from "@/components/ui/button";
 import {
   MoreHorizontal,
@@ -20,7 +21,8 @@ import {
   Send,
   ExternalLink,
   Globe,
-  Clock
+  Clock,
+  Zap
 } from "lucide-react";
 import { 
   DropdownMenu,
@@ -54,6 +56,7 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPublishAllDialogOpen, setIsPublishAllDialogOpen] = useState(false);
 
   // Get page for the post
   const { data: page, isLoading: isPageLoading } = useQuery<Page>({
@@ -87,6 +90,29 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
       console.error("Failed to delete post:", error);
     },
   });
+  
+  // 一鍵發布到所有平台的 mutation
+  const publishAllMutation = useMutation({
+    mutationFn: async () => {
+      return facebookApi.publishToAllPlatforms(post.id);
+    },
+    onSuccess: () => {
+      toast({
+        title: "發布成功",
+        description: "貼文已成功發布到所有已連接的平台！",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/pages/${post.pageId}/posts`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "發布失敗",
+        description: "無法發布貼文。請確認平台連接狀態並重試。",
+        variant: "destructive",
+      });
+      console.error("Failed to publish post to all platforms:", error);
+    },
+  });
 
   // Format date/time for display
   const getPostDateText = () => {
@@ -118,6 +144,12 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
     deletePostMutation.mutate();
     setIsDeleteDialogOpen(false);
   };
+  
+  // 處理一鍵發布
+  const handlePublishAll = () => {
+    publishAllMutation.mutate();
+    setIsPublishAllDialogOpen(false);
+  };
 
   return (
     <div className="post-card bg-white shadow-md rounded-lg overflow-hidden transition-all duration-200 mb-4 border border-gray-200">
@@ -141,7 +173,7 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
                   className="w-10 h-10 rounded-full mr-3" 
                 />
                 <div>
-                  <div className="font-semibold text-[15px] text-gray-900">{page?.name}</div>
+                  <div className="font-semibold text-[15px] text-gray-900">{page?.pageName}</div>
                   <div className="flex items-center text-xs text-gray-500">
                     {post.status === "published" ? (
                       <>
@@ -179,6 +211,11 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
                 <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
                   <Edit className="mr-2 h-4 w-4" /> 編輯貼文
                 </DropdownMenuItem>
+                {post.status !== "published" && (
+                  <DropdownMenuItem onClick={() => setIsPublishAllDialogOpen(true)}>
+                    <Zap className="mr-2 h-4 w-4" /> 一鍵發佈到所有平台
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-red-600" 
@@ -293,11 +330,12 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-red-600 hover:bg-red-50 rounded-md"
-                onClick={() => setIsDeleteDialogOpen(true)}
+                className="flex-1 py-5 text-blue-600 hover:bg-blue-50 rounded-md"
+                onClick={() => setIsPublishAllDialogOpen(true)}
+                disabled={publishAllMutation.isPending}
               >
-                <Trash2 className="mr-2 h-5 w-5" />
-                刪除
+                <Zap className="mr-2 h-5 w-5" />
+                立即發佈
               </Button>
             </>
           ) : (
@@ -315,9 +353,11 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
                 variant="ghost" 
                 size="sm" 
                 className="flex-1 py-5 text-blue-600 hover:bg-blue-50 rounded-md"
+                onClick={() => setIsPublishAllDialogOpen(true)}
+                disabled={publishAllMutation.isPending}
               >
-                <Send className="mr-2 h-5 w-5" />
-                發佈
+                <Zap className="mr-2 h-5 w-5" />
+                一鍵發佈
               </Button>
             </>
           )}
@@ -353,6 +393,29 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
           post={post}
         />
       )}
+      
+      {/* 一鍵發佈確認對話框 */}
+      <AlertDialog open={isPublishAllDialogOpen} onOpenChange={setIsPublishAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>一鍵發佈到所有平台</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作將把貼文發佈到所有已連接的平台（FB、IG、TikTok、Threads、X）。
+              確認所有平台內容已準備好了嗎？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handlePublishAll} 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={publishAllMutation.isPending}
+            >
+              {publishAllMutation.isPending ? "發佈中..." : "確認發佈"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
