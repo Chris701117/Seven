@@ -20,10 +20,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const pages = pgTable("pages", {
   id: serial("id").primaryKey(),
   pageId: text("page_id").notNull().unique(),
-  name: text("name").notNull(),
+  pageName: text("page_name").notNull(),
   accessToken: text("access_token").notNull(),
   userId: integer("user_id").notNull(),
   picture: text("picture"),
+  pageImage: text("page_image"),
 });
 
 export const insertPageSchema = createInsertSchema(pages).omit({
@@ -61,7 +62,6 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   publishedTime: true,
   updatedAt: true,
   reminderSent: true,
-  reminderTime: true,
   isCompleted: true,
   completedTime: true,
 });
@@ -74,6 +74,12 @@ export const postAnalytics = pgTable("post_analytics", {
   commentCount: integer("comment_count").default(0),
   shareCount: integer("share_count").default(0),
   viewCount: integer("view_count").default(0),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  reach: integer("reach").default(0),
+  engagementRate: text("engagement_rate"),
+  clickCount: integer("click_count").default(0),
   lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 
@@ -90,6 +96,9 @@ export const pageAnalytics = pgTable("page_analytics", {
   totalComments: integer("total_comments").default(0),
   totalShares: integer("total_shares").default(0),
   pageViews: integer("page_views").default(0),
+  reachCount: integer("reach_count").default(0),
+  engagementRate: text("engagement_rate"),
+  demographicsData: text("demographics_data"),
   lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 

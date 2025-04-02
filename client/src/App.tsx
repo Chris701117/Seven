@@ -7,6 +7,7 @@ import ContentCalendar from "./pages/ContentCalendar";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
+import FacebookSetupGuide from "./pages/FacebookSetupGuide";
 import { PageProvider } from "./contexts/PageContext";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/calendar" component={ContentCalendar} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
+      <Route path="/facebook-setup" component={FacebookSetupGuide} />
       <Route component={NotFound} />
     </Switch>
   );

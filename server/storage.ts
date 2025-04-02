@@ -93,10 +93,11 @@ export class MemStorage implements IStorage {
     const page: Page = {
       id: this.pageId++,
       pageId: "12345678901234567",
-      name: "Home & Garden Tips",
+      pageName: "Home & Garden Tips",
       accessToken: "sample_page_access_token",
       userId: user.id,
-      picture: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750"
+      picture: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750",
+      pageImage: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750"
     };
     this.pages.set(page.id, page);
 
@@ -108,6 +109,28 @@ export class MemStorage implements IStorage {
       totalComments: 1849,
       totalShares: 724,
       pageViews: 28391,
+      reachCount: 42500,
+      engagementRate: "4.8",
+      demographicsData: JSON.stringify({
+        ageGroups: {
+          "18-24": 15,
+          "25-34": 42,
+          "35-44": 28,
+          "45-54": 10,
+          "55+": 5
+        },
+        gender: {
+          male: 60,
+          female: 40
+        },
+        locations: [
+          { name: "台北", percentage: 35 },
+          { name: "新北", percentage: 25 },
+          { name: "台中", percentage: 15 },
+          { name: "高雄", percentage: 10 },
+          { name: "其他", percentage: 15 }
+        ]
+      }),
       lastUpdated: new Date()
     };
     this.pageAnalytics.set(pageAnalyticsData.id, pageAnalyticsData);
@@ -145,6 +168,12 @@ export class MemStorage implements IStorage {
       commentCount: 36,
       shareCount: 12,
       viewCount: 1089,
+      likes: 243,
+      comments: 36,
+      shares: 12,
+      reach: 1620,
+      engagementRate: "17.8",
+      clickCount: 54,
       lastUpdated: new Date()
     };
     this.postAnalytics.set(postAnalytics1.id, postAnalytics1);
@@ -182,6 +211,12 @@ export class MemStorage implements IStorage {
       commentCount: 42,
       shareCount: 8,
       viewCount: 892,
+      likes: 187,
+      comments: 42,
+      shares: 8,
+      reach: 1250,
+      engagementRate: "19.0",
+      clickCount: 32,
       lastUpdated: new Date()
     };
     this.postAnalytics.set(postAnalytics2.id, postAnalytics2);
@@ -313,7 +348,8 @@ export class MemStorage implements IStorage {
     const page: Page = { 
       ...insertPage, 
       id,
-      picture: insertPage.picture || null 
+      picture: insertPage.picture || null,
+      pageImage: insertPage.pageImage || null
     };
     this.pages.set(id, page);
     return page;
@@ -483,6 +519,12 @@ export class MemStorage implements IStorage {
       commentCount: insertAnalytics.commentCount || 0,
       shareCount: insertAnalytics.shareCount || 0,
       viewCount: insertAnalytics.viewCount || 0,
+      likes: insertAnalytics.likes || 0,
+      comments: insertAnalytics.comments || 0,
+      shares: insertAnalytics.shares || 0,
+      reach: insertAnalytics.reach || 0,
+      engagementRate: insertAnalytics.engagementRate || null,
+      clickCount: insertAnalytics.clickCount || 0,
       lastUpdated: new Date()
     };
     this.postAnalytics.set(id, analytics);
@@ -520,6 +562,9 @@ export class MemStorage implements IStorage {
       totalComments: insertAnalytics.totalComments || 0,
       totalShares: insertAnalytics.totalShares || 0,
       pageViews: insertAnalytics.pageViews || 0,
+      reachCount: insertAnalytics.reachCount || 0,
+      engagementRate: insertAnalytics.engagementRate || null,
+      demographicsData: insertAnalytics.demographicsData || null,
       lastUpdated: new Date()
     };
     this.pageAnalytics.set(id, analytics);

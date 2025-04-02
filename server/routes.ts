@@ -1104,6 +1104,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook configuration API
+  app.get("/api/config/facebook", (req, res) => {
+    const domain = req.get('host') || "";
+    
+    // 檢查是否有 App ID 和 App Secret
+    const appId = process.env.FACEBOOK_APP_ID;
+    const hasAppSecret = !!process.env.FACEBOOK_APP_SECRET;
+
+    res.json({
+      appId,
+      hasAppSecret,
+      domain
+    });
+  });
+  
   // Set up HTTP server
   const httpServer = createServer(app);
   

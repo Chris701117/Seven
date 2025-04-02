@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown } from "lucide-react";
+import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown, HelpCircle } from "lucide-react";
 import { Page } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -56,6 +56,12 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
                 <span>設定</span>
               </a>
             </Link>
+            <Link href="/facebook-setup">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/facebook-setup' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <HelpCircle className="h-5 w-5 mr-3" />
+                <span>Facebook 設置指南</span>
+              </a>
+            </Link>
           </nav>
           
           {/* Page selector */}
@@ -82,7 +88,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
                         alt="粉絲頁頭像" 
                         className="w-8 h-8 rounded-full" 
                       />
-                      <div className="ml-2 text-sm font-medium text-gray-700">{getActivePage()?.name}</div>
+                      <div className="ml-2 text-sm font-medium text-gray-700">{getActivePage()?.pageName}</div>
                       <ChevronDown className="ml-auto text-gray-400 h-4 w-4" />
                     </>
                   ) : (
@@ -103,10 +109,10 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
                       >
                         <img 
                           src={page.picture || "https://via.placeholder.com/32"} 
-                          alt={page.name} 
+                          alt={page.pageName} 
                           className="w-8 h-8 rounded-full" 
                         />
-                        <div className="ml-2 text-sm font-medium text-gray-700">{page.name}</div>
+                        <div className="ml-2 text-sm font-medium text-gray-700">{page.pageName}</div>
                       </div>
                     ))}
                   </div>
