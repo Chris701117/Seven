@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertPostSchema } from "@shared/schema";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageContext } from "@/contexts/PageContext";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Post } from "@shared/schema";
@@ -126,12 +127,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Get active page
-  const { data: pages = [] } = useQuery<any[]>({
-    queryKey: ['/api/pages'],
-  });
-  
-  const activePage = pages.length > 0 ? pages[0] : null;
+  // Get active page from context
+  const { activePageData } = usePageContext();
   
   // Function to upload media to Cloudinary
   const uploadMedia = async (file: File) => {
@@ -245,7 +242,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      pageId: activePage?.pageId || "",
+      pageId: activePageData?.pageId || "",
       content: post?.content || "",
       status: post?.status || "draft",
       scheduledTime: post?.scheduledTime ? new Date(post.scheduledTime) : undefined,
@@ -267,10 +264,10 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   
   // Update form values when active page changes
   useEffect(() => {
-    if (activePage && !form.getValues().pageId) {
-      form.setValue("pageId", activePage.pageId);
+    if (activePageData && !form.getValues().pageId) {
+      form.setValue("pageId", activePageData.pageId);
     }
-  }, [activePage, form]);
+  }, [activePageData, form]);
   
   // Initialize media preview if post has an image
   useEffect(() => {
@@ -393,12 +390,12 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
               <div className="p-4">
                 <div className="flex items-center mb-4">
                   <img 
-                    src={activePage?.picture || "https://via.placeholder.com/40"} 
+                    src={activePageData?.picture || "https://via.placeholder.com/40"} 
                     alt="Page profile" 
                     className="w-10 h-10 rounded-full mr-3" 
                   />
                   <div className="flex flex-col">
-                    <div className="font-semibold text-[15px]">{activePage?.name || "選擇粉絲頁"}</div>
+                    <div className="font-semibold text-[15px]">{activePageData?.pageName || "選擇粉絲頁"}</div>
                     {form.watch("schedulePost") && (
                       <div className="text-xs flex items-center text-gray-600 mt-0.5">
                         <Clock className="h-3 w-3 mr-1" />
@@ -415,7 +412,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     <FormItem>
                       <FormControl>
                         <Textarea 
-                          placeholder={`${activePage?.name || "你"}在想什麼？`}
+                          placeholder={`${activePageData?.pageName || "你"}在想什麼？`}
                           className="resize-none min-h-[120px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
                           {...field}
                         />
