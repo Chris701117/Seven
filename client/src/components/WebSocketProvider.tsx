@@ -17,8 +17,10 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ userId, children }: WebSocketProviderProps) {
+  // 使用useWebSocket鉤子獲取WebSocket功能
   const webSocket = useWebSocket(userId);
 
+  // 確保創建了有效的上下文值
   return (
     <WebSocketContext.Provider value={webSocket}>
       {children}

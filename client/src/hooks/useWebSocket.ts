@@ -11,6 +11,7 @@ interface Notification {
 }
 
 export const useWebSocket = (userId: number | null) => {
+  // 使用React的hooks
   const [status, setStatus] = useState<WebSocketStatus>('disconnected');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
