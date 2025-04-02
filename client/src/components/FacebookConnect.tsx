@@ -286,6 +286,14 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
                   <li>2. 確保「OAuth 重定向 URI」中也包含您的 Replit 網域</li>
                   <li>3. 設置後，請點擊「重新初始化」按鈕</li>
                 </ul>
+                <div className="mt-2 pt-2 border-t border-blue-200">
+                  <a 
+                    href="/facebook-setup" 
+                    className="text-xs font-medium text-blue-700 hover:text-blue-800 flex items-center"
+                  >
+                    查看詳細的 Facebook 設置指南 →
+                  </a>
+                </div>
               </div>
               
               <Button 
