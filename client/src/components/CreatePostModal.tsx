@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,10 @@ import {
   Loader2, 
   FilePlus,
   FileVideo,
+  Share,
+  Camera,
+  Music as MusicIcon,
+  MessageCircle,
   FileImage,
   FileBadge,
   ChevronDown
@@ -59,6 +64,7 @@ import PostEditor from "./PostEditor";
 // Extended schema for the form
 const formSchema = insertPostSchema.extend({
   schedulePost: z.boolean().default(false),
+  multiPlatform: z.boolean().default(false),
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
   endDate: z.string().optional(),
@@ -266,7 +272,22 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       endTime: post?.endTime ? new Date(post.endTime).toTimeString().split(' ')[0].substring(0, 5) : "",
       hasImage: !!post?.imageUrl,
       hasLink: !!post?.linkUrl,
+      multiPlatform: false,
       category: post?.category as "promotion" | "event" | "announcement" | undefined,
+      platformContent: post?.platformContent || {
+        fb: '',
+        ig: '',
+        tiktok: '',
+        threads: '',
+        x: ''
+      },
+      platformStatus: post?.platformStatus || {
+        fb: true,
+        ig: false,
+        tiktok: false,
+        threads: false,
+        x: false
+      },
     },
   });
   
@@ -297,6 +318,11 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         endTime = new Date(`${values.endDate}T${values.endTime}`);
       }
       
+      // 檢查 pageId 是否有效
+      if (!values.pageId) {
+        throw new Error("請選擇一個頁面來發布貼文");
+      }
+      
       const postData = {
         pageId: values.pageId,
         content: values.content,
@@ -309,8 +335,11 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         linkTitle: values.hasLink ? values.linkTitle : null,
         linkDescription: values.hasLink ? values.linkDescription : null,
         linkImageUrl: values.hasLink ? values.linkImageUrl : null,
+        platformContent: values.multiPlatform ? values.platformContent : null,
+        platformStatus: values.multiPlatform ? values.platformStatus : null,
       };
       
+      console.log(`Creating post for page: ${values.pageId}`);
       return apiRequest("POST", `/api/pages/${values.pageId}/posts`, postData);
     },
     onSuccess: () => {
@@ -322,9 +351,15 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       onClose();
     },
     onError: (error) => {
+      let errorMessage = "創建貼文失敗。請再試一次。";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "錯誤",
-        description: "創建貼文失敗。請再試一次。",
+        description: errorMessage,
         variant: "destructive",
       });
       console.error("Failed to create post:", error);
@@ -353,6 +388,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         linkTitle: values.hasLink ? values.linkTitle : null,
         linkDescription: values.hasLink ? values.linkDescription : null,
         linkImageUrl: values.hasLink ? values.linkImageUrl : null,
+        platformContent: values.multiPlatform ? values.platformContent : null,
+        platformStatus: values.multiPlatform ? values.platformStatus : null,
       };
       
       return apiRequest("PATCH", `/api/posts/${post.id}`, postData);
@@ -590,6 +627,19 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     >
                       <Calendar className="h-5 w-5 mr-2" />
                       <span>排程</span>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center justify-start rounded-md h-10 px-3 text-red-600"
+                      onClick={() => {
+                        form.setValue("multiPlatform", !form.watch("multiPlatform"));
+                      }}
+                    >
+                      <Share className="h-5 w-5 mr-2" />
+                      <span>多平台</span>
                     </Button>
                   </div>
                   
@@ -863,6 +913,278 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   )}
                 />
               </div>
+              
+              {/* Multi-Platform Panel */}
+              {form.watch("multiPlatform") && (
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <Share className="h-5 w-5 mr-2 text-red-500" />
+                      <h4 className="font-medium">多平台發佈設定</h4>
+                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => {
+                        // 一鍵全開或全關
+                        const allEnabled = form.watch("platformStatus.fb") && 
+                                           form.watch("platformStatus.ig") && 
+                                           form.watch("platformStatus.tiktok") && 
+                                           form.watch("platformStatus.threads") && 
+                                           form.watch("platformStatus.x");
+                        
+                        if (allEnabled) {
+                          // 如果全部已開啟，則全部關閉
+                          form.setValue("platformStatus.fb", false);
+                          form.setValue("platformStatus.ig", false);
+                          form.setValue("platformStatus.tiktok", false);
+                          form.setValue("platformStatus.threads", false);
+                          form.setValue("platformStatus.x", false);
+                        } else {
+                          // 否則全部開啟
+                          form.setValue("platformStatus.fb", true);
+                          form.setValue("platformStatus.ig", true);
+                          form.setValue("platformStatus.tiktok", true);
+                          form.setValue("platformStatus.threads", true);
+                          form.setValue("platformStatus.x", true);
+                        }
+                      }}
+                    >
+                      {(form.watch("platformStatus.fb") && 
+                        form.watch("platformStatus.ig") && 
+                        form.watch("platformStatus.tiktok") && 
+                        form.watch("platformStatus.threads") && 
+                        form.watch("platformStatus.x")) 
+                          ? "全部關閉" : "全部開啟"}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-3">
+                          <span className="text-white font-semibold">f</span>
+                        </div>
+                        <span className="font-medium">Facebook</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="platformStatus.fb"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center mr-3">
+                          <Camera className="text-white h-4 w-4" />
+                        </div>
+                        <span className="font-medium">Instagram</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="platformStatus.ig"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mr-3">
+                          <span className="text-white font-semibold">𝕏</span>
+                        </div>
+                        <span className="font-medium">X (Twitter)</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="platformStatus.x"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mr-3">
+                          <MessageCircle className="text-white h-4 w-4" />
+                        </div>
+                        <span className="font-medium">Threads</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="platformStatus.threads"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pb-2">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center mr-3">
+                          <MusicIcon className="text-white h-4 w-4" />
+                        </div>
+                        <span className="font-medium">TikTok</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="platformStatus.tiktok"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-xs text-gray-500">
+                    選擇要發佈的平台。每個平台可以有不同的內容，預設與主要內容相同。
+                  </div>
+                  
+                  <div className="mt-3">
+                    <Tabs defaultValue="fb" className="w-full">
+                      <TabsList className="w-full grid grid-cols-5">
+                        <TabsTrigger value="fb" className="text-xs">FB</TabsTrigger>
+                        <TabsTrigger value="ig" className="text-xs">IG</TabsTrigger>
+                        <TabsTrigger value="tiktok" className="text-xs">TikTok</TabsTrigger>
+                        <TabsTrigger value="threads" className="text-xs">Threads</TabsTrigger>
+                        <TabsTrigger value="x" className="text-xs">X</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="fb">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.fb"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Facebook 專屬內容（如不填則使用主貼文內容）" 
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="resize-none h-24 mt-2"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value="ig">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.ig"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Instagram 專屬內容（如不填則使用主貼文內容）" 
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="resize-none h-24 mt-2"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value="tiktok">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.tiktok"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="TikTok 專屬內容（如不填則使用主貼文內容）" 
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="resize-none h-24 mt-2"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value="threads">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.threads"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Threads 專屬內容（如不填則使用主貼文內容）" 
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="resize-none h-24 mt-2"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value="x">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.x"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="X (Twitter) 專屬內容（如不填則使用主貼文內容）" 
+                                  {...field}
+                                  value={field.value || ''}
+                                  className="resize-none h-24 mt-2"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </div>
+              )}
               
               {/* Link Panel */}
               {form.watch("hasLink") && (
