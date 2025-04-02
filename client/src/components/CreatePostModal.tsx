@@ -11,6 +11,7 @@ import { Post } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -378,12 +379,14 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
-        <div className="bg-white rounded-t-lg">
-          <div className="p-4 border-b">
-            <h3 className="text-xl font-bold text-center">
-              {post ? "編輯貼文" : "建立新貼文"}
-            </h3>
-          </div>
+        <DialogHeader className="p-4 border-b">
+          <DialogTitle className="text-xl font-bold text-center">
+            {post ? "編輯貼文" : "建立新貼文"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {post ? "在此編輯您的貼文內容" : "在此創建您的新貼文"}
+          </DialogDescription>
+        </DialogHeader>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
@@ -856,7 +859,6 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
               </div>
             </form>
           </Form>
-        </div>
       </DialogContent>
     </Dialog>
   );
