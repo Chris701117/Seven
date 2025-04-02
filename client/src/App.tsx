@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Marketing from "./pages/Marketing";
 import Operations from "./pages/Operations";
+import Onelink from "./pages/Onelink";
 import NotFound from "./pages/not-found";
 import FacebookSetupGuide from "./pages/FacebookSetupGuide";
 import Login from "./pages/Login";
@@ -18,7 +19,7 @@ import { PageProvider } from "./contexts/PageContext";
 import { User } from "@shared/schema";
 
 // 需要登入的路由
-const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing', '/operations'];
+const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing', '/operations', '/onelink'];
 
 function Router() {
   const [location, setLocation] = useLocation();
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/marketing" component={Marketing} />
       <Route path="/operations" component={Operations} />
+      <Route path="/onelink" component={Onelink} />
       <Route path="/settings" component={Settings} />
       <Route path="/facebook-setup" component={FacebookSetupGuide} />
       

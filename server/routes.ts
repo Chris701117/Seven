@@ -1923,5 +1923,216 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 廠商聯絡表路由
+  app.get("/api/vendors", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const vendors = await storage.getVendors();
+      res.json(vendors);
+    } catch (error) {
+      console.error("獲取廠商資料失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.get("/api/vendors/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendor = await storage.getVendorById(id);
+      if (!vendor) {
+        return res.status(404).json({ message: "找不到廠商資料" });
+      }
+      res.json(vendor);
+    } catch (error) {
+      console.error("獲取廠商資料失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.post("/api/vendors", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const vendor = await storage.createVendor(req.body);
+      res.status(201).json(vendor);
+    } catch (error) {
+      console.error("創建廠商資料失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.patch("/api/vendors/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const vendor = await storage.updateVendor(id, req.body);
+      res.json(vendor);
+    } catch (error) {
+      console.error("更新廠商資料失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.delete("/api/vendors/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteVendor(id);
+      if (!result) {
+        return res.status(404).json({ message: "找不到廠商資料" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("刪除廠商資料失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // Onelink AppsFlyer 路由
+  app.get("/api/onelink-fields", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const onelinkFields = await storage.getOnelinkFields();
+      res.json(onelinkFields);
+    } catch (error) {
+      console.error("獲取 Onelink 欄位失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.get("/api/onelink-fields/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const onelinkField = await storage.getOnelinkFieldById(id);
+      if (!onelinkField) {
+        return res.status(404).json({ message: "找不到 Onelink 欄位" });
+      }
+      res.json(onelinkField);
+    } catch (error) {
+      console.error("獲取 Onelink 欄位失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.post("/api/onelink-fields", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const onelinkField = await storage.createOnelinkField(req.body);
+      res.status(201).json(onelinkField);
+    } catch (error) {
+      console.error("創建 Onelink 欄位失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.patch("/api/onelink-fields/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const onelinkField = await storage.updateOnelinkField(id, req.body);
+      res.json(onelinkField);
+    } catch (error) {
+      console.error("更新 Onelink 欄位失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  app.delete("/api/onelink-fields/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteOnelinkField(id);
+      if (!result) {
+        return res.status(404).json({ message: "找不到 Onelink 欄位" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("刪除 Onelink 欄位失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 生成 Onelink URL
+  app.post("/api/generate-onelink", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { id, baseUrl, customParams } = req.body;
+      
+      if (!id || !baseUrl) {
+        return res.status(400).json({ message: "缺少必要參數" });
+      }
+      
+      const onelinkField = await storage.getOnelinkFieldById(parseInt(id));
+      if (!onelinkField) {
+        return res.status(404).json({ message: "找不到 Onelink 欄位" });
+      }
+      
+      // 構建基本參數
+      const params = new URLSearchParams();
+      params.append("pid", onelinkField.platform);
+      params.append("c", onelinkField.campaignCode);
+      params.append("af_sub1", onelinkField.materialId);
+      
+      // 添加可選參數（如果存在）
+      if (onelinkField.adSet) params.append("af_adset", onelinkField.adSet);
+      if (onelinkField.adName) params.append("af_ad", onelinkField.adName);
+      if (onelinkField.audienceTag) params.append("af_sub2", onelinkField.audienceTag);
+      if (onelinkField.creativeSize) params.append("af_sub3", onelinkField.creativeSize);
+      if (onelinkField.adPlacement) params.append("af_channel", onelinkField.adPlacement);
+      
+      // 添加自定義參數
+      if (customParams && typeof customParams === "object") {
+        Object.entries(customParams).forEach(([key, value]) => {
+          params.append(key, String(value));
+        });
+      }
+      
+      // 構建完整 URL
+      const finalUrl = `${baseUrl}?${params.toString()}`;
+      
+      res.json({ 
+        url: finalUrl,
+        params: Object.fromEntries(params.entries())
+      });
+    } catch (error) {
+      console.error("生成 Onelink URL 失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
   return httpServer;
 }
