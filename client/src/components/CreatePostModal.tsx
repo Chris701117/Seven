@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,6 +30,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   X, 
   Image as ImageIcon, 
@@ -43,7 +49,8 @@ import {
   FilePlus,
   FileVideo,
   FileImage,
-  FileBadge 
+  FileBadge,
+  ChevronDown
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -658,12 +665,32 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                             <FormControl>
                               <div className="relative">
                                 <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <Input 
-                                  type="time" 
-                                  {...field} 
-                                  value={field.value || ''} 
-                                  className="pl-9"
-                                />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
+                                      {field.value || '選擇時間'}
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    {Array.from({ length: 24 }).map((_, hour) => (
+                                      <React.Fragment key={hour}>
+                                        {[0, 30].map(minute => {
+                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                          return (
+                                            <DropdownMenuItem 
+                                              key={timeValue}
+                                              onClick={() => field.onChange(timeValue)}
+                                              className={field.value === timeValue ? "bg-blue-100" : ""}
+                                            >
+                                              {timeValue}
+                                            </DropdownMenuItem>
+                                          );
+                                        })}
+                                      </React.Fragment>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -705,12 +732,32 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                             <FormControl>
                               <div className="relative">
                                 <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <Input 
-                                  type="time" 
-                                  {...field} 
-                                  value={field.value || ''} 
-                                  className="pl-9"
-                                />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
+                                      {field.value || '選擇時間'}
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    {Array.from({ length: 24 }).map((_, hour) => (
+                                      <React.Fragment key={hour}>
+                                        {[0, 30].map(minute => {
+                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                          return (
+                                            <DropdownMenuItem 
+                                              key={timeValue}
+                                              onClick={() => field.onChange(timeValue)}
+                                              className={field.value === timeValue ? "bg-blue-100" : ""}
+                                            >
+                                              {timeValue}
+                                            </DropdownMenuItem>
+                                          );
+                                        })}
+                                      </React.Fragment>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </FormControl>
                             <FormMessage />
