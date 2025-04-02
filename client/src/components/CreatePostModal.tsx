@@ -341,6 +341,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       };
       
       console.log(`Creating post for page: ${values.pageId}`);
+      console.log("Post data being sent:", JSON.stringify(postData, null, 2));
       return apiRequest("POST", `/api/pages/${values.pageId}/posts`, postData);
     },
     onSuccess: () => {
@@ -414,10 +415,53 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   });
 
   const onSubmit = (values: FormValues) => {
-    if (post) {
-      updatePostMutation.mutate(values);
-    } else {
-      createPostMutation.mutate(values);
+    try {
+      // 確保必要欄位存在
+      if (!values.content?.trim()) {
+        toast({
+          title: "錯誤",
+          description: "請輸入貼文內容",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 確保多平台設置的數據格式正確
+      if (values.multiPlatform) {
+        if (!values.platformContent || !values.platformStatus) {
+          // 初始化預設值
+          values.platformContent = values.platformContent || {
+            fb: values.content,
+            ig: values.content,
+            tiktok: values.content,
+            threads: values.content,
+            x: values.content
+          };
+          
+          values.platformStatus = values.platformStatus || {
+            fb: true,
+            ig: false,
+            tiktok: false,
+            threads: false,
+            x: false
+          };
+        }
+      }
+
+      console.log("提交表單:", values);
+      
+      if (post) {
+        updatePostMutation.mutate(values);
+      } else {
+        createPostMutation.mutate(values);
+      }
+    } catch (error) {
+      console.error("表單提交錯誤:", error);
+      toast({
+        title: "錯誤",
+        description: "表單提交過程中發生錯誤，請檢查您的輸入並再試一次",
+        variant: "destructive",
+      });
     }
   };
 
@@ -463,6 +507,30 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                           placeholder={`${activePageData?.pageName || "你"}在想什麼？`}
                           className="resize-none min-h-[120px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // 如果多平台功能已開啟，將主內容同步到所有平台
+                            if (form.watch("multiPlatform")) {
+                              const mainContent = e.target.value;
+                              const currentPlatformContents = form.getValues("platformContent") || {};
+                              
+                              // 確保所有平台都有內容
+                              if (typeof currentPlatformContents === 'object' && currentPlatformContents !== null) {
+                                // 指定平台鍵以避免TypeScript錯誤
+                                const platforms = ['fb', 'ig', 'tiktok', 'threads', 'x'] as const;
+                                
+                                // 針對每個平台更新內容
+                                platforms.forEach(platform => {
+                                  // 安全地訪問屬性
+                                  const platformContent = currentPlatformContents[platform as keyof typeof currentPlatformContents] as string | undefined;
+                                  // 只更新空白或與主內容相同的平台內容
+                                  if (!platformContent || platformContent === field.value) {
+                                    form.setValue(`platformContent.${platform}`, mainContent);
+                                  }
+                                });
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -636,7 +704,20 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       size="sm"
                       className="flex items-center justify-start rounded-md h-10 px-3 text-red-600"
                       onClick={() => {
-                        form.setValue("multiPlatform", !form.watch("multiPlatform"));
+                        const newMultiPlatformValue = !form.watch("multiPlatform");
+                        form.setValue("multiPlatform", newMultiPlatformValue);
+                        
+                        // 如果開啟多平台功能，將主內容同步到所有平台
+                        if (newMultiPlatformValue) {
+                          const mainContent = form.getValues("content");
+                          form.setValue("platformContent", {
+                            fb: mainContent,
+                            ig: mainContent,
+                            tiktok: mainContent,
+                            threads: mainContent,
+                            x: mainContent
+                          });
+                        }
                       }}
                     >
                       <Share className="h-5 w-5 mr-2" />
