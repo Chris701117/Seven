@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MarketingTask } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Lucide icons
 import { Plus, RefreshCw, Filter, Search, MegaphoneOff, CalendarRange, LayoutGrid } from "lucide-react";
@@ -271,6 +273,35 @@ interface TaskListProps {
 }
 
 function TaskList({ tasks, isLoading, isError }: TaskListProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const deleteMutation = useMutation({
+    mutationFn: (taskId: number) => {
+      return apiRequest<any>(`/api/marketing-tasks/${taskId}`, {
+        method: "DELETE",
+      } as RequestInit);
+    },
+    onSuccess: () => {
+      toast({
+        title: "刪除成功",
+        description: "行銷任務已成功刪除！",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/marketing-tasks'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "刪除失敗",
+        description: `錯誤: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteTask = (taskId: number) => {
+    deleteMutation.mutate(taskId);
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -310,7 +341,12 @@ function TaskList({ tasks, isLoading, isError }: TaskListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {tasks.map(task => (
-        <MarketingTaskCard key={task.id} task={task} />
+        <MarketingTaskCard 
+          key={task.id} 
+          task={task} 
+          onDelete={() => handleDeleteTask(task.id)} 
+          layout="grid"
+        />
       ))}
     </div>
   );
