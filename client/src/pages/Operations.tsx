@@ -137,7 +137,7 @@ export default function Operations() {
       {/* 任務統計卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card 
-          className="cursor-pointer transition-all hover:shadow-md" 
+          className={`cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'all' ? 'border-2 border-red-500 hover:border-red-600' : ''}`} 
           onClick={() => setSelectedStatus('all')}
         >
           <CardHeader className="pb-2">
@@ -151,7 +151,7 @@ export default function Operations() {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all hover:shadow-md" 
+          className={`cursor-pointer transition-all hover:shadow-md ${selectedStatus === '進行中' ? 'border-2 border-red-500 hover:border-red-600' : ''}`} 
           onClick={() => setSelectedStatus('進行中')}
         >
           <CardHeader className="pb-2">
@@ -165,7 +165,7 @@ export default function Operations() {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all hover:shadow-md border-2 border-red-500 hover:border-red-600" 
+          className={`cursor-pointer transition-all hover:shadow-md ${selectedStatus === '待處理' ? 'border-2 border-red-500 hover:border-red-600' : ''}`} 
           onClick={() => setSelectedStatus('待處理')}
         >
           <CardHeader className="pb-2">
@@ -179,7 +179,7 @@ export default function Operations() {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer transition-all hover:shadow-md" 
+          className={`cursor-pointer transition-all hover:shadow-md ${selectedStatus === '已延遲' ? 'border-2 border-red-500 hover:border-red-600' : ''}`} 
           onClick={() => setSelectedStatus('已延遲')}
         >
           <CardHeader className="pb-2">
