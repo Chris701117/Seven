@@ -467,7 +467,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-auto max-h-[90vh]">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-xl font-bold text-center">
             {post ? "編輯貼文" : "建立新貼文"}
@@ -478,8 +478,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-              <div className="p-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 flex flex-col max-h-[calc(90vh-4rem)]">
+              <div className="p-4 overflow-y-auto flex-1">
                 <div className="flex items-center mb-4">
                   <img 
                     src={activePageData?.picture || "https://via.placeholder.com/40"} 
@@ -517,12 +517,13 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               // 確保所有平台都有內容
                               if (typeof currentPlatformContents === 'object' && currentPlatformContents !== null) {
                                 // 指定平台鍵以避免TypeScript錯誤
+                                // 定義平台列表
                                 const platforms = ['fb', 'ig', 'tiktok', 'threads', 'x'] as const;
                                 
                                 // 針對每個平台更新內容
                                 platforms.forEach(platform => {
-                                  // 安全地訪問屬性
-                                  const platformContent = currentPlatformContents[platform as keyof typeof currentPlatformContents] as string | undefined;
+                                  // 安全地訪問屬性，使用類型斷言避免 TypeScript 錯誤
+                                  const platformContent = (currentPlatformContents as Record<string, string | undefined>)[platform];
                                   // 只更新空白或與主內容相同的平台內容
                                   if (!platformContent || platformContent === field.value) {
                                     form.setValue(`platformContent.${platform}`, mainContent);
@@ -1574,7 +1575,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
               )}
               
               {/* Footer Actions */}
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 mt-auto sticky bottom-0 z-10">
                 <div className="flex justify-end space-x-2">
                   <Button 
                     type="button" 
