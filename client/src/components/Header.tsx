@@ -17,7 +17,7 @@ interface HeaderProps {
 const getPageTitle = (path: string) => {
   switch (path) {
     case "/":
-      return "儀表板";
+      return "貼文總覽";
     case "/calendar":
       return "內容日曆";
     case "/analytics":
@@ -25,7 +25,7 @@ const getPageTitle = (path: string) => {
     case "/settings":
       return "設定";
     default:
-      return "儀表板";
+      return "貼文總覽";
   }
 };
 

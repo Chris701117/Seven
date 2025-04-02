@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
         <div className="flex items-center justify-center h-16 border-b border-neutral-200">
           <h1 className="text-xl font-semibold text-gray-800">
             <Facebook className="inline-block mr-2 text-primary" />
-            FB 粉絲團管理
+            七七七科技
           </h1>
         </div>
         <div className="h-0 flex-1 flex flex-col overflow-y-auto">
@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
             <Link href="/">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Home className="h-5 w-5 mr-3" />
-                <span>儀表板</span>
+                <span>貼文總覽</span>
               </a>
             </Link>
             <Link href="/calendar">

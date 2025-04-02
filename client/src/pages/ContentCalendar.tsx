@@ -27,6 +27,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import CreatePostModal from "@/components/CreatePostModal";
+import ContentGanttChart from "@/components/ContentGanttChart";
 import { formatDateDisplay } from "@/lib/utils";
 
 const ContentCalendar = () => {
@@ -342,38 +343,7 @@ const ContentCalendar = () => {
             {isLoadingPosts || isLoadingPages ? (
               <Skeleton className="h-[600px] w-full" />
             ) : scheduledPosts.length > 0 ? (
-              <div className="h-[600px]">
-                <Calendar
-                  localizer={localizer}
-                  events={calendarEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: '100%' }}
-                  defaultView="agenda"
-                  views={['agenda']}
-                  onSelectEvent={handleSelectEvent}
-                  eventPropGetter={(event) => {
-                    const category = event.resource?.category || "default";
-                    const backgroundColor = getPostColor(category);
-                    return { style: { backgroundColor } };
-                  }}
-                  messages={{
-                    today: '今天',
-                    previous: '上一頁',
-                    next: '下一頁',
-                    month: '月',
-                    week: '週',
-                    day: '日',
-                    agenda: '時間線',
-                    date: '日期',
-                    time: '時間',
-                    event: '事件',
-                    allDay: '全天',
-                    showMore: total => `+${total} 更多`
-                  }}
-                  culture="zh-TW"
-                />
-              </div>
+              <ContentGanttChart posts={scheduledPosts} />
             ) : (
               <div className="text-center py-10">
                 <BarChart4 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
