@@ -806,16 +806,16 @@ export default function OnelinkPage() {
                       <SelectValue placeholder="選擇平台" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="facebook">臉書 (Facebook)</SelectItem>
                       <SelectItem value="instagram">Instagram</SelectItem>
                       <SelectItem value="google">Google</SelectItem>
-                      <SelectItem value="tiktok">TikTok</SelectItem>
-                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="tiktok">抖音 (TikTok)</SelectItem>
+                      <SelectItem value="linkedin">領英 (LinkedIn)</SelectItem>
                       <SelectItem value="line">Line</SelectItem>
-                      <SelectItem value="yahoo">Yahoo</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="qrcode">QR Code</SelectItem>
+                      <SelectItem value="yahoo">Yahoo奇摩</SelectItem>
+                      <SelectItem value="email">電子郵件</SelectItem>
+                      <SelectItem value="sms">簡訊</SelectItem>
+                      <SelectItem value="qrcode">QR 碼</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
