@@ -561,7 +561,7 @@ export default function OnelinkPage() {
 
                 {Object.keys(customParams).length > 0 && (
                   <div className="border rounded-md p-3 space-y-2">
-                    <h3 className="font-medium">已添加的自定義參數:</h3>
+                    <h3 className="font-medium">已添加的自定義參數：</h3>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(customParams).map(([key, value]) => (
                         <Badge key={key} variant="outline" className="flex items-center space-x-1">
@@ -596,7 +596,7 @@ export default function OnelinkPage() {
                 {generatedUrl && (
                   <div className="border rounded-md p-3 space-y-2">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-medium">生成的 URL:</h3>
+                      <h3 className="font-medium">生成的 URL：</h3>
                       <Button variant="ghost" size="sm" onClick={() => copyToClipboard(generatedUrl)}>
                         <Copy className="h-4 w-4 mr-1" />
                         複製

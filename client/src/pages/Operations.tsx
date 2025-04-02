@@ -241,7 +241,7 @@ export default function Operations() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-semibold">任務狀態分布</CardTitle>
-            <CardDescription>管理公司營運相關任務，包括活動、測試、會議等</CardDescription>
+            <CardDescription>各狀態營運任務數量分布</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col space-y-2">
