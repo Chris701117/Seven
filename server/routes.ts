@@ -30,6 +30,10 @@ const clients: Map<number, ExtendedWebSocket[]> = new Map();
 declare module "express-session" {
   interface SessionData {
     userId: number;
+    instagramConnected?: boolean;
+    threadsConnected?: boolean;
+    tiktokConnected?: boolean;
+    xConnected?: boolean;
   }
 }
 
@@ -253,6 +257,257 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: error instanceof Error ? error.message : "未知錯誤"
       });
     }
+  });
+
+  // Instagram連接API
+  app.get("/api/auth/instagram/status", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 檢查用戶是否已經連接Instagram
+    // 在實際實現中，應該檢查數據庫中存儲的Instagram令牌
+    // 這裡使用會話簡化實現
+    const connected = !!req.session.instagramConnected;
+    res.json({ connected });
+  });
+  
+  app.post("/api/auth/instagram", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { accessToken, devMode } = req.body;
+      
+      // 開發模式處理
+      if (devMode || (accessToken && accessToken.startsWith("DEV_MODE_IG_TOKEN_"))) {
+        console.log('使用開發模式 Instagram 連接:', req.session.userId);
+        req.session.instagramConnected = true;
+        
+        return res.json({ 
+          success: true, 
+          message: "Instagram開發模式連接成功",
+          devMode: true
+        });
+      }
+      
+      // 實際連接邏輯 - 使用Facebook Graph API獲取Instagram授權
+      // 檢查是否已連接Facebook（Instagram Business帳號需要Facebook連接）
+      const user = await storage.getUser(req.session.userId);
+      if (!user?.accessToken) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "您需要先連接Facebook帳號才能連接Instagram" 
+        });
+      }
+      
+      // 在實際實現中，這裡應使用Facebook Graph API獲取Instagram帳號信息
+      // 目前為了演示，假設連接成功
+      req.session.instagramConnected = true;
+      
+      res.json({ success: true, message: "Instagram連接成功" });
+    } catch (error) {
+      console.error("Instagram連接錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Instagram連接處理錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  app.post("/api/auth/instagram/disconnect", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 斷開Instagram連接
+    req.session.instagramConnected = false;
+    // 同時斷開Threads，因為Threads依賴Instagram
+    req.session.threadsConnected = false;
+    
+    res.json({ success: true, message: "已斷開Instagram連接" });
+  });
+
+  // TikTok連接API
+  app.get("/api/auth/tiktok/status", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 檢查用戶是否已經連接TikTok
+    const connected = !!req.session.tiktokConnected;
+    res.json({ connected });
+  });
+  
+  app.post("/api/auth/tiktok", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { accessToken, devMode } = req.body;
+      
+      // 開發模式處理
+      if (devMode || (accessToken && accessToken.startsWith("DEV_MODE_TIKTOK_TOKEN_"))) {
+        console.log('使用開發模式 TikTok 連接:', req.session.userId);
+        req.session.tiktokConnected = true;
+        
+        return res.json({ 
+          success: true, 
+          message: "TikTok開發模式連接成功",
+          devMode: true
+        });
+      }
+      
+      // 實際TikTok連接邏輯
+      // 在實際實現中，這裡應使用TikTok開放平台API
+      // 目前為了演示，假設連接成功
+      req.session.tiktokConnected = true;
+      
+      res.json({ success: true, message: "TikTok連接成功" });
+    } catch (error) {
+      console.error("TikTok連接錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "TikTok連接處理錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  app.post("/api/auth/tiktok/disconnect", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 斷開TikTok連接
+    req.session.tiktokConnected = false;
+    
+    res.json({ success: true, message: "已斷開TikTok連接" });
+  });
+
+  // Threads連接API
+  app.get("/api/auth/threads/status", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 檢查用戶是否已經連接Threads
+    const connected = !!req.session.threadsConnected;
+    res.json({ connected });
+  });
+  
+  app.post("/api/auth/threads", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { accessToken, devMode } = req.body;
+      
+      // 開發模式處理
+      if (devMode || (accessToken && accessToken.startsWith("DEV_MODE_THREADS_TOKEN_"))) {
+        console.log('使用開發模式 Threads 連接:', req.session.userId);
+        req.session.threadsConnected = true;
+        
+        return res.json({ 
+          success: true, 
+          message: "Threads開發模式連接成功",
+          devMode: true
+        });
+      }
+      
+      // 檢查是否已連接Instagram（Threads依賴Instagram）
+      if (!req.session.instagramConnected) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "您需要先連接Instagram帳號才能連接Threads" 
+        });
+      }
+      
+      // 實際連接邏輯 - 在實際實現中，這裡應使用Instagram/Meta Graph API
+      // 目前為了演示，假設連接成功
+      req.session.threadsConnected = true;
+      
+      res.json({ success: true, message: "Threads連接成功" });
+    } catch (error) {
+      console.error("Threads連接錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Threads連接處理錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  app.post("/api/auth/threads/disconnect", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 斷開Threads連接
+    req.session.threadsConnected = false;
+    
+    res.json({ success: true, message: "已斷開Threads連接" });
+  });
+
+  // X(Twitter)連接API
+  app.get("/api/auth/x/status", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 檢查用戶是否已經連接X
+    const connected = !!req.session.xConnected;
+    res.json({ connected });
+  });
+  
+  app.post("/api/auth/x", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const { accessToken, devMode } = req.body;
+      
+      // 開發模式處理
+      if (devMode || (accessToken && accessToken.startsWith("DEV_MODE_X_TOKEN_"))) {
+        console.log('使用開發模式 X(Twitter) 連接:', req.session.userId);
+        req.session.xConnected = true;
+        
+        return res.json({ 
+          success: true, 
+          message: "X(Twitter)開發模式連接成功",
+          devMode: true
+        });
+      }
+      
+      // 實際X(Twitter)連接邏輯 - 在實際實現中，這裡應使用Twitter API
+      // 目前為了演示，假設連接成功
+      req.session.xConnected = true;
+      
+      res.json({ success: true, message: "X(Twitter)連接成功" });
+    } catch (error) {
+      console.error("X(Twitter)連接錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "X(Twitter)連接處理錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  app.post("/api/auth/x/disconnect", (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    // 斷開X(Twitter)連接
+    req.session.xConnected = false;
+    
+    res.json({ success: true, message: "已斷開X(Twitter)連接" });
   });
 
   // Pages routes
@@ -608,6 +863,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedPost);
     } catch (error) {
       res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // 一鍵多平台發布
+  app.post("/api/posts/:id/publish-all", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPostById(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "貼文未找到" });
+      }
+      
+      const page = await storage.getPageByPageId(post.pageId);
+      if (!page || page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "未授權" });
+      }
+      
+      // 檢查平台連接狀態
+      const platformsStatus = {
+        fb: true, // Facebook本身就是必須連接的
+        ig: !!req.session.instagramConnected,
+        tiktok: !!req.session.tiktokConnected,
+        threads: !!req.session.threadsConnected,
+        x: !!req.session.xConnected
+      };
+      
+      // 執行一鍵發布
+      const updatedPost = await storage.publishToAllPlatforms(postId);
+      
+      // 發送WebSocket通知
+      if (sendCompletionNotification && typeof sendCompletionNotification === 'function') {
+        try {
+          await sendCompletionNotification(updatedPost);
+        } catch (wsError) {
+          console.error("發送WebSocket通知失敗:", wsError);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: "貼文已發布到所有已連接平台",
+        post: updatedPost,
+        platforms: platformsStatus
+      });
+    } catch (error) {
+      console.error("一鍵發布錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "發布失敗",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
     }
   });
 
