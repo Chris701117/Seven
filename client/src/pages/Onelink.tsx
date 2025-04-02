@@ -536,7 +536,7 @@ export default function OnelinkPage() {
                     onChange={(e) => setBaseUrl(e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    例如: https://example.onelink.me/abc
+                    例如：https://example.onelink.me/abc
                   </p>
                 </div>
 
@@ -824,7 +824,7 @@ export default function OnelinkPage() {
                   <Input
                     id="campaignCode"
                     name="campaignCode"
-                    placeholder="例如: FB_SUM2023"
+                    placeholder="例如：FB_SUM2023"
                     value={formData.campaignCode}
                     onChange={handleInputChange}
                     required
@@ -835,7 +835,7 @@ export default function OnelinkPage() {
                   <Input
                     id="materialId"
                     name="materialId"
-                    placeholder="例如: FB001"
+                    placeholder="例如：FB001"
                     value={formData.materialId}
                     onChange={handleInputChange}
                     required
@@ -851,7 +851,7 @@ export default function OnelinkPage() {
                   <Input
                     id="adSet"
                     name="adSet"
-                    placeholder="例如: Conversion_Summer"
+                    placeholder="例如：Conversion_Summer"
                     value={formData.adSet}
                     onChange={handleInputChange}
                   />
@@ -861,7 +861,7 @@ export default function OnelinkPage() {
                   <Input
                     id="adName"
                     name="adName"
-                    placeholder="例如: Summer_Sale_Carousel"
+                    placeholder="例如：Summer_Sale_Carousel"
                     value={formData.adName}
                     onChange={handleInputChange}
                   />
@@ -871,7 +871,7 @@ export default function OnelinkPage() {
                   <Input
                     id="audienceTag"
                     name="audienceTag"
-                    placeholder="例如: Interest_Garden"
+                    placeholder="例如：Interest_Garden"
                     value={formData.audienceTag}
                     onChange={handleInputChange}
                   />
@@ -881,7 +881,7 @@ export default function OnelinkPage() {
                   <Input
                     id="creativeSize"
                     name="creativeSize"
-                    placeholder="例如: 1200x628"
+                    placeholder="例如：1200x628"
                     value={formData.creativeSize}
                     onChange={handleInputChange}
                   />
@@ -891,7 +891,7 @@ export default function OnelinkPage() {
                   <Input
                     id="adPlacement"
                     name="adPlacement"
-                    placeholder="例如: Feed, Stories"
+                    placeholder="例如：Feed, Stories"
                     value={formData.adPlacement}
                     onChange={handleInputChange}
                   />
@@ -947,7 +947,7 @@ export default function OnelinkPage() {
                   <Label htmlFor="batch-prefix">序號前綴</Label>
                   <Input
                     id="batch-prefix"
-                    placeholder="例如: ID_"
+                    placeholder="例如：ID_"
                     value={batchPrefix}
                     onChange={(e) => setBatchPrefix(e.target.value)}
                   />
