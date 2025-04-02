@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  displayName: text("display_name"),
+  email: text("email"),
   accessToken: text("access_token"),
   fbUserId: text("fb_user_id"),
 });
@@ -14,6 +16,8 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  displayName: true,
+  email: true,
 });
 
 // Facebook Pages

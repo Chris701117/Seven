@@ -146,6 +146,8 @@ export class MemStorage implements IStorage {
       id: this.userId++,
       username: "demouser",
       password: "password123",
+      displayName: "示範用戶",
+      email: "demo@example.com",
       accessToken: "sample_fb_access_token",
       fbUserId: "10123456789"
     };
@@ -457,7 +459,14 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
-    const user: User = { ...insertUser, id, accessToken: null, fbUserId: null };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      displayName: insertUser.displayName || null,
+      email: insertUser.email || null,
+      accessToken: null, 
+      fbUserId: null 
+    };
     this.users.set(id, user);
     return user;
   }
