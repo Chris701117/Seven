@@ -53,7 +53,11 @@ export default function Register() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/register', values);
+      // 使用正確的參數形式調用apiRequest
+      const response = await apiRequest('/api/auth/register', {
+        method: 'POST',
+        data: values
+      });
       
       // 註冊成功
       toast({
@@ -70,6 +74,7 @@ export default function Register() {
         title: '註冊失敗',
         description: '該用戶名可能已經被使用',
       });
+      console.error('註冊錯誤:', error);
     } finally {
       setIsLoading(false);
     }
