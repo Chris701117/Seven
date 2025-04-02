@@ -156,7 +156,7 @@ export class MemStorage implements IStorage {
     // Create a sample page
     const page: Page = {
       id: this.pageId++,
-      pageId: "12345678901234567",
+      pageId: "page_123456", // 更改為客戶端期望的格式
       pageName: "Home & Garden Tips",
       accessToken: "sample_page_access_token",
       userId: user.id,
@@ -202,7 +202,7 @@ export class MemStorage implements IStorage {
     // Create sample posts
     const publishedPost1: Post = {
       id: this.postId++,
-      postId: "post123456789",
+      postId: "post_123456", // 更改為客戶端期望的格式
       pageId: page.pageId,
       content: "Spring is finally here! Check out our latest collection of garden furniture to spruce up your outdoor space. Perfect for those warm evenings ahead! 🌿☀️ #SpringGardening #OutdoorLiving",
       status: "published",
