@@ -55,7 +55,8 @@ import {
   MessageCircle,
   FileImage,
   FileBadge,
-  ChevronDown
+  ChevronDown,
+  AtSign
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -675,6 +676,246 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   )}
                 />
               </div>
+              
+              {/* Multi-Platform Panel */}
+              {form.watch("multiPlatform") && (
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="flex items-center mb-2 justify-between">
+                    <div className="flex items-center">
+                      <Share className="h-5 w-5 mr-2 text-red-500" />
+                      <h4 className="font-medium">多平台設置</h4>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue("platformStatus", {
+                            fb: true,
+                            ig: true,
+                            tiktok: true,
+                            threads: true,
+                            x: true
+                          });
+                        }}
+                      >
+                        全部開啟
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue("platformStatus", {
+                            fb: false,
+                            ig: false,
+                            tiktok: false,
+                            threads: false,
+                            x: false
+                          });
+                        }}
+                      >
+                        全部關閉
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    <div 
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border ${form.watch("platformStatus.fb") ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}
+                      onClick={() => {
+                        const currentStatus = form.watch("platformStatus.fb");
+                        form.setValue("platformStatus.fb", !currentStatus);
+                      }}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.watch("platformStatus.fb") ? "bg-blue-500 text-white" : "bg-gray-100"}`}>
+                        <span className="text-xl font-bold">f</span>
+                      </div>
+                      <span className="mt-1 text-xs">Facebook</span>
+                    </div>
+                    
+                    <div 
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border ${form.watch("platformStatus.ig") ? "border-purple-500 bg-purple-50" : "border-gray-200"}`}
+                      onClick={() => {
+                        const currentStatus = form.watch("platformStatus.ig");
+                        form.setValue("platformStatus.ig", !currentStatus);
+                      }}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.watch("platformStatus.ig") ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white" : "bg-gray-100"}`}>
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <span className="mt-1 text-xs">Instagram</span>
+                    </div>
+                    
+                    <div 
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border ${form.watch("platformStatus.tiktok") ? "border-black bg-gray-50" : "border-gray-200"}`}
+                      onClick={() => {
+                        const currentStatus = form.watch("platformStatus.tiktok");
+                        form.setValue("platformStatus.tiktok", !currentStatus);
+                      }}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.watch("platformStatus.tiktok") ? "bg-black text-white" : "bg-gray-100"}`}>
+                        <MusicIcon className="w-5 h-5" />
+                      </div>
+                      <span className="mt-1 text-xs">TikTok</span>
+                    </div>
+                    
+                    <div 
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border ${form.watch("platformStatus.threads") ? "border-gray-900 bg-gray-50" : "border-gray-200"}`}
+                      onClick={() => {
+                        const currentStatus = form.watch("platformStatus.threads");
+                        form.setValue("platformStatus.threads", !currentStatus);
+                      }}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.watch("platformStatus.threads") ? "bg-gray-900 text-white" : "bg-gray-100"}`}>
+                        <AtSign className="w-5 h-5" />
+                      </div>
+                      <span className="mt-1 text-xs">Threads</span>
+                    </div>
+                    
+                    <div 
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border ${form.watch("platformStatus.x") ? "border-gray-800 bg-gray-50" : "border-gray-200"}`}
+                      onClick={() => {
+                        const currentStatus = form.watch("platformStatus.x");
+                        form.setValue("platformStatus.x", !currentStatus);
+                      }}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.watch("platformStatus.x") ? "bg-gray-800 text-white" : "bg-gray-100"}`}>
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                        </svg>
+                      </div>
+                      <span className="mt-1 text-xs">X</span>
+                    </div>
+                  </div>
+                  
+                  <Tabs defaultValue="fb" className="w-full mb-4">
+                    <TabsList className="grid w-full grid-cols-5">
+                      <TabsTrigger value="fb" disabled={!form.watch("platformStatus.fb")}>FB</TabsTrigger>
+                      <TabsTrigger value="ig" disabled={!form.watch("platformStatus.ig")}>IG</TabsTrigger>
+                      <TabsTrigger value="tiktok" disabled={!form.watch("platformStatus.tiktok")}>TikTok</TabsTrigger>
+                      <TabsTrigger value="threads" disabled={!form.watch("platformStatus.threads")}>Threads</TabsTrigger>
+                      <TabsTrigger value="x" disabled={!form.watch("platformStatus.x")}>X</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="fb">
+                      <div className="border rounded-md p-3 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.fb"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Facebook 內容</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="請輸入 Facebook 專用內容..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                若不填寫則使用主要內容
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="ig">
+                      <div className="border rounded-md p-3 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.ig"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Instagram 內容</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="請輸入 Instagram 專用內容..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                應使用多個標籤，建議不超過 30 個標籤
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="tiktok">
+                      <div className="border rounded-md p-3 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.tiktok"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>TikTok 內容</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="請輸入 TikTok 專用內容..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                建議使用活潑生動的文字和流行標籤
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="threads">
+                      <div className="border rounded-md p-3 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.threads"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Threads 內容</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="請輸入 Threads 專用內容..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                簡短有力的文字更適合 Threads 平台
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="x">
+                      <div className="border rounded-md p-3 mt-2">
+                        <FormField
+                          control={form.control}
+                          name="platformContent.x"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>X 內容</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="請輸入 X (Twitter) 專用內容..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                字數限制為 280 字元
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
               
               {/* Schedule Panel */}
               {form.watch("schedulePost") && (
