@@ -52,6 +52,8 @@ const formSchema = insertPostSchema.extend({
   schedulePost: z.boolean().default(false),
   scheduleDate: z.string().optional(),
   scheduleTime: z.string().optional(),
+  endDate: z.string().optional(),
+  endTime: z.string().optional(),
   hasImage: z.boolean().default(false),
   hasLink: z.boolean().default(false),
   category: z.enum(["promotion", "event", "announcement"]).optional(),
@@ -60,16 +62,48 @@ const formSchema = insertPostSchema.extend({
     if (!data.scheduleDate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Schedule date is required",
+        message: "開始日期為必填",
         path: ["scheduleDate"],
       });
     }
     if (!data.scheduleTime) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Schedule time is required",
+        message: "開始時間為必填",
         path: ["scheduleTime"],
       });
+    }
+    
+    // 如果有填寫結束日期，必須確保結束時間也有填寫
+    if (data.endDate && !data.endTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "已填寫結束日期時，結束時間為必填",
+        path: ["endTime"],
+      });
+    }
+    
+    // 如果有填寫結束時間，必須確保結束日期也有填寫
+    if (!data.endDate && data.endTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "已填寫結束時間時，結束日期為必填",
+        path: ["endDate"],
+      });
+    }
+    
+    // 如果開始和結束日期時間都存在，確保結束時間在開始時間之後
+    if (data.scheduleDate && data.scheduleTime && data.endDate && data.endTime) {
+      const startDateTime = new Date(`${data.scheduleDate}T${data.scheduleTime}`);
+      const endDateTime = new Date(`${data.endDate}T${data.endTime}`);
+      
+      if (endDateTime <= startDateTime) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "結束時間必須晚於開始時間",
+          path: ["endTime"],
+        });
+      }
     }
   }
 });
@@ -223,6 +257,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       schedulePost: post?.scheduledTime ? true : false,
       scheduleDate: post?.scheduledTime ? new Date(post.scheduledTime).toISOString().split('T')[0] : "",
       scheduleTime: post?.scheduledTime ? new Date(post.scheduledTime).toTimeString().split(' ')[0].substring(0, 5) : "",
+      endDate: post?.endTime ? new Date(post.endTime).toISOString().split('T')[0] : "",
+      endTime: post?.endTime ? new Date(post.endTime).toTimeString().split(' ')[0].substring(0, 5) : "",
       hasImage: !!post?.imageUrl,
       hasLink: !!post?.linkUrl,
       category: post?.category as "promotion" | "event" | "announcement" | undefined,
@@ -250,12 +286,19 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   // Create post mutation
   const createPostMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      // 計算結束時間
+      let endTime = null;
+      if (values.schedulePost && values.endDate && values.endTime) {
+        endTime = new Date(`${values.endDate}T${values.endTime}`);
+      }
+      
       const postData = {
         pageId: values.pageId,
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
         scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
+        endTime,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
@@ -288,11 +331,18 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     mutationFn: async (values: FormValues) => {
       if (!post) return;
       
+      // 計算結束時間
+      let endTime = null;
+      if (values.schedulePost && values.endDate && values.endTime) {
+        endTime = new Date(`${values.endDate}T${values.endTime}`);
+      }
+      
       const postData = {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
         scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
+        endTime,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
@@ -576,48 +626,98 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     <Calendar className="h-5 w-5 mr-2 text-blue-500" />
                     <h4 className="font-medium">設定發佈時間</h4>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="scheduleDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <div className="relative">
-                              <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                              <Input 
-                                type="date" 
-                                {...field} 
-                                value={field.value || ''} 
-                                className="pl-9"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="scheduleTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <div className="relative">
-                              <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                              <Input 
-                                type="time" 
-                                {...field} 
-                                value={field.value || ''} 
-                                className="pl-9"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-1">開始時間：</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="scheduleDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <Input 
+                                  type="date" 
+                                  {...field} 
+                                  value={field.value || ''} 
+                                  className="pl-9"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="scheduleTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <Input 
+                                  type="time" 
+                                  {...field} 
+                                  value={field.value || ''} 
+                                  className="pl-9"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">結束時間 (選填)：</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <Input 
+                                  type="date" 
+                                  {...field} 
+                                  value={field.value || ''} 
+                                  className="pl-9"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <Input 
+                                  type="time" 
+                                  {...field} 
+                                  value={field.value || ''} 
+                                  className="pl-9"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
