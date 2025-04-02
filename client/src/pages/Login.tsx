@@ -45,7 +45,11 @@ export default function Login() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/login', values);
+      // 使用正確的參數形式調用apiRequest
+      const response = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        data: values
+      });
       
       // 登入成功
       toast({
@@ -62,6 +66,7 @@ export default function Login() {
         title: '登入失敗',
         description: '用戶名或密碼不正確',
       });
+      console.error('登入錯誤:', error);
     } finally {
       setIsLoading(false);
     }
