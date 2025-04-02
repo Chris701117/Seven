@@ -1,27 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page, Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
-  ChevronLeft,
-  ChevronRight,
   Calendar as CalendarIcon,
   List,
-  GridIcon
+  BarChart4
 } from "lucide-react";
 import {
   format,
-  addMonths,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
+  parseISO,
   getDay,
-  isSameDay,
-  parseISO
+  addHours
 } from "date-fns";
+import { zhTW } from "date-fns/locale";
+import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -30,21 +26,15 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import CreatePostModal from "@/components/CreatePostModal";
 import { formatDateDisplay } from "@/lib/utils";
 
 const ContentCalendar = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activePageId, setActivePageId] = useState<string | null>(null);
-  const [view, setView] = useState<"month" | "list">("month");
+  const [calendarView, setCalendarView] = useState<"month" | "list" | "gantt">("month");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   
   // Get all pages for the user
   const { data: pages, isLoading: isLoadingPages } = useQuery<Page[]>({
@@ -69,189 +59,211 @@ const ContentCalendar = () => {
     post.status === "scheduled" && post.scheduledTime !== null
   ) || [];
   
-  // Calendar navigation
-  const prevMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
+  // Set up date-fns localizer for react-big-calendar
+  const locales = {
+    'zh-TW': zhTW
   };
   
-  const nextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
-  };
+  const localizer = dateFnsLocalizer({
+    format,
+    parse: parseISO,
+    startOfWeek: () => {
+      return new Date(0, 0, 0);
+    },
+    getDay,
+    locales,
+  });
   
-  // Generate calendar data
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  
-  // Get posts for a specific day
-  const getPostsForDay = (day: Date) => {
-    if (!scheduledPosts) return [];
-    
-    return scheduledPosts.filter(post => {
-      if (!post.scheduledTime) return false;
-      const postDate = new Date(post.scheduledTime);
-      return isSameDay(postDate, day);
+  // Convert posts to calendar events
+  const calendarEvents = useMemo(() => {
+    return scheduledPosts.map(post => {
+      // Creating start and end dates for the event
+      const start = post.scheduledTime ? new Date(post.scheduledTime) : new Date();
+      // If endTime is not set, default to 1 hour after start
+      const end = post.endTime 
+        ? new Date(post.endTime) 
+        : addHours(start, 1);
+      
+      return {
+        id: post.id,
+        title: post.content.substring(0, 50) + (post.content.length > 50 ? '...' : ''),
+        start,
+        end,
+        allDay: false,
+        resource: post,
+        category: post.category || 'default'
+      };
     });
-  };
+  }, [scheduledPosts]);
   
   // Determine post type (simplified)
-  const getPostType = (post: Post): "blog" | "promotion" | "event" => {
-    if (post.content.toLowerCase().includes("workshop") || post.content.toLowerCase().includes("event")) {
-      return "event";
-    }
-    if (post.content.toLowerCase().includes("sale") || post.content.toLowerCase().includes("discount") || post.content.toLowerCase().includes("promotion")) {
-      return "promotion";
-    }
-    return "blog";
-  };
-  
-  // Get color based on post type
-  const getPostTypeColor = (type: "blog" | "promotion" | "event") => {
-    switch (type) {
-      case "blog":
-        return "bg-blue-200";
+  const getPostType = (post: Post): "promotion" | "event" | "announcement" | "default" => {
+    if (!post.category) return "default";
+    
+    switch(post.category) {
       case "promotion":
-        return "bg-green-200";
+        return "promotion";
       case "event":
-        return "bg-indigo-200";
+        return "event";
+      case "announcement":
+        return "announcement";
       default:
-        return "bg-gray-200";
+        return "default";
     }
   };
   
-  // Handle date click to schedule a post
-  const handleDayClick = (day: Date) => {
-    setSelectedDate(day);
+  // Get color based on post type/category
+  const getPostColor = (category: string | null) => {
+    if (!category) return "#94a3b8"; // slate-400
+    
+    switch(category) {
+      case "promotion":
+        return "#4ade80"; // green-400
+      case "event":
+        return "#60a5fa"; // blue-400
+      case "announcement":
+        return "#f97316"; // orange-500
+      default:
+        return "#94a3b8"; // slate-400
+    }
+  };
+  
+  // Handle event selection
+  const handleSelectEvent = (event: any) => {
+    setSelectedEvent(event.resource);
     setIsCreateModalOpen(true);
+  };
+  
+  // Handle slot selection (empty time slot)
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setSelectedDate(start);
+    setIsCreateModalOpen(true);
+  };
+  
+  // Custom event component for the calendar
+  const EventComponent = ({ event }: any) => {
+    const category = event.resource?.category || "default";
+    const bgColor = getPostColor(category);
+    
+    return (
+      <div
+        className="rounded px-2 py-1 truncate text-white text-sm"
+        style={{ backgroundColor: bgColor }}
+      >
+        <div className="font-semibold">{event.title}</div>
+        <div className="text-xs opacity-90">
+          {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+        </div>
+      </div>
+    );
   };
   
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Content Calendar</h2>
+        <h2 className="text-2xl font-bold">內容日曆</h2>
         <div className="flex items-center space-x-2">
-          <Tabs defaultValue={view} onValueChange={(value) => setView(value as "month" | "list")}>
+          <Tabs defaultValue={calendarView} onValueChange={(value) => setCalendarView(value as "month" | "list" | "gantt")}>
             <TabsList>
               <TabsTrigger value="month">
                 <CalendarIcon className="h-4 w-4 mr-2" />
-                Month
+                月曆視圖
               </TabsTrigger>
               <TabsTrigger value="list">
                 <List className="h-4 w-4 mr-2" />
-                List
+                列表視圖
+              </TabsTrigger>
+              <TabsTrigger value="gantt">
+                <BarChart4 className="h-4 w-4 mr-2" />
+                甘特圖
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            Schedule Post
+          <Button onClick={() => {
+            setSelectedEvent(null);
+            setIsCreateModalOpen(true);
+          }}>
+            安排貼文
           </Button>
         </div>
       </div>
       
-      {view === "month" ? (
-        <Card>
+      {calendarView === "month" ? (
+        <Card className="overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Button variant="outline" size="icon" onClick={prevMonth}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h3 className="mx-4 text-xl font-semibold">
-                  {format(currentMonth, 'MMMM yyyy')}
+                <h3 className="text-xl font-semibold">
+                  社群媒體排程
                 </h3>
-                <Button variant="outline" size="icon" onClick={nextMonth}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
               </div>
               <div className="flex space-x-4 text-sm">
                 <div className="flex items-center">
-                  <div className="h-3 w-3 bg-blue-200 rounded-full mr-1"></div>
-                  <span>Blog Posts</span>
+                  <div className="h-3 w-3 rounded-full mr-1" style={{ backgroundColor: "#60a5fa" }}></div>
+                  <span>活動</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="h-3 w-3 bg-green-200 rounded-full mr-1"></div>
-                  <span>Promotions</span>
+                  <div className="h-3 w-3 rounded-full mr-1" style={{ backgroundColor: "#4ade80" }}></div>
+                  <span>宣傳</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="h-3 w-3 bg-indigo-200 rounded-full mr-1"></div>
-                  <span>Events</span>
+                  <div className="h-3 w-3 rounded-full mr-1" style={{ backgroundColor: "#f97316" }}></div>
+                  <span>公告</span>
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {isLoadingPosts || isLoadingPages ? (
-              <div className="grid grid-cols-7 gap-2">
-                {[...Array(35)].map((_, index) => (
-                  <Skeleton key={index} className="h-24 w-full" />
-                ))}
+              <div className="p-4">
+                <Skeleton className="h-[600px] w-full" />
               </div>
             ) : (
-              <div className="grid grid-cols-7 gap-1">
-                {/* Day headers */}
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Sun</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Mon</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Tue</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Wed</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Thu</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Fri</div>
-                <div className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">Sat</div>
-                
-                {/* Empty cells for days before the first of the month */}
-                {[...Array(getDay(monthStart))].map((_, index) => (
-                  <div 
-                    key={`empty-start-${index}`} 
-                    className="h-24 p-1 border border-gray-100 rounded-md bg-gray-50"
-                  ></div>
-                ))}
-                
-                {/* Calendar days */}
-                {days.map((day, dayIdx) => {
-                  const postsOnDay = getPostsForDay(day);
-                  return (
-                    <div 
-                      key={dayIdx} 
-                      className="h-24 p-1 border border-gray-200 rounded-md hover:border-primary hover:border-2 cursor-pointer transition-all"
-                      onClick={() => handleDayClick(day)}
-                    >
-                      <div className="text-sm font-medium">
-                        {format(day, 'd')}
-                      </div>
-                      <div className="mt-1 space-y-1">
-                        <TooltipProvider>
-                          {postsOnDay.slice(0, 3).map((post, idx) => (
-                            <Tooltip key={idx}>
-                              <TooltipTrigger asChild>
-                                <div className={`h-5 ${getPostTypeColor(getPostType(post))} rounded-md px-1 text-xs truncate`}>
-                                  {format(new Date(post.scheduledTime!), 'h:mm a')}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-xs">
-                                <p className="font-medium">{format(new Date(post.scheduledTime!), 'h:mm a')}</p>
-                                <p className="text-xs mt-1">{post.content}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                          {postsOnDay.length > 3 && (
-                            <div className="text-xs text-center text-gray-500">
-                              +{postsOnDay.length - 3} more
-                            </div>
-                          )}
-                        </TooltipProvider>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="h-[600px] p-2">
+                <Calendar
+                  localizer={localizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: '100%' }}
+                  views={['month', 'week', 'day']}
+                  defaultView="month"
+                  selectable
+                  onSelectEvent={handleSelectEvent}
+                  onSelectSlot={handleSelectSlot}
+                  components={{
+                    event: EventComponent
+                  }}
+                  eventPropGetter={(event) => {
+                    const category = event.resource?.category || "default";
+                    const backgroundColor = getPostColor(category);
+                    return { style: { backgroundColor } };
+                  }}
+                  messages={{
+                    today: '今天',
+                    previous: '上一頁',
+                    next: '下一頁',
+                    month: '月',
+                    week: '週',
+                    day: '日',
+                    agenda: '行程',
+                    date: '日期',
+                    time: '時間',
+                    event: '事件',
+                    showMore: total => `+${total} 更多`
+                  }}
+                  culture="zh-TW"
+                />
               </div>
             )}
           </CardContent>
         </Card>
-      ) : (
+      ) : calendarView === "list" ? (
         <Card>
           <CardHeader>
-            <CardTitle>Scheduled Posts</CardTitle>
+            <CardTitle>待發佈貼文</CardTitle>
             <CardDescription>
-              All your upcoming posts in chronological order
+              所有即將發佈的貼文，依時間順序排列
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -272,21 +284,36 @@ const ContentCalendar = () => {
                     <div 
                       key={post.id} 
                       className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        setSelectedEvent(post);
+                        setIsCreateModalOpen(true);
+                      }}
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-medium truncate">{post.content.substring(0, 60)}...</h3>
                           <div className="flex items-center space-x-2 mt-2">
-                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Scheduled</Badge>
+                            <Badge 
+                              style={{ 
+                                backgroundColor: post.category ? `${getPostColor(post.category)}30` : '#e2e8f0',
+                                color: post.category ? getPostColor(post.category) : '#64748b'
+                              }}
+                            >
+                              {post.category || '未分類'}
+                            </Badge>
                             <span className="text-sm text-gray-500">
                               {formatDateDisplay(post.scheduledTime)}
                             </span>
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="outline" size="sm" onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEvent(post);
+                            setIsCreateModalOpen(true);
+                          }}>編輯</Button>
                           <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
-                            Delete
+                            刪除
                           </Button>
                         </div>
                       </div>
@@ -296,9 +323,63 @@ const ContentCalendar = () => {
             ) : (
               <div className="text-center py-10">
                 <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-1">No scheduled posts</h3>
-                <p className="text-gray-500 mb-4">Start scheduling posts to see them here.</p>
-                <Button onClick={() => setIsCreateModalOpen(true)}>Schedule a Post</Button>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">沒有排程貼文</h3>
+                <p className="text-gray-500 mb-4">開始安排貼文以在此處查看。</p>
+                <Button onClick={() => setIsCreateModalOpen(true)}>安排貼文</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>甘特圖視圖</CardTitle>
+            <CardDescription>
+              以時間線形式查看所有貼文計劃
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingPosts || isLoadingPages ? (
+              <Skeleton className="h-[600px] w-full" />
+            ) : scheduledPosts.length > 0 ? (
+              <div className="h-[600px]">
+                <Calendar
+                  localizer={localizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: '100%' }}
+                  defaultView="agenda"
+                  views={['agenda']}
+                  onSelectEvent={handleSelectEvent}
+                  eventPropGetter={(event) => {
+                    const category = event.resource?.category || "default";
+                    const backgroundColor = getPostColor(category);
+                    return { style: { backgroundColor } };
+                  }}
+                  messages={{
+                    today: '今天',
+                    previous: '上一頁',
+                    next: '下一頁',
+                    month: '月',
+                    week: '週',
+                    day: '日',
+                    agenda: '時間線',
+                    date: '日期',
+                    time: '時間',
+                    event: '事件',
+                    allDay: '全天',
+                    showMore: total => `+${total} 更多`
+                  }}
+                  culture="zh-TW"
+                />
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <BarChart4 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">沒有排程活動</h3>
+                <p className="text-gray-500 mb-4">安排貼文以在甘特圖中查看。</p>
+                <Button onClick={() => setIsCreateModalOpen(true)}>安排貼文</Button>
               </div>
             )}
           </CardContent>
@@ -311,8 +392,9 @@ const ContentCalendar = () => {
         onClose={() => {
           setIsCreateModalOpen(false);
           setSelectedDate(null);
+          setSelectedEvent(null);
         }}
-        defaultScheduledDate={selectedDate}
+        post={selectedEvent}
       />
     </div>
   );
