@@ -28,9 +28,11 @@ import MarketingTaskModal from "./MarketingTaskModal";
 
 interface MarketingTaskCardProps {
   task: MarketingTask;
+  onDelete: () => void;
+  layout: "grid" | "list";
 }
 
-export default function MarketingTaskCard({ task }: MarketingTaskCardProps) {
+export default function MarketingTaskCard({ task, onDelete, layout }: MarketingTaskCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -38,6 +40,10 @@ export default function MarketingTaskCard({ task }: MarketingTaskCardProps) {
 
   const startDate = new Date(task.startTime);
   const endDate = new Date(task.endTime);
+  
+  // 控制模態視窗
+  const openModal = () => setIsEditModalOpen(true);
+  const closeModal = () => setIsEditModalOpen(false);
 
   // 根據優先級顯示不同顏色
   const getPriorityColor = (priority: string) => {
@@ -114,93 +120,148 @@ export default function MarketingTaskCard({ task }: MarketingTaskCardProps) {
     return endDate < today && task.status !== '已完成' && task.status !== '已取消';
   };
 
-  // Delete task mutation
-  const deleteMutation = useMutation({
-    mutationFn: () => {
-      return apiRequest<any>(`/api/marketing-tasks/${task.id}`, {
-        method: "DELETE",
-      } as RequestInit);
-    },
-    onSuccess: () => {
-      toast({
-        title: "刪除成功",
-        description: "行銷任務已成功刪除！",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/marketing-tasks'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "刪除失敗",
-        description: `錯誤: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle delete confirmation
+  // 處理刪除確認
   const handleDelete = () => {
-    deleteMutation.mutate();
+    onDelete();
     setIsDeleteDialogOpen(false);
   };
 
+  // 網格佈局
+  if (layout === 'grid') {
+    return (
+      <>
+        <Card className={`w-full h-full flex flex-col ${isOverdue() ? 'border-red-300' : ''}`}>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <CardTitle className="text-lg font-bold truncate">{task.title}</CardTitle>
+              <div className="flex space-x-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={`font-medium ${getPriorityColor(task.priority || '中')}`}>
+                        {task.priority || '中'}優先
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>優先級: {task.priority || '中'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {getStatusBadge()}
+              {getCategoryBadge()}
+            </div>
+          </CardHeader>
+
+          <CardContent className="py-2 flex-grow">
+            <div className="text-sm text-gray-600 max-h-20 overflow-hidden">
+              {task.description || task.content || <span className="text-gray-400 italic">無任務描述</span>}
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col items-start pt-2 border-t">
+            <div className="flex items-center text-sm text-gray-500 mb-1">
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              {format(startDate, 'yyyy/MM/dd', { locale: zhTW })} - {format(endDate, 'yyyy/MM/dd', { locale: zhTW })}
+            </div>
+            <div className="flex justify-between w-full mt-2">
+              <Button size="sm" variant="outline" onClick={openModal}>
+                <EditIcon className="h-3.5 w-3.5 mr-1" />
+                編輯
+              </Button>
+              <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setIsDeleteDialogOpen(true)}>
+                <TrashIcon className="h-3.5 w-3.5 mr-1" />
+                刪除
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+
+        {/* 編輯任務的模態框 */}
+        <MarketingTaskModal
+          task={task}
+          open={isEditModalOpen}
+          onClose={closeModal}
+        />
+        
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>確認刪除</AlertDialogTitle>
+              <AlertDialogDescription>
+                您確定要刪除此行銷任務嗎？此操作無法撤銷。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete}
+                className="bg-red-500 text-white hover:bg-red-600"
+              >
+                刪除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
+
+  // 清單佈局
   return (
     <>
-      <Card className={`w-full h-full flex flex-col ${isOverdue() ? 'border-red-300' : ''}`}>
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-bold truncate">{task.title}</CardTitle>
-            <div className="flex space-x-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className={`font-medium ${getPriorityColor(task.priority || '中')}`}>
-                      {task.priority || '中'}優先
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>優先級: {task.priority || '中'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+      <div className={`bg-white p-4 rounded-lg border ${isOverdue() ? 'border-red-300' : 'border-gray-200'} shadow-sm hover:shadow-md transition-shadow duration-200 mb-3`}>
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-semibold">{task.title}</h3>
+              <div className="flex space-x-2">
+                {getStatusBadge()}
+                {getCategoryBadge()}
+              </div>
+            </div>
+            <div className="text-sm text-gray-500 mt-1 mb-2">
+              <span className={`font-medium ${getPriorityColor(task.priority || '中')}`}>
+                [{task.priority || '中'}優先]
+              </span>{' '}
+              <span className="mx-1">·</span>
+              <CalendarIcon className="h-3.5 w-3.5 inline mr-1" />
+              {format(startDate, 'yyyy/MM/dd', { locale: zhTW })} - {format(endDate, 'yyyy/MM/dd', { locale: zhTW })}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {getStatusBadge()}
-            {getCategoryBadge()}
-          </div>
-        </CardHeader>
-
-        <CardContent className="py-2 flex-grow">
-          <div className="text-sm text-gray-600 max-h-20 overflow-hidden">
-            {task.description || task.content || <span className="text-gray-400 italic">無任務描述</span>}
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex flex-col items-start pt-2 border-t">
-          <div className="flex items-center text-sm text-gray-500 mb-1">
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            {format(startDate, 'yyyy/MM/dd', { locale: zhTW })} - {format(endDate, 'yyyy/MM/dd', { locale: zhTW })}
-          </div>
-          <div className="flex justify-between w-full mt-2">
-            <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
+          <div className="flex space-x-2">
+            <Button size="sm" variant="outline" onClick={openModal}>
               <EditIcon className="h-3.5 w-3.5 mr-1" />
               編輯
             </Button>
-            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setIsDeleteDialogOpen(true)}>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-red-600 hover:text-red-700 hover:bg-red-50" 
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
               <TrashIcon className="h-3.5 w-3.5 mr-1" />
               刪除
             </Button>
           </div>
-        </CardFooter>
-      </Card>
+        </div>
+        {(task.description || task.content) && (
+          <div className="text-sm text-gray-600 mt-2 border-t pt-2">
+            {task.description || task.content}
+          </div>
+        )}
+      </div>
 
-      {/* Edit Modal */}
+      {/* 編輯任務的模態框 */}
       <MarketingTaskModal
-        open={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
         task={task}
+        open={isEditModalOpen}
+        onClose={closeModal}
       />
-
+      
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
