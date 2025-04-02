@@ -342,6 +342,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       
       console.log(`Creating post for page: ${values.pageId}`);
       console.log("Post data being sent:", JSON.stringify(postData, null, 2));
+      // 修改URL格式，確保與伺服器路由匹配
       return apiRequest("POST", `/api/pages/${values.pageId}/posts`, postData);
     },
     onSuccess: () => {
@@ -354,16 +355,62 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     },
     onError: (error) => {
       let errorMessage = "創建貼文失敗。請再試一次。";
+      let errorTitle = "錯誤";
       
       if (error instanceof Error) {
-        errorMessage = error.message;
+        // 檢查是否有擴展錯誤屬性
+        const extError = error as any;
+        
+        if (extError.friendlyMessage) {
+          // 使用我們的友好錯誤信息
+          errorMessage = extError.friendlyMessage;
+        } else if (extError.message) {
+          // 使用錯誤消息
+          errorMessage = extError.message;
+        }
+        
+        // 添加HTTP狀態碼到標題（如果有）
+        if (extError.status) {
+          errorTitle = `錯誤 ${extError.status}`;
+          
+          // 針對特定錯誤碼提供更具體的說明
+          if (extError.status === 404) {
+            errorTitle = "找不到資源";
+            if (!extError.friendlyMessage) {
+              errorMessage = "請求的頁面或資源不存在。請確認頁面ID是否正確。";
+            }
+          } else if (extError.status === 401) {
+            errorTitle = "需要登錄";
+          } else if (extError.status === 403) {
+            errorTitle = "權限不足";
+          } else if (extError.status === 500) {
+            errorTitle = "伺服器錯誤";
+          }
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        // 嘗試從錯誤響應中獲取更多信息
+        const errorObj = error as any;
+        if (errorObj.message) {
+          errorMessage = errorObj.message;
+        } else if (errorObj.status === 404) {
+          errorTitle = "找不到資源";
+          errorMessage = "找不到指定的頁面。請確認頁面ID是否正確。";
+        } else if (errorObj.statusText) {
+          errorMessage = `錯誤: ${errorObj.statusText}`;
+          if (errorObj.status) {
+            errorTitle = `錯誤 ${errorObj.status}`;
+          }
+        }
       }
       
+      // 顯示紅色提示通知
       toast({
-        title: "錯誤",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
+      
+      // 記錄原始錯誤到控制台以便調試
       console.error("Failed to create post:", error);
     },
   });
@@ -405,11 +452,48 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       onClose();
     },
     onError: (error) => {
+      let errorMessage = "更新貼文失敗。請再試一次。";
+      let errorTitle = "錯誤";
+      
+      if (error instanceof Error) {
+        // 檢查是否有擴展錯誤屬性
+        const extError = error as any;
+        
+        if (extError.friendlyMessage) {
+          // 使用我們的友好錯誤信息
+          errorMessage = extError.friendlyMessage;
+        } else if (extError.message) {
+          // 使用錯誤消息
+          errorMessage = extError.message;
+        }
+        
+        // 添加HTTP狀態碼到標題（如果有）
+        if (extError.status) {
+          errorTitle = `錯誤 ${extError.status}`;
+          
+          // 針對特定錯誤碼提供更具體的說明
+          if (extError.status === 404) {
+            errorTitle = "找不到資源";
+            if (!extError.friendlyMessage) {
+              errorMessage = "請求的貼文不存在。可能已被刪除。";
+            }
+          } else if (extError.status === 401) {
+            errorTitle = "需要登錄";
+          } else if (extError.status === 403) {
+            errorTitle = "權限不足";
+          } else if (extError.status === 500) {
+            errorTitle = "伺服器錯誤";
+          }
+        }
+      }
+      
+      // 顯示紅色提示通知
       toast({
-        title: "錯誤",
-        description: "更新貼文失敗。請再試一次。",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
+      
       console.error("Failed to update post:", error);
     },
   });

@@ -11,21 +11,57 @@ const getBaseUrl = () => {
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // 保存原始響應狀態碼和狀態文本
+    const status = res.status;
+    const statusText = res.statusText;
+    
     let errorData;
     try {
       // 嘗試解析錯誤響應為 JSON
       errorData = await res.json();
+      
+      // 創建擴展錯誤對象，包含原始狀態碼和狀態文本
+      const extendedError: any = new Error(
+        errorData.message || `請求失敗: ${status} ${statusText}`
+      );
+      extendedError.status = status;
+      extendedError.statusText = statusText;
+      extendedError.data = errorData;
+      
+      // 對於特定的錯誤碼添加更友好的信息
+      if (status === 404) {
+        extendedError.friendlyMessage = "找不到請求的資源。請檢查URL是否正確。";
+      } else if (status === 401) {
+        extendedError.friendlyMessage = "您需要登錄才能訪問此資源。";
+      } else if (status === 403) {
+        extendedError.friendlyMessage = "您沒有權限訪問此資源。";
+      } else if (status === 500) {
+        extendedError.friendlyMessage = "伺服器內部錯誤。請稍後再試。";
+      }
+      
+      throw extendedError;
+      
     } catch (e) {
-      // 如果無法解析為 JSON，則使用文本
-      const text = (await res.text()) || res.statusText;
-      throw new Error(`${res.status}: ${text}`);
-    }
-    
-    // 如果有詳細的錯誤信息，則使用它
-    if (errorData && errorData.message) {
-      throw new Error(`${res.status}: ${errorData.message}`);
-    } else {
-      throw new Error(`${res.status}: ${JSON.stringify(errorData)}`);
+      // 如果無法解析為 JSON 或處理過程中出現錯誤
+      if (e instanceof Error && (e as any).status) {
+        // 如果已經是我們的擴展錯誤，則直接拋出
+        throw e;
+      }
+      
+      // 否則嘗試獲取文本內容並創建新的擴展錯誤
+      try {
+        const text = await res.text() || statusText;
+        const extendedError: any = new Error(`${status}: ${text}`);
+        extendedError.status = status;
+        extendedError.statusText = statusText;
+        throw extendedError;
+      } catch (textError) {
+        // 如果獲取文本也失敗，則使用基本錯誤信息
+        const fallbackError: any = new Error(`${status}: ${statusText}`);
+        fallbackError.status = status;
+        fallbackError.statusText = statusText;
+        throw fallbackError;
+      }
     }
   }
 }
