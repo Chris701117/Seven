@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { OnelinkField } from '@shared/schema';
-import { Plus, Copy, RefreshCcw, Trash, Edit } from 'lucide-react';
+import { Plus, Copy, RefreshCcw, Trash, Edit, Search, DownloadCloud, ArrowUpDown, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu';
 
 export default function OnelinkPage() {
   const { toast } = useToast();
@@ -21,6 +29,7 @@ export default function OnelinkPage() {
   const [activeTab, setActiveTab] = useState<'generate' | 'manage'>('generate');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<OnelinkField | null>(null);
   const [baseUrl, setBaseUrl] = useState('https://example.onelink.me/abc');
   const [selectedOnelinkId, setSelectedOnelinkId] = useState<number | null>(null);
@@ -28,6 +37,19 @@ export default function OnelinkPage() {
   const [customParamKey, setCustomParamKey] = useState('');
   const [customParamValue, setCustomParamValue] = useState('');
   const [generatedUrl, setGeneratedUrl] = useState('');
+  const [batchUrls, setBatchUrls] = useState<Array<{url: string, params: Record<string, string>}>>([]);
+  
+  // 批量生成相關
+  const [batchCount, setBatchCount] = useState(5);
+  const [batchStartNumber, setBatchStartNumber] = useState(1);
+  const [batchPrefix, setBatchPrefix] = useState('');
+  const [batchParamName, setBatchParamName] = useState('af_sub4');
+  
+  // 篩選相關
+  const [searchTerm, setSearchTerm] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
+  const [sortField, setSortField] = useState<'platform' | 'campaignCode' | 'materialId' | 'createdAt'>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // 表單數據
   const [formData, setFormData] = useState({
@@ -262,15 +284,163 @@ export default function OnelinkPage() {
   };
 
   // 複製 URL 到剪貼板
-  const copyToClipboard = () => {
-    if (generatedUrl) {
-      navigator.clipboard.writeText(generatedUrl);
+  const copyToClipboard = (url = generatedUrl) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
       toast({
         title: '已複製到剪貼板',
         description: '已成功複製 URL 到剪貼板。',
       });
     }
   };
+  
+  // 批量生成 URL
+  const handleBatchGenerate = async () => {
+    if (!selectedOnelinkId || !baseUrl) {
+      toast({
+        title: '生成失敗',
+        description: '請選擇 Onelink 參數設定並輸入基本 URL。',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const urls: Array<{url: string, params: Record<string, string>}> = [];
+    let allCustomParams = { ...customParams };
+    
+    try {
+      for (let i = 0; i < batchCount; i++) {
+        const currentNumber = batchStartNumber + i;
+        const batchParamValue = batchPrefix ? `${batchPrefix}${currentNumber}` : `${currentNumber}`;
+        
+        // 添加序號參數
+        allCustomParams = {
+          ...customParams,
+          [batchParamName]: batchParamValue
+        };
+        
+        // 呼叫 API 生成 URL
+        const response = await apiRequest('/api/generate-onelink', {
+          method: 'POST',
+          data: {
+            id: selectedOnelinkId,
+            baseUrl,
+            customParams: allCustomParams
+          }
+        });
+        
+        urls.push(response);
+      }
+      
+      setBatchUrls(urls);
+      setIsBatchModalOpen(true);
+      
+      toast({
+        title: '批量生成成功',
+        description: `已成功生成 ${batchCount} 個 Onelink URL`,
+      });
+    } catch (error) {
+      toast({
+        title: '批量生成失敗',
+        description: '生成過程中發生錯誤，請稍後再試。',
+        variant: 'destructive',
+      });
+      console.error('Batch generate error:', error);
+    }
+  };
+  
+  // 複製所有批量生成的 URL
+  const copyAllBatchUrls = () => {
+    if (batchUrls.length > 0) {
+      const allUrls = batchUrls.map(item => item.url).join('\n');
+      navigator.clipboard.writeText(allUrls);
+      toast({
+        title: '已複製到剪貼板',
+        description: `已成功複製 ${batchUrls.length} 個 URL 到剪貼板。`,
+      });
+    }
+  };
+  
+  // 匯出批量生成的 URL 為 CSV
+  const exportBatchUrlsAsCsv = () => {
+    if (batchUrls.length > 0) {
+      // 創建 CSV 內容
+      let csvContent = 'Serial,URL\n';
+      batchUrls.forEach((item, index) => {
+        const serialNum = batchStartNumber + index;
+        csvContent += `${serialNum},"${item.url}"\n`;
+      });
+      
+      // 創建 Blob 和下載連結
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `onelink_batch_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+  
+  // 篩選和排序 Onelink 字段
+  const filteredAndSortedOnelinkFields = (() => {
+    // 先篩選
+    let filtered = [...onelinkFields];
+    
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(field => 
+        field.platform.toLowerCase().includes(lowerSearchTerm) ||
+        field.campaignCode.toLowerCase().includes(lowerSearchTerm) ||
+        field.materialId.toLowerCase().includes(lowerSearchTerm) ||
+        (field.adSet && field.adSet.toLowerCase().includes(lowerSearchTerm)) ||
+        (field.adName && field.adName.toLowerCase().includes(lowerSearchTerm))
+      );
+    }
+    
+    if (platformFilter) {
+      filtered = filtered.filter(field => field.platform === platformFilter);
+    }
+    
+    // 再排序
+    return filtered.sort((a, b) => {
+      const getValue = (field: OnelinkField, key: typeof sortField) => {
+        if (key === 'createdAt') {
+          return new Date(field[key]).getTime();
+        }
+        return field[key]?.toLowerCase() || '';
+      };
+      
+      const valueA = getValue(a, sortField);
+      const valueB = getValue(b, sortField);
+      
+      if (sortDirection === 'asc') {
+        return valueA > valueB ? 1 : -1;
+      } else {
+        return valueA < valueB ? 1 : -1;
+      }
+    });
+  })();
+  
+  // 處理排序切換
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+  
+  // 獲取所有平台選項
+  const platformOptions = (() => {
+    const platforms = new Set<string>();
+    onelinkFields.forEach(field => {
+      platforms.add(field.platform);
+    });
+    return Array.from(platforms);
+  })();
 
   return (
     <div className="space-y-4 p-4 sm:p-6 h-full">
@@ -378,15 +548,26 @@ export default function OnelinkPage() {
                   </div>
                 )}
 
-                <Button onClick={handleGenerateUrl} disabled={!selectedOnelinkId || !baseUrl}>
-                  生成 Onelink URL
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Button onClick={handleGenerateUrl} disabled={!selectedOnelinkId || !baseUrl}>
+                    生成單個 Onelink URL
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsBatchModalOpen(true)} 
+                    disabled={!selectedOnelinkId || !baseUrl}
+                  >
+                    <DownloadCloud className="h-4 w-4 mr-1" />
+                    批量生成 URL
+                  </Button>
+                </div>
 
                 {generatedUrl && (
                   <div className="border rounded-md p-3 space-y-2">
                     <div className="flex justify-between items-center">
                       <h3 className="font-medium">生成的 URL:</h3>
-                      <Button variant="ghost" size="sm" onClick={copyToClipboard}>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(generatedUrl)}>
                         <Copy className="h-4 w-4 mr-1" />
                         複製
                       </Button>
@@ -403,7 +584,31 @@ export default function OnelinkPage() {
 
         {/* 管理參數設定的標籤內容 */}
         <TabsContent value="manage" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <div className="w-64">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="搜尋 Onelink 參數設定..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-xs pl-8"
+                  />
+                </div>
+              </div>
+              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="所有平台" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">所有平台</SelectItem>
+                  {platformOptions.map(platform => (
+                    <SelectItem key={platform} value={platform}>{platform}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={() => setIsModalOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               新增 Onelink 參數設定
@@ -414,7 +619,7 @@ export default function OnelinkPage() {
             <CardHeader>
               <CardTitle>Onelink 參數設定列表</CardTitle>
               <CardDescription>
-                管理所有已儲存的 AppsFlyer Onelink 參數設定。
+                管理所有已儲存的 AppsFlyer Onelink 參數設定，總共 {filteredAndSortedOnelinkFields.length} 組。
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -435,20 +640,49 @@ export default function OnelinkPage() {
                   <p className="text-gray-500 mb-4">暫無 Onelink 參數設定</p>
                   <Button onClick={() => setIsModalOpen(true)}>新增 Onelink 參數設定</Button>
                 </div>
+              ) : filteredAndSortedOnelinkFields.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg border">
+                  <p className="text-gray-500 mb-4">沒有符合篩選條件的 Onelink 參數設定</p>
+                  <Button variant="outline" onClick={() => {
+                    setSearchTerm('');
+                    setPlatformFilter('');
+                  }}>清除篩選條件</Button>
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>平台</TableHead>
-                      <TableHead>活動代碼</TableHead>
-                      <TableHead>素材 ID</TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => toggleSort('platform')}>
+                        <div className="flex items-center">
+                          平台
+                          {sortField === 'platform' && (
+                            <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => toggleSort('campaignCode')}>
+                        <div className="flex items-center">
+                          活動代碼
+                          {sortField === 'campaignCode' && (
+                            <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
+                          )}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => toggleSort('materialId')}>
+                        <div className="flex items-center">
+                          素材 ID
+                          {sortField === 'materialId' && (
+                            <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
+                          )}
+                        </div>
+                      </TableHead>
                       <TableHead>廣告系列</TableHead>
                       <TableHead>廣告名稱</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {onelinkFields.map((field) => (
+                    {filteredAndSortedOnelinkFields.map((field) => (
                       <TableRow key={field.id}>
                         <TableCell>{field.platform}</TableCell>
                         <TableCell>{field.campaignCode}</TableCell>
@@ -599,6 +833,133 @@ export default function OnelinkPage() {
               <Button type="submit">{editingField ? '更新' : '儲存'}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 批量生成模態框 */}
+      <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>批量生成 Onelink URL</DialogTitle>
+            <DialogDescription>
+              設置批量參數，自動生成多個 Onelink URL
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* 批量設置部分 */}
+          {batchUrls.length === 0 ? (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="batch-count">生成數量</Label>
+                  <Input
+                    id="batch-count"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={batchCount}
+                    onChange={(e) => setBatchCount(parseInt(e.target.value) || 5)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="batch-start">起始序號</Label>
+                  <Input
+                    id="batch-start"
+                    type="number"
+                    min="1"
+                    value={batchStartNumber}
+                    onChange={(e) => setBatchStartNumber(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="batch-prefix">序號前綴</Label>
+                  <Input
+                    id="batch-prefix"
+                    placeholder="例如: ID_"
+                    value={batchPrefix}
+                    onChange={(e) => setBatchPrefix(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="batch-param-name">序號參數名稱</Label>
+                  <Select 
+                    value={batchParamName} 
+                    onValueChange={setBatchParamName}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="選擇參數名稱" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="af_sub4">序號 (af_sub4)</SelectItem>
+                      <SelectItem value="af_sub5">自定義 (af_sub5)</SelectItem>
+                      <SelectItem value="serial">自定義 (serial)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter className="flex justify-between pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsBatchModalOpen(false)}>
+                  取消
+                </Button>
+                <Button onClick={handleBatchGenerate} disabled={!selectedOnelinkId || !baseUrl}>
+                  開始批量生成
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="py-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-muted-foreground">已生成 {batchUrls.length} 個 Onelink URL</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={copyAllBatchUrls}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    複製所有 URL
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={exportBatchUrlsAsCsv}>
+                    <DownloadCloud className="h-4 w-4 mr-1" />
+                    匯出 CSV
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">序號</TableHead>
+                      <TableHead>URL</TableHead>
+                      <TableHead className="w-20">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {batchUrls.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{batchStartNumber + index}</TableCell>
+                        <TableCell className="max-w-lg truncate">
+                          <code className="text-xs">{item.url}</code>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => copyToClipboard(item.url)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <DialogFooter className="pt-4">
+                <Button onClick={() => {
+                  setBatchUrls([]);
+                  setIsBatchModalOpen(false);
+                }}>
+                  完成
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
