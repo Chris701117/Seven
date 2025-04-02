@@ -643,13 +643,26 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                           <FormItem>
                             <FormControl>
                               <div className="relative">
-                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <Input 
-                                  type="date" 
-                                  {...field} 
-                                  value={field.value || ''} 
-                                  className="pl-9"
-                                />
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
+                                <div className="flex">
+                                  <Input 
+                                    type="date" 
+                                    {...field} 
+                                    value={field.value || ''} 
+                                    className="pl-9 rounded-r-none"
+                                  />
+                                  <Button 
+                                    type="button"
+                                    variant="outline" 
+                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const today = new Date().toISOString().split('T')[0];
+                                      field.onChange(today);
+                                    }}
+                                  >
+                                    今天
+                                  </Button>
+                                </div>
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -673,6 +686,22 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const now = new Date();
+                                          const hours = now.getHours().toString().padStart(2, '0');
+                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
+                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                                          field.onChange(timeValue);
+                                        }}
+                                      >
+                                        現在
+                                      </Button>
+                                    </div>
                                     {Array.from({ length: 24 }).map((_, hour) => (
                                       <React.Fragment key={hour}>
                                         {[0, 30].map(minute => {
@@ -710,13 +739,26 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                           <FormItem>
                             <FormControl>
                               <div className="relative">
-                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <Input 
-                                  type="date" 
-                                  {...field} 
-                                  value={field.value || ''} 
-                                  className="pl-9"
-                                />
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
+                                <div className="flex">
+                                  <Input 
+                                    type="date" 
+                                    {...field} 
+                                    value={field.value || ''} 
+                                    className="pl-9 rounded-r-none"
+                                  />
+                                  <Button 
+                                    type="button"
+                                    variant="outline" 
+                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const today = new Date().toISOString().split('T')[0];
+                                      field.onChange(today);
+                                    }}
+                                  >
+                                    今天
+                                  </Button>
+                                </div>
                               </div>
                             </FormControl>
                             <FormMessage />
@@ -740,6 +782,22 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const now = new Date();
+                                          const hours = now.getHours().toString().padStart(2, '0');
+                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
+                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                                          field.onChange(timeValue);
+                                        }}
+                                      >
+                                        現在
+                                      </Button>
+                                    </div>
                                     {Array.from({ length: 24 }).map((_, hour) => (
                                       <React.Fragment key={hour}>
                                         {[0, 30].map(minute => {
