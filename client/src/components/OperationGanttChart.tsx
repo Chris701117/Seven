@@ -22,9 +22,9 @@ const priorityColorMap: Record<string, string> = {
 // 任務類別顏色映射
 const categoryColorMap: Record<string, string> = {
   '一般': 'bg-cyan-200 hover:bg-cyan-300 border-cyan-300',
-  '設備維護': 'bg-amber-200 hover:bg-amber-300 border-amber-300',
-  '人員調度': 'bg-pink-200 hover:bg-pink-300 border-pink-300',
-  '物資管理': 'bg-purple-200 hover:bg-purple-300 border-purple-300',
+  '活動': 'bg-amber-200 hover:bg-amber-300 border-amber-300',
+  '測試': 'bg-pink-200 hover:bg-pink-300 border-pink-300',
+  '會議': 'bg-purple-200 hover:bg-purple-300 border-purple-300',
 };
 
 // 任務狀態顏色映射

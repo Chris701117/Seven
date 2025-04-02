@@ -198,9 +198,10 @@ export default function Operations() {
                       variant="outline" 
                       className={
                         category === '一般' ? 'bg-gray-100 text-gray-800' : 
-                        category === '設備維護' ? 'bg-amber-100 text-amber-800' : 
-                        category === '人員調度' ? 'bg-pink-100 text-pink-800' : 
-                        'bg-purple-100 text-purple-800'
+                        category === '活動' ? 'bg-amber-100 text-amber-800' : 
+                        category === '測試' ? 'bg-pink-100 text-pink-800' : 
+                        category === '會議' ? 'bg-purple-100 text-purple-800' : 
+                        'bg-blue-100 text-blue-800'
                       }
                     >
                       {category}
@@ -211,9 +212,10 @@ export default function Operations() {
                     <div 
                       className={`h-2.5 rounded-full ${
                         category === '一般' ? 'bg-gray-500' : 
-                        category === '設備維護' ? 'bg-amber-500' : 
-                        category === '人員調度' ? 'bg-pink-500' : 
-                        'bg-purple-500'
+                        category === '活動' ? 'bg-amber-500' : 
+                        category === '測試' ? 'bg-pink-500' : 
+                        category === '會議' ? 'bg-purple-500' : 
+                        'bg-blue-500'
                       }`}
                       style={{ width: `${(count / stats.total) * 100}%` }}
                     ></div>
@@ -320,9 +322,9 @@ export default function Operations() {
             <SelectContent>
               <SelectItem value="all">所有類別</SelectItem>
               <SelectItem value="一般">一般</SelectItem>
-              <SelectItem value="設備維護">設備維護</SelectItem>
-              <SelectItem value="人員調度">人員調度</SelectItem>
-              <SelectItem value="物資管理">物資管理</SelectItem>
+              <SelectItem value="活動">活動</SelectItem>
+              <SelectItem value="測試">測試</SelectItem>
+              <SelectItem value="會議">會議</SelectItem>
             </SelectContent>
           </Select>
         </div>

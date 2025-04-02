@@ -273,9 +273,9 @@ export default function OperationTaskModal({ open, onClose, task }: OperationTas
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="一般">一般</SelectItem>
-                        <SelectItem value="設備維護">設備維護</SelectItem>
-                        <SelectItem value="人員調度">人員調度</SelectItem>
-                        <SelectItem value="物資管理">物資管理</SelectItem>
+                        <SelectItem value="活動">活動</SelectItem>
+                        <SelectItem value="測試">測試</SelectItem>
+                        <SelectItem value="會議">會議</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
