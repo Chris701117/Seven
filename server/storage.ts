@@ -841,7 +841,7 @@ export class MemStorage implements IStorage {
     tomorrow.setDate(tomorrow.getDate() + 1);
     
     return Array.from(this.marketingTasks.values()).filter(
-      task => task.status !== "已完成" && 
+      task => task.status !== "completed" && 
               !task.reminderSent &&
               new Date(task.startTime) <= tomorrow
     );
@@ -1023,9 +1023,11 @@ export class MemStorage implements IStorage {
     const marketingTask1: MarketingTask = {
       id: this.marketingTaskId++,
       title: "夏季促銷活動",
-      status: "進行中",
+      description: "夏季專屬促銷活動企劃與執行，目標提升夏季銷售額 20%",
+      status: "in-progress",
       content: "策劃夏季促銷活動，包括社交媒體宣傳和電子郵件營銷",
-      category: "促銷活動",
+      category: "advertising",
+      priority: "high",
       startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
       reminderSent: false,
@@ -1038,9 +1040,11 @@ export class MemStorage implements IStorage {
     const marketingTask2: MarketingTask = {
       id: this.marketingTaskId++,
       title: "內容創作計畫",
-      status: "已完成",
+      description: "下個月內容行銷策略規劃，包含社群平台內容排程與部落格文章計畫",
+      status: "completed",
       content: "為下個月準備部落格和社交媒體的內容計畫",
-      category: "內容策略",
+      category: "content",
+      priority: "normal",
       startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       endTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       reminderSent: true,
@@ -1053,9 +1057,11 @@ export class MemStorage implements IStorage {
     const marketingTask3: MarketingTask = {
       id: this.marketingTaskId++,
       title: "新產品發布會",
-      status: "準備中",
+      description: "新品牌系列產品發表會籌備，包含媒體邀請與市場宣傳規劃",
+      status: "pending",
       content: "為新產品發布會準備營銷材料和媒體宣傳",
-      category: "產品發布",
+      category: "event",
+      priority: "high",
       startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       endTime: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
       reminderSent: false,
@@ -1064,6 +1070,23 @@ export class MemStorage implements IStorage {
       createdBy: "產品經理"
     };
     this.marketingTasks.set(marketingTask3.id, marketingTask3);
+    
+    const marketingTask4: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "社群媒體互動活動",
+      description: "設計並執行社群媒體互動活動，提高粉絲互動率和品牌黏著度",
+      status: "in-progress",
+      content: "策劃社群互動遊戲，制定獎品機制，提高用戶參與度",
+      category: "social-media",
+      priority: "normal",
+      startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      createdBy: "社群經理"
+    };
+    this.marketingTasks.set(marketingTask4.id, marketingTask4);
   }
 
   private initSampleOperationTasks() {

@@ -1607,5 +1607,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("初始化 WebSocket 伺服器失敗:", error);
   }
 
+  // 行銷模組 API 路由
+  // 獲取所有行銷任務
+  app.get("/api/marketing-tasks", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const tasks = await storage.getMarketingTasks();
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據 ID 獲取行銷任務
+  app.get("/api/marketing-tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getMarketingTaskById(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      console.error("獲取行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 創建行銷任務
+  app.post("/api/marketing-tasks", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const newTask = req.body;
+      const task = await storage.createMarketingTask(newTask);
+      res.status(201).json(task);
+    } catch (error) {
+      console.error("創建行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 更新行銷任務
+  app.patch("/api/marketing-tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      const taskData = req.body;
+      
+      const task = await storage.getMarketingTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      const updatedTask = await storage.updateMarketingTask(taskId, taskData);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("更新行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 刪除行銷任務
+  app.delete("/api/marketing-tasks/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const taskId = parseInt(req.params.id);
+      
+      const task = await storage.getMarketingTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "任務未找到" });
+      }
+      
+      const result = await storage.deleteMarketingTask(taskId);
+      
+      if (result) {
+        res.status(200).json({ message: "任務已刪除" });
+      } else {
+        res.status(500).json({ message: "刪除任務失敗" });
+      }
+    } catch (error) {
+      console.error("刪除行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據狀態獲取行銷任務
+  app.get("/api/marketing-tasks/status/:status", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const status = req.params.status;
+      const tasks = await storage.getMarketingTasksByStatus(status);
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 根據類別獲取行銷任務
+  app.get("/api/marketing-tasks/category/:category", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const category = req.params.category;
+      const tasks = await storage.getMarketingTasksByCategory(category);
+      res.json(tasks);
+    } catch (error) {
+      console.error("獲取行銷任務失敗:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
   return httpServer;
 }

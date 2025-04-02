@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown, HelpCircle } from "lucide-react";
+import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown, HelpCircle, Megaphone } from "lucide-react";
 import { Page } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -48,6 +48,12 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/analytics' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <BarChart2 className="h-5 w-5 mr-3" />
                 <span>數據分析</span>
+              </a>
+            </Link>
+            <Link href="/marketing">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/marketing' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Megaphone className="h-5 w-5 mr-3" />
+                <span>行銷管理</span>
               </a>
             </Link>
             <Link href="/settings">
