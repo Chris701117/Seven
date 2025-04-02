@@ -602,7 +602,7 @@ export default function OnelinkPage() {
                   <SelectValue placeholder="所有平台" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">所有平台</SelectItem>
+                  <SelectItem value="all">所有平台</SelectItem>
                   {platformOptions.map(platform => (
                     <SelectItem key={platform} value={platform}>{platform}</SelectItem>
                   ))}
