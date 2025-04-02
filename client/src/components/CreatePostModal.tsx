@@ -257,7 +257,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      pageId: activePageData?.pageId || "",
+      pageId: post?.pageId || activePageData?.pageId || "page_123456", // 確保一定有頁面ID
       content: post?.content || "",
       status: post?.status || "draft",
       scheduledTime: post?.scheduledTime ? new Date(post.scheduledTime) : undefined,
