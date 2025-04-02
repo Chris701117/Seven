@@ -49,10 +49,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   
-  // Configuration routes
+  // Configuration routes - Facebook 配置
   app.get("/api/config/facebook", (req, res) => {
     const appId = process.env.FACEBOOK_APP_ID || "";
-    res.json({ appId });
+    
+    // 檢查 App ID 是否存在
+    if (!appId) {
+      console.warn("警告: FACEBOOK_APP_ID 環境變量未設置");
+    }
+    
+    // 返回 App ID 和環境信息，幫助調試
+    res.json({ 
+      appId, 
+      domain: req.get('host'), 
+      environment: process.env.NODE_ENV || 'development',
+      hasAppSecret: !!process.env.FACEBOOK_APP_SECRET
+    });
   });
 
   // Authentication routes
@@ -126,15 +138,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Facebook auth routes
   app.post("/api/auth/facebook", async (req, res) => {
     if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.status(401).json({ message: "未認證" });
     }
     
     try {
       const { accessToken, fbUserId } = req.body;
       
       if (!accessToken || !fbUserId) {
-        return res.status(400).json({ message: "Access token and user ID are required" });
+        return res.status(400).json({ message: "需要 Access Token 和 User ID" });
       }
+      
+      console.log('Facebook 連接嘗試 - 用戶:', req.session.userId);
+      console.log('Facebook 連接嘗試 - FB 用戶ID:', fbUserId);
+      console.log('Facebook 連接嘗試 - 令牌長度:', accessToken.length);
       
       // 檢查是否為開發模式
       const isDevelopmentMode = accessToken.startsWith('DEV_MODE_TOKEN_');
@@ -148,11 +164,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const devAccessToken = 'DEV_MODE_ACCESS_TOKEN_' + req.session.userId;
           const devFbUserId = 'DEV_MODE_USER_' + req.session.userId;
           
+          // 檢查環境變數是否存在
+          if (!process.env.FACEBOOK_APP_ID) {
+            console.warn('警告: 在開發模式下使用，但環境變數 FACEBOOK_APP_ID 未設置');
+          }
+          
           const updatedUser = await storage.updateUserAccessToken(
             req.session.userId,
             devAccessToken,
             devFbUserId
           );
+          
+          // 創建或更新測試頁面（如果用戶尚未有任何頁面）
+          const userPages = await storage.getPages(req.session.userId);
+          if (userPages.length === 0) {
+            // 創建一個測試頁面
+            await storage.createPage({
+              userId: req.session.userId,
+              pageId: `dev_page_${req.session.userId}_1`,
+              pageName: '測試粉絲專頁 1',
+              accessToken: devAccessToken,
+              pageImage: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg'
+            });
+            
+            // 再創建一個測試頁面
+            await storage.createPage({
+              userId: req.session.userId,
+              pageId: `dev_page_${req.session.userId}_2`,
+              pageName: '測試粉絲專頁 2',
+              accessToken: devAccessToken,
+              pageImage: 'https://res.cloudinary.com/demo/image/upload/w_150,h_150,c_fill/sample.jpg'
+            });
+            
+            console.log('開發模式: 已創建測試頁面');
+          }
           
           const { password, ...userWithoutPassword } = updatedUser;
           return res.json({ 
@@ -171,22 +216,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 正常 Facebook 連接處理
-      const updatedUser = await storage.updateUserAccessToken(
-        req.session.userId,
-        accessToken,
-        fbUserId
-      );
-      
-      const { password, ...userWithoutPassword } = updatedUser;
-      return res.json({ 
-        message: "Facebook credentials updated", 
-        user: userWithoutPassword
-      });
+      try {
+        console.log('正在處理真實 Facebook 連接...');
+        
+        // 檢查 FACEBOOK_APP_ID 和 FACEBOOK_APP_SECRET 是否存在
+        if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
+          console.error('錯誤: 缺少必要的 Facebook API 密鑰');
+          return res.status(500).json({
+            message: "Facebook 連接錯誤: 伺服器缺少必要的 API 密鑰配置",
+            missingKeys: !process.env.FACEBOOK_APP_ID ? 'FACEBOOK_APP_ID' : 'FACEBOOK_APP_SECRET'
+          });
+        }
+        
+        const updatedUser = await storage.updateUserAccessToken(
+          req.session.userId,
+          accessToken,
+          fbUserId
+        );
+        
+        const { password, ...userWithoutPassword } = updatedUser;
+        return res.json({ 
+          message: "Facebook 憑證已更新", 
+          user: userWithoutPassword
+        });
+      } catch (fbError) {
+        console.error('真實 Facebook 連接錯誤:', fbError);
+        return res.status(500).json({ 
+          message: "Facebook 連接失敗", 
+          error: fbError instanceof Error ? fbError.message : "未知錯誤"
+        });
+      }
     } catch (error) {
       console.error('Facebook auth error:', error);
       return res.status(500).json({ 
-        message: "Server error", 
-        error: error instanceof Error ? error.message : "Unknown error"
+        message: "伺服器錯誤", 
+        error: error instanceof Error ? error.message : "未知錯誤"
       });
     }
   });
