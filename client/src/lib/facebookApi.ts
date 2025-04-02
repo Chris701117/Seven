@@ -235,6 +235,11 @@ export const facebookApi = {
     return apiRequest("DELETE", `/api/posts/${postId}`);
   },
   
+  // 一鍵發布到所有平台
+  publishToAllPlatforms: async (postId: number) => {
+    return apiRequest("POST", `/api/posts/${postId}/publish-all`);
+  },
+  
   // Analytics related functions
   fetchPostAnalytics: async (postId: string) => {
     return apiRequest("GET", `/api/posts/${postId}/analytics`);
