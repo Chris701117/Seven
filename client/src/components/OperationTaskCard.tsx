@@ -90,12 +90,12 @@ export default function OperationTaskCard({ task, onDelete, layout }: OperationT
     switch (task.category) {
       case '一般':
         return <Badge variant="secondary">一般</Badge>;
-      case '設備維護':
-        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300">設備維護</Badge>;
-      case '人員調度':
-        return <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-200 border border-pink-300">人員調度</Badge>;
-      case '物資管理':
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300">物資管理</Badge>;
+      case '活動':
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300">活動</Badge>;
+      case '測試':
+        return <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-200 border border-pink-300">測試</Badge>;
+      case '會議':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300">會議</Badge>;
       default:
         return <Badge variant="outline">{task.category}</Badge>;
     }

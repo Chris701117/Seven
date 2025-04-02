@@ -1,18 +1,27 @@
 import { useState } from "react";
 import { format } from "date-fns";
+import { zhTW } from 'date-fns/locale';
 import { MarketingTask } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 // Icons
-import { Edit, Trash2, Calendar, CheckSquare, AlertTriangle } from "lucide-react";
+import { 
+  Edit as EditIcon, 
+  Trash2 as TrashIcon, 
+  Calendar as CalendarIcon, 
+  CheckSquare as CheckIcon, 
+  AlertTriangle as AlertTriangleIcon,
+  Clock as ClockIcon
+} from "lucide-react";
 
 // UI Components
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Modal
 import MarketingTaskModal from "./MarketingTaskModal";
@@ -27,33 +36,83 @@ export default function MarketingTaskCard({ task }: MarketingTaskCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Status color mapping
-  const statusColorMap: Record<string, string> = {
-    "待處理": "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
-    "進行中": "bg-blue-100 text-blue-800 hover:bg-blue-200",
-    "已完成": "bg-green-100 text-green-800 hover:bg-green-200",
-    "已延遲": "bg-red-100 text-red-800 hover:bg-red-200",
-    "已取消": "bg-gray-100 text-gray-800 hover:bg-gray-200",
+  const startDate = new Date(task.startTime);
+  const endDate = new Date(task.endTime);
+
+  // 根據優先級顯示不同顏色
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case '高':
+        return 'text-red-600';
+      case '中':
+        return 'text-blue-600';
+      case '低':
+        return 'text-green-600';
+      default:
+        return 'text-gray-600';
+    }
   };
 
-  // Priority color mapping
-  const priorityColorMap: Record<string, string> = {
-    "高": "bg-red-100 text-red-800 hover:bg-red-200",
-    "中": "bg-blue-100 text-blue-800 hover:bg-blue-200",
-    "低": "bg-green-100 text-green-800 hover:bg-green-200",
+  // 根據狀態顯示不同顏色的標籤
+  const getStatusBadge = () => {
+    switch (task.status) {
+      case '已完成':
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-300">
+            <CheckIcon className="h-3.5 w-3.5 mr-1" />
+            已完成
+          </Badge>
+        );
+      case '進行中':
+        return (
+          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border border-blue-300">
+            <ClockIcon className="h-3.5 w-3.5 mr-1" />
+            進行中
+          </Badge>
+        );
+      case '已延遲':
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-300">
+            <AlertTriangleIcon className="h-3.5 w-3.5 mr-1" />
+            已延遲
+          </Badge>
+        );
+      case '已取消':
+        return (
+          <Badge variant="outline" className="text-gray-800 border border-gray-300">
+            已取消
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300">
+            待處理
+          </Badge>
+        );
+    }
   };
 
-  // Calculate days left
-  const calculateDaysLeft = () => {
-    const endDate = new Date(task.endTime);
+  // 根據類別顯示不同顏色
+  const getCategoryBadge = () => {
+    switch (task.category) {
+      case '一般':
+        return <Badge variant="secondary">一般</Badge>;
+      case '廣告投放':
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300">廣告投放</Badge>;
+      case '地面推廣':
+        return <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-200 border border-pink-300">地面推廣</Badge>;
+      case '會議':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300">會議</Badge>;
+      default:
+        return <Badge variant="outline">{task.category}</Badge>;
+    }
+  };
+
+  // 檢查是否已過期
+  const isOverdue = () => {
     const today = new Date();
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return endDate < today && task.status !== '已完成' && task.status !== '已取消';
   };
-
-  const daysLeft = calculateDaysLeft();
-  const isOverdue = daysLeft < 0;
 
   // Delete task mutation
   const deleteMutation = useMutation({
@@ -86,72 +145,52 @@ export default function MarketingTaskCard({ task }: MarketingTaskCardProps) {
 
   return (
     <>
-      <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
+      <Card className={`w-full h-full flex flex-col ${isOverdue() ? 'border-red-300' : ''}`}>
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-bold line-clamp-2">{task.title}</CardTitle>
+            <CardTitle className="text-lg font-bold truncate">{task.title}</CardTitle>
             <div className="flex space-x-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0" 
-                onClick={() => setIsEditModalOpen(true)}
-              >
-                <Edit className="h-4 w-4" />
-                <span className="sr-only">編輯</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-100" 
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">刪除</span>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className={`font-medium ${getPriorityColor(task.priority || '中')}`}>
+                      {task.priority || '中'}優先
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>優先級: {task.priority || '中'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <Badge className={statusColorMap[task.status] || "bg-gray-100"}>
-              {task.status}
-            </Badge>
-            <Badge className={priorityColorMap[task.priority || "中"] || "bg-blue-100"}>
-              {task.priority || "中"}優先
-            </Badge>
-            <Badge variant="outline">{task.category}</Badge>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {getStatusBadge()}
+            {getCategoryBadge()}
           </div>
         </CardHeader>
-        <CardContent className="py-2 flex-grow">
-          <div className="text-sm text-gray-600 mb-2 line-clamp-3">
-            {task.description || task.content}
-          </div>
-          
-          <div className="flex items-center text-sm text-gray-500 mt-3">
-            <Calendar className="h-4 w-4 mr-1" />
-            <span>
-              {format(new Date(task.startTime), "yyyy/MM/dd")} - {format(new Date(task.endTime), "yyyy/MM/dd")}
-            </span>
-          </div>
 
-          {task.status !== "已完成" && task.status !== "已取消" && (
-            <div className="flex items-center mt-2">
-              {isOverdue ? (
-                <div className="flex items-center text-red-500">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  <span>已逾期 {Math.abs(daysLeft)} 天</span>
-                </div>
-              ) : (
-                <div className={`flex items-center ${daysLeft <= 3 ? 'text-amber-500' : 'text-green-500'}`}>
-                  <CheckSquare className="h-4 w-4 mr-1" />
-                  <span>剩餘 {daysLeft} 天</span>
-                </div>
-              )}
-            </div>
-          )}
+        <CardContent className="py-2 flex-grow">
+          <div className="text-sm text-gray-600 max-h-20 overflow-hidden">
+            {task.description || task.content || <span className="text-gray-400 italic">無任務描述</span>}
+          </div>
         </CardContent>
-        <CardFooter className="pt-2 border-t text-xs text-gray-500">
-          <div>建立於 {format(new Date(task.createdAt), "yyyy/MM/dd")}</div>
-          {task.createdBy && <div className="ml-auto">建立者: {task.createdBy}</div>}
+
+        <CardFooter className="flex flex-col items-start pt-2 border-t">
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <CalendarIcon className="h-4 w-4 mr-1" />
+            {format(startDate, 'yyyy/MM/dd', { locale: zhTW })} - {format(endDate, 'yyyy/MM/dd', { locale: zhTW })}
+          </div>
+          <div className="flex justify-between w-full mt-2">
+            <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>
+              <EditIcon className="h-3.5 w-3.5 mr-1" />
+              編輯
+            </Button>
+            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => setIsDeleteDialogOpen(true)}>
+              <TrashIcon className="h-3.5 w-3.5 mr-1" />
+              刪除
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 
