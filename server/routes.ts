@@ -475,8 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create post with reminder time
       const post = await storage.createPost({
         ...postData,
-        reminderTime,
-        reminderSent: false
+        reminderTime
       });
       
       res.status(201).json(post);

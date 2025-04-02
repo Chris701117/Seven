@@ -200,6 +200,23 @@ export const insertVendorSchema = createInsertSchema(vendors).omit({
 });
 
 // Types
+// 定義多平台內容和狀態的類型
+export interface PlatformContent {
+  fb: string;
+  ig: string;
+  tiktok: string;
+  threads: string;
+  x: string;
+}
+
+export interface PlatformStatus {
+  fb: boolean;
+  ig: boolean;
+  tiktok: boolean;
+  threads: boolean;
+  x: boolean;
+}
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 

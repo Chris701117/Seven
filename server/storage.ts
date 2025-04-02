@@ -7,7 +7,8 @@ import {
   marketingTasks, type MarketingTask, type InsertMarketingTask,
   operationTasks, type OperationTask, type InsertOperationTask,
   onelinkFields, type OnelinkField, type InsertOnelinkField,
-  vendors, type Vendor, type InsertVendor
+  vendors, type Vendor, type InsertVendor,
+  type PlatformContent, type PlatformStatus
 } from "@shared/schema";
 
 export interface IStorage {
@@ -133,6 +134,10 @@ export class MemStorage implements IStorage {
     
     // Add sample data
     this.initSampleData();
+    this.initSampleMarketingTasks();
+    this.initSampleOperationTasks();
+    this.initSampleOnelinkFields();
+    this.initSampleVendors();
   }
 
   private initSampleData() {
@@ -201,19 +206,36 @@ export class MemStorage implements IStorage {
       status: "published",
       category: "promotion",
       scheduledTime: null,
+      endTime: null,
       imageUrl: "https://images.unsplash.com/photo-1528495612343-9ca9f4a4de28",
       videoUrl: null,
       linkUrl: null,
       linkTitle: null,
       linkDescription: null,
       linkImageUrl: null,
+      platformContent: { 
+        fb: "Spring is finally here! Check out our latest collection of garden furniture to spruce up your outdoor space.",
+        ig: "春天終於來了！快來看看我們最新的花園家具系列，讓你的戶外空間煥然一新。溫暖的夜晚即將來臨！🌿☀️ #SpringGardening #OutdoorLiving",
+        tiktok: "",
+        threads: "",
+        x: ""
+      },
+      platformStatus: { 
+        fb: true, 
+        ig: true, 
+        tiktok: false, 
+        threads: false, 
+        x: false 
+      },
       reminderSent: false,
       reminderTime: null,
       isCompleted: true,
       completedTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
       createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
       publishedTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      author: "行銷團隊",
+      publishedBy: "系統管理員"
     };
     this.posts.set(publishedPost1.id, publishedPost1);
 
@@ -244,19 +266,36 @@ export class MemStorage implements IStorage {
       status: "published",
       category: "event",
       scheduledTime: null,
+      endTime: null,
       imageUrl: null,
       videoUrl: null,
       linkUrl: null,
       linkTitle: null,
       linkDescription: null,
       linkImageUrl: null,
+      platformContent: { 
+        fb: "We're excited to announce our summer workshop series! Learn everything from container gardening to landscape design from our experts.",
+        ig: "夏季工作坊系列即將開始！從容器園藝到景觀設計，跟著我們的專家一起學習。名額有限，立即報名！🌸🌼 #花園工作坊 #景觀設計",
+        tiktok: "",
+        threads: "",
+        x: ""
+      },
+      platformStatus: { 
+        fb: true, 
+        ig: false, 
+        tiktok: false, 
+        threads: false, 
+        x: false 
+      },
       reminderSent: false,
       reminderTime: null,
       isCompleted: true,
       completedTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       publishedTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      author: "內容團隊",
+      publishedBy: "系統管理員"
     };
     this.posts.set(publishedPost2.id, publishedPost2);
 
@@ -287,19 +326,36 @@ export class MemStorage implements IStorage {
       status: "scheduled",
       category: "promotion",
       scheduledTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 結束時間設置為一週後
       imageUrl: null,
       videoUrl: null,
       linkUrl: "https://www.homeandgardentips.com/water-saving-tips",
       linkTitle: "5 Water-Saving Garden Tips for Summer",
       linkDescription: "Learn how to save water and money with these eco-friendly garden tips.",
       linkImageUrl: "https://images.unsplash.com/photo-1591382386627-349b692688ff",
+      platformContent: { 
+        fb: "Looking for easy ways to reduce your water bill this summer? Here are our top 5 water-saving tips for your garden!",
+        ig: "想找省水的方法嗎？查看我們的夏季花園省水攻略，輕鬆省水又省錢！點擊連結閱讀完整指南。 #省水 #夏季園藝",
+        tiktok: "夏季省水花園小技巧！#省水 #園藝 #環保生活",
+        threads: "",
+        x: ""
+      },
+      platformStatus: { 
+        fb: false, 
+        ig: false, 
+        tiktok: false, 
+        threads: false, 
+        x: false 
+      },
       reminderSent: false,
       reminderTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // One day before scheduled time
       isCompleted: false,
       completedTime: null,
       createdAt: new Date(),
       publishedTime: null,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      author: "內容團隊",
+      publishedBy: null
     };
     this.posts.set(scheduledPost.id, scheduledPost);
 
@@ -312,19 +368,36 @@ export class MemStorage implements IStorage {
       status: "scheduled",
       category: "event",
       scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      endTime: new Date(Date.now() + 48 * 60 * 60 * 1000), // 2 days after
       imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72",
       videoUrl: null,
       linkUrl: null,
       linkTitle: null,
       linkDescription: null,
       linkImageUrl: null,
+      platformContent: { 
+        fb: "明天就是我們的大型活動！不要錯過這個與我們互動的機會，我們將提供獨家優惠和免費禮品。快來參加吧！ #特別活動 #限時優惠",
+        ig: "明天就是我們的大型活動！🎉 與我們互動並獲得獨家優惠和免費禮品！ #特別活動 #限時優惠 #驚喜",
+        tiktok: "倒數24小時！明天大型活動，獨家優惠，禮品等你拿！ #特別活動 #限時優惠 #倒數",
+        threads: "",
+        x: ""
+      },
+      platformStatus: { 
+        fb: false, 
+        ig: false, 
+        tiktok: false, 
+        threads: false, 
+        x: false 
+      },
       reminderSent: false,
       reminderTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago (to trigger immediate reminder)
       isCompleted: false,
       completedTime: null,
       createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // Created 2 days ago
       publishedTime: null,
-      updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+      author: "行銷團隊",
+      publishedBy: null
     };
     this.posts.set(upcomingScheduledPost.id, upcomingScheduledPost);
 
@@ -337,19 +410,36 @@ export class MemStorage implements IStorage {
       status: "draft",
       category: "announcement",
       scheduledTime: null,
+      endTime: null,
       imageUrl: null,
       videoUrl: null,
       linkUrl: null,
       linkTitle: null,
       linkDescription: null,
       linkImageUrl: null,
+      platformContent: { 
+        fb: "室內淨化空氣植物—美觀又實用！新品即將上市，敬請期待更多細節。",
+        ig: "室內淨化空氣植物，讓你呼吸更健康！新品即將推出，關注我們獲取最新消息！#室內植物 #空氣淨化 #新品預告",
+        tiktok: "淨化空氣的室內植物，美觀又實用！#室內植物 #空氣淨化 #新品預告",
+        threads: "",
+        x: ""
+      },
+      platformStatus: { 
+        fb: false, 
+        ig: false, 
+        tiktok: false, 
+        threads: false, 
+        x: false 
+      },
       reminderSent: false,
       reminderTime: null,
       isCompleted: false,
       completedTime: null,
       createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
       publishedTime: null,
-      updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      author: "產品團隊",
+      publishedBy: null
     };
     this.posts.set(draftPost.id, draftPost);
   }
@@ -465,6 +555,7 @@ export class MemStorage implements IStorage {
       id,
       postId: null,
       scheduledTime: insertPost.scheduledTime || null,
+      endTime: insertPost.endTime || null,
       imageUrl: insertPost.imageUrl || null,
       videoUrl: insertPost.videoUrl || null,
       linkUrl: insertPost.linkUrl || null,
@@ -472,13 +563,17 @@ export class MemStorage implements IStorage {
       linkDescription: insertPost.linkDescription || null,
       linkImageUrl: insertPost.linkImageUrl || null,
       category: insertPost.category || null,
+      platformContent: insertPost.platformContent || { fb: "", ig: "", tiktok: "", threads: "", x: "" } as PlatformContent,
+      platformStatus: insertPost.platformStatus || { fb: false, ig: false, tiktok: false, threads: false, x: false } as PlatformStatus,
       reminderSent: false,
       reminderTime: insertPost.scheduledTime ? new Date(insertPost.scheduledTime.getTime() - 24 * 60 * 60 * 1000) : null, // Set reminder 1 day before
       isCompleted: false,
       completedTime: null,
       createdAt: new Date(),
       publishedTime: null,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      author: insertPost.author || null,
+      publishedBy: null
     };
     this.posts.set(id, post);
     return post;
@@ -558,6 +653,37 @@ export class MemStorage implements IStorage {
               !post.isCompleted &&
               post.scheduledTime <= now
     );
+  }
+  
+  // 一鍵發布功能（發布到所有平台）
+  async publishToAllPlatforms(id: number): Promise<Post> {
+    const post = await this.getPostById(id);
+    if (!post) {
+      throw new Error(`Post with id ${id} not found`);
+    }
+    
+    // 更新各平台狀態
+    const updatedPlatformStatus: PlatformStatus = post.platformStatus 
+      ? { ...post.platformStatus as PlatformStatus }
+      : { fb: false, ig: false, tiktok: false, threads: false, x: false };
+      
+    updatedPlatformStatus.fb = true;
+    updatedPlatformStatus.ig = true;
+    updatedPlatformStatus.tiktok = true;
+    updatedPlatformStatus.threads = true;
+    updatedPlatformStatus.x = true;
+    
+    const updatedPost = { 
+      ...post, 
+      status: "published", 
+      platformStatus: updatedPlatformStatus,
+      isCompleted: true, 
+      completedTime: new Date(),
+      publishedTime: new Date(),
+      updatedAt: new Date() 
+    };
+    this.posts.set(id, updatedPost);
+    return updatedPost;
   }
 
   // Post Analytics operations
@@ -641,6 +767,408 @@ export class MemStorage implements IStorage {
     };
     this.pageAnalytics.set(analytics.id, updatedAnalytics);
     return updatedAnalytics;
+  }
+
+  // 行銷模組操作
+  async getMarketingTasks(): Promise<MarketingTask[]> {
+    return Array.from(this.marketingTasks.values()).sort((a, b) => {
+      if (a.status === "已完成" && b.status !== "已完成") return 1;
+      if (a.status !== "已完成" && b.status === "已完成") return -1;
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
+  }
+
+  async getMarketingTaskById(id: number): Promise<MarketingTask | undefined> {
+    return this.marketingTasks.get(id);
+  }
+
+  async getMarketingTasksByStatus(status: string): Promise<MarketingTask[]> {
+    return Array.from(this.marketingTasks.values()).filter(
+      task => task.status === status
+    );
+  }
+
+  async getMarketingTasksByCategory(category: string): Promise<MarketingTask[]> {
+    return Array.from(this.marketingTasks.values()).filter(
+      task => task.category === category
+    );
+  }
+
+  async createMarketingTask(task: InsertMarketingTask): Promise<MarketingTask> {
+    const id = this.marketingTaskId++;
+    const newTask: MarketingTask = {
+      ...task,
+      id,
+      reminderSent: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.marketingTasks.set(id, newTask);
+    return newTask;
+  }
+
+  async updateMarketingTask(id: number, task: Partial<MarketingTask>): Promise<MarketingTask> {
+    const existingTask = await this.getMarketingTaskById(id);
+    if (!existingTask) {
+      throw new Error(`Marketing task with id ${id} not found`);
+    }
+    
+    const updatedTask = {
+      ...existingTask,
+      ...task,
+      updatedAt: new Date()
+    };
+    this.marketingTasks.set(id, updatedTask);
+    return updatedTask;
+  }
+
+  async deleteMarketingTask(id: number): Promise<boolean> {
+    return this.marketingTasks.delete(id);
+  }
+
+  async getMarketingTasksNeedingReminders(): Promise<MarketingTask[]> {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return Array.from(this.marketingTasks.values()).filter(
+      task => task.status !== "已完成" && 
+              !task.reminderSent &&
+              new Date(task.startTime) <= tomorrow
+    );
+  }
+
+  async markMarketingTaskReminderSent(id: number): Promise<MarketingTask> {
+    const task = await this.getMarketingTaskById(id);
+    if (!task) {
+      throw new Error(`Marketing task with id ${id} not found`);
+    }
+    
+    const updatedTask = { ...task, reminderSent: true, updatedAt: new Date() };
+    this.marketingTasks.set(id, updatedTask);
+    return updatedTask;
+  }
+  
+  // 營運模組操作
+  async getOperationTasks(): Promise<OperationTask[]> {
+    return Array.from(this.operationTasks.values()).sort((a, b) => {
+      if (a.status === "已完成" && b.status !== "已完成") return 1;
+      if (a.status !== "已完成" && b.status === "已完成") return -1;
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
+  }
+
+  async getOperationTaskById(id: number): Promise<OperationTask | undefined> {
+    return this.operationTasks.get(id);
+  }
+
+  async getOperationTasksByStatus(status: string): Promise<OperationTask[]> {
+    return Array.from(this.operationTasks.values()).filter(
+      task => task.status === status
+    );
+  }
+
+  async getOperationTasksByCategory(category: string): Promise<OperationTask[]> {
+    return Array.from(this.operationTasks.values()).filter(
+      task => task.category === category
+    );
+  }
+
+  async createOperationTask(task: InsertOperationTask): Promise<OperationTask> {
+    const id = this.operationTaskId++;
+    const newTask: OperationTask = {
+      ...task,
+      id,
+      reminderSent: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.operationTasks.set(id, newTask);
+    return newTask;
+  }
+
+  async updateOperationTask(id: number, task: Partial<OperationTask>): Promise<OperationTask> {
+    const existingTask = await this.getOperationTaskById(id);
+    if (!existingTask) {
+      throw new Error(`Operation task with id ${id} not found`);
+    }
+    
+    const updatedTask = {
+      ...existingTask,
+      ...task,
+      updatedAt: new Date()
+    };
+    this.operationTasks.set(id, updatedTask);
+    return updatedTask;
+  }
+
+  async deleteOperationTask(id: number): Promise<boolean> {
+    return this.operationTasks.delete(id);
+  }
+
+  async getOperationTasksNeedingReminders(): Promise<OperationTask[]> {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return Array.from(this.operationTasks.values()).filter(
+      task => task.status !== "已完成" && 
+              !task.reminderSent &&
+              new Date(task.startTime) <= tomorrow
+    );
+  }
+
+  async markOperationTaskReminderSent(id: number): Promise<OperationTask> {
+    const task = await this.getOperationTaskById(id);
+    if (!task) {
+      throw new Error(`Operation task with id ${id} not found`);
+    }
+    
+    const updatedTask = { ...task, reminderSent: true, updatedAt: new Date() };
+    this.operationTasks.set(id, updatedTask);
+    return updatedTask;
+  }
+  
+  // Onelink AppsFlyer 操作
+  async getOnelinkFields(): Promise<OnelinkField[]> {
+    return Array.from(this.onelinkFields.values());
+  }
+
+  async getOnelinkFieldById(id: number): Promise<OnelinkField | undefined> {
+    return this.onelinkFields.get(id);
+  }
+
+  async createOnelinkField(field: InsertOnelinkField): Promise<OnelinkField> {
+    const id = this.onelinkFieldId++;
+    const newField: OnelinkField = {
+      ...field,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.onelinkFields.set(id, newField);
+    return newField;
+  }
+
+  async updateOnelinkField(id: number, field: Partial<OnelinkField>): Promise<OnelinkField> {
+    const existingField = await this.getOnelinkFieldById(id);
+    if (!existingField) {
+      throw new Error(`Onelink field with id ${id} not found`);
+    }
+    
+    const updatedField = {
+      ...existingField,
+      ...field,
+      updatedAt: new Date()
+    };
+    this.onelinkFields.set(id, updatedField);
+    return updatedField;
+  }
+
+  async deleteOnelinkField(id: number): Promise<boolean> {
+    return this.onelinkFields.delete(id);
+  }
+  
+  // 廠商聯絡表操作
+  async getVendors(): Promise<Vendor[]> {
+    return Array.from(this.vendors.values());
+  }
+
+  async getVendorById(id: number): Promise<Vendor | undefined> {
+    return this.vendors.get(id);
+  }
+
+  async createVendor(vendor: InsertVendor): Promise<Vendor> {
+    const id = this.vendorId++;
+    const newVendor: Vendor = {
+      ...vendor,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.vendors.set(id, newVendor);
+    return newVendor;
+  }
+
+  async updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor> {
+    const existingVendor = await this.getVendorById(id);
+    if (!existingVendor) {
+      throw new Error(`Vendor with id ${id} not found`);
+    }
+    
+    const updatedVendor = {
+      ...existingVendor,
+      ...vendor,
+      updatedAt: new Date()
+    };
+    this.vendors.set(id, updatedVendor);
+    return updatedVendor;
+  }
+
+  async deleteVendor(id: number): Promise<boolean> {
+    return this.vendors.delete(id);
+  }
+
+  private initSampleMarketingTasks() {
+    // 建立範例行銷任務
+    const marketingTask1: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "夏季促銷活動",
+      status: "進行中",
+      content: "策劃夏季促銷活動，包括社交媒體宣傳和電子郵件營銷",
+      category: "促銷活動",
+      startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      createdBy: "行銷部門"
+    };
+    this.marketingTasks.set(marketingTask1.id, marketingTask1);
+
+    const marketingTask2: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "內容創作計畫",
+      status: "已完成",
+      content: "為下個月準備部落格和社交媒體的內容計畫",
+      category: "內容策略",
+      startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      createdBy: "內容團隊"
+    };
+    this.marketingTasks.set(marketingTask2.id, marketingTask2);
+
+    const marketingTask3: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "新產品發布會",
+      status: "準備中",
+      content: "為新產品發布會準備營銷材料和媒體宣傳",
+      category: "產品發布",
+      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      createdBy: "產品經理"
+    };
+    this.marketingTasks.set(marketingTask3.id, marketingTask3);
+  }
+
+  private initSampleOperationTasks() {
+    // 建立範例營運任務
+    const operationTask1: OperationTask = {
+      id: this.operationTaskId++,
+      title: "系統更新維護",
+      status: "排程中",
+      content: "計畫進行服務器和系統的定期維護",
+      category: "系統維護",
+      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      createdBy: "IT部門"
+    };
+    this.operationTasks.set(operationTask1.id, operationTask1);
+
+    const operationTask2: OperationTask = {
+      id: this.operationTaskId++,
+      title: "客戶服務培訓",
+      status: "進行中",
+      content: "為客服團隊組織季度培訓和產品更新講解",
+      category: "培訓",
+      startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      createdBy: "客服主管"
+    };
+    this.operationTasks.set(operationTask2.id, operationTask2);
+
+    const operationTask3: OperationTask = {
+      id: this.operationTaskId++,
+      title: "庫存管理審查",
+      status: "已完成",
+      content: "進行月度庫存審查並更新物流系統",
+      category: "庫存管理",
+      startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      createdBy: "物流主管"
+    };
+    this.operationTasks.set(operationTask3.id, operationTask3);
+  }
+
+  private initSampleOnelinkFields() {
+    // 建立範例 Onelink 欄位設定
+    const onelinkField1: OnelinkField = {
+      id: this.onelinkFieldId++,
+      platform: "Facebook",
+      campaignCode: "FB_SUM2023",
+      materialId: "FB001",
+      adSet: "Summer_Conversion",
+      adName: "Summer_Sale_Carousel",
+      audienceTag: "Interest_Garden",
+      creativeSize: "1200x628",
+      adPlacement: "Feed",
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    };
+    this.onelinkFields.set(onelinkField1.id, onelinkField1);
+
+    const onelinkField2: OnelinkField = {
+      id: this.onelinkFieldId++,
+      platform: "Instagram",
+      campaignCode: "IG_SUM2023",
+      materialId: "IG001",
+      adSet: "Summer_Awareness",
+      adName: "Summer_Collection_Story",
+      audienceTag: "Lookalike_Customers",
+      creativeSize: "1080x1920",
+      adPlacement: "Stories",
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+    };
+    this.onelinkFields.set(onelinkField2.id, onelinkField2);
+  }
+
+  private initSampleVendors() {
+    // 建立範例廠商聯絡資料
+    const vendor1: Vendor = {
+      id: this.vendorId++,
+      name: "綠色園藝用品有限公司",
+      contactPerson: "張小明",
+      phone: "02-2345-6789",
+      email: "contact@greengardeningtools.com",
+      chatApp: "Line",
+      chatId: "@greengardening",
+      address: "台北市信義區花園路123號",
+      note: "主要供應花園工具和戶外家具",
+      createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+    };
+    this.vendors.set(vendor1.id, vendor1);
+
+    const vendor2: Vendor = {
+      id: this.vendorId++,
+      name: "瑞富植栽集團",
+      contactPerson: "李大華",
+      phone: "02-8765-4321",
+      email: "sales@richplants.com",
+      chatApp: "WhatsApp",
+      chatId: "+886912345678",
+      address: "新北市三重區植物街45號",
+      note: "室內植物和種子專業供應商",
+      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+    };
+    this.vendors.set(vendor2.id, vendor2);
   }
 }
 
