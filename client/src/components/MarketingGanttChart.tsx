@@ -21,12 +21,10 @@ const priorityColorMap: Record<string, string> = {
 
 // 任務類別顏色映射
 const categoryColorMap: Record<string, string> = {
-  '社群媒體': 'bg-purple-200 hover:bg-purple-300 border-purple-300',
-  '內容行銷': 'bg-cyan-200 hover:bg-cyan-300 border-cyan-300',
+  '一般': 'bg-cyan-200 hover:bg-cyan-300 border-cyan-300',
   '廣告投放': 'bg-amber-200 hover:bg-amber-300 border-amber-300',
-  '活動策劃': 'bg-pink-200 hover:bg-pink-300 border-pink-300',
-  '公關': 'bg-teal-200 hover:bg-teal-300 border-teal-300',
-  '其他': 'bg-gray-200 hover:bg-gray-300 border-gray-300',
+  '地面推廣': 'bg-pink-200 hover:bg-pink-300 border-pink-300',
+  '會議': 'bg-purple-200 hover:bg-purple-300 border-purple-300',
 };
 
 // 任務狀態顏色映射

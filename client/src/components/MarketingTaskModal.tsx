@@ -67,7 +67,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
     title: task?.title || "",
     content: task?.content || "",
     description: task?.description || "",
-    category: task?.category || "社群媒體",
+    category: task?.category || "一般",
     status: task?.status || "待處理",
     priority: task?.priority || "中",
     startTime: task?.startTime ? new Date(task.startTime) : new Date(),
@@ -82,10 +82,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
   // Create task mutation
   const createMutation = useMutation({
     mutationFn: (data: MarketingTaskFormValues) => {
-      return apiRequest<any>("/api/marketing-tasks", {
-        method: "POST",
-        body: JSON.stringify(data),
-      } as RequestInit);
+      return apiRequest<any>("POST", "/api/marketing-tasks", data);
     },
     onSuccess: () => {
       toast({
@@ -96,10 +93,10 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
       onClose();
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "創建失敗",
-        description: `錯誤: ${error.message}`,
+        description: `錯誤: ${error?.message || '未知錯誤'}`,
         variant: "destructive",
       });
     },
@@ -108,10 +105,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
   // Update task mutation
   const updateMutation = useMutation({
     mutationFn: (data: MarketingTaskFormValues) => {
-      return apiRequest<any>(`/api/marketing-tasks/${task?.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      } as RequestInit);
+      return apiRequest<any>("PATCH", `/api/marketing-tasks/${task?.id}`, data);
     },
     onSuccess: () => {
       toast({
@@ -121,10 +115,10 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
       queryClient.invalidateQueries({ queryKey: ['/api/marketing-tasks'] });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "更新失敗",
-        description: `錯誤: ${error.message}`,
+        description: `錯誤: ${error?.message || '未知錯誤'}`,
         variant: "destructive",
       });
     },
@@ -184,12 +178,10 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="社群媒體">社群媒體</SelectItem>
-                        <SelectItem value="內容行銷">內容行銷</SelectItem>
+                        <SelectItem value="一般">一般</SelectItem>
                         <SelectItem value="廣告投放">廣告投放</SelectItem>
-                        <SelectItem value="活動策劃">活動策劃</SelectItem>
-                        <SelectItem value="公關">公關</SelectItem>
-                        <SelectItem value="其他">其他</SelectItem>
+                        <SelectItem value="地面推廣">地面推廣</SelectItem>
+                        <SelectItem value="會議">會議</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
