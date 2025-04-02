@@ -283,18 +283,8 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                                     onClick={() => handleTaskClick(task)}
                                   >
                                     <div 
-                                      className={`h-6 w-full rounded-sm px-1 flex items-center justify-between text-xs border ${
-                                        getTaskColor(task)
-                                      }`}
-                                    >
-                                      <span className="truncate max-w-[80%] font-medium">{task.title}</span>
-                                      <div className="flex items-center">
-                                        {isDelayed && <AlertTriangle className="h-3 w-3 text-red-700" />}
-                                        {isCompleted && <CheckSquare className="h-3 w-3 text-green-700" />}
-                                        {isInProgress && <Calendar className="h-3 w-3 text-blue-700" />}
-                                        <Edit className="h-3 w-3 ml-1" />
-                                      </div>
-                                    </div>
+                                      className={`h-6 w-full rounded-sm ${getTaskColor(task)}`}
+                                    ></div>
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent>

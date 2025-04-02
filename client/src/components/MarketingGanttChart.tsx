@@ -226,10 +226,6 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                 {tasksByCategory[category].map((task) => {
                   const taskDays = getTaskDaysInRange(task);
                   const status = task.status;
-                  const isCompleted = status === '已完成';
-                  const isDelayed = status === '已延遲';
-                  const isPending = status === '待處理';
-                  const isInProgress = status === '進行中';
                   
                   // 計算任務在甘特圖中的起始位置和寬度
                   const startIdx = daysInMonth.findIndex(day => 
@@ -269,7 +265,7 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                               <TooltipTrigger asChild>
                                 <div 
                                   className={`absolute top-0 h-full flex items-center cursor-pointer ${
-                                    isCompleted ? 'opacity-70' : 'opacity-90'
+                                    status === '已完成' ? 'opacity-70' : 'opacity-90'
                                   }`}
                                   style={{
                                     left: `${startIdx * 40}px`,
@@ -278,18 +274,8 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                                   onClick={() => handleTaskClick(task)}
                                 >
                                   <div 
-                                    className={`h-6 w-full rounded-sm px-1 flex items-center justify-between text-xs border ${
-                                      getTaskColor(task)
-                                    }`}
-                                  >
-                                    <span className="truncate max-w-[80%] font-medium">{task.title}</span>
-                                    <div className="flex items-center">
-                                      {isDelayed && <AlertTriangle className="h-3 w-3 text-red-700" />}
-                                      {isCompleted && <CheckSquare className="h-3 w-3 text-green-700" />}
-                                      {isInProgress && <Calendar className="h-3 w-3 text-blue-700" />}
-                                      <Edit className="h-3 w-3 ml-1" />
-                                    </div>
-                                  </div>
+                                    className={`h-6 w-full rounded-sm ${getTaskColor(task)}`}
+                                  ></div>
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent>
