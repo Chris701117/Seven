@@ -82,7 +82,10 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
   // Create task mutation
   const createMutation = useMutation({
     mutationFn: (data: MarketingTaskFormValues) => {
-      return apiRequest<any>("POST", "/api/marketing-tasks", data);
+      return apiRequest<any>("/api/marketing-tasks", {
+        method: "POST",
+        data
+      });
     },
     onSuccess: () => {
       toast({
@@ -105,7 +108,10 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
   // Update task mutation
   const updateMutation = useMutation({
     mutationFn: (data: MarketingTaskFormValues) => {
-      return apiRequest<any>("PATCH", `/api/marketing-tasks/${task?.id}`, data);
+      return apiRequest<any>(`/api/marketing-tasks/${task?.id}`, {
+        method: "PATCH",
+        data
+      });
     },
     onSuccess: () => {
       toast({

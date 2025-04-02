@@ -146,8 +146,9 @@ export const operationTasks = pgTable("operation_tasks", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content"),
-  status: text("status").notNull().default("未完成"), // 未完成、已完成
-  category: text("category").notNull(), // 一般、活動、測試、會議
+  status: text("status").notNull().default("待處理"), // 待處理、進行中、已完成、已延遲、已取消
+  category: text("category").notNull(), // 一般、設備維護、人員調度、物資管理
+  priority: text("priority").default("中"), // 低、中、高
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   reminderSent: boolean("reminder_sent").default(false),
