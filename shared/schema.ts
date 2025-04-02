@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -38,14 +38,18 @@ export const posts = pgTable("posts", {
   pageId: text("page_id").notNull(),
   content: text("content").notNull(),
   status: text("status").notNull(), // published, scheduled, draft, completed
-  category: text("category"), // 宣傳、活動、公告
-  scheduledTime: timestamp("scheduled_time"),
+  category: text("category"), // 資訊、活動、公告
+  scheduledTime: timestamp("scheduled_time"), // 開始發布時間
+  endTime: timestamp("end_time"), // 貼文結束時間（進行區間結束）
   imageUrl: text("image_url"),
   videoUrl: text("video_url"), // Added to support video uploads
   linkUrl: text("link_url"),
   linkTitle: text("link_title"),
   linkDescription: text("link_description"),
   linkImageUrl: text("link_image_url"),
+  // 多平台內容支援
+  platformContent: jsonb("platform_content").default({}).notNull(), // {ig: "", tiktok: "", threads: "", x: ""}
+  platformStatus: jsonb("platform_status").default({}).notNull(), // {fb: true, ig: false, tiktok: false, threads: false, x: false}
   reminderSent: boolean("reminder_sent").default(false), // Track if reminder was sent
   reminderTime: timestamp("reminder_time"), // When reminder should be sent
   isCompleted: boolean("is_completed").default(false), // Track if post was actually published
@@ -53,6 +57,8 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   publishedTime: timestamp("published_time"),
   updatedAt: timestamp("updated_at"),
+  author: text("author"), // 貼文作者
+  publishedBy: text("published_by"), // 發布者
 });
 
 export const insertPostSchema = createInsertSchema(posts).omit({
@@ -107,6 +113,92 @@ export const insertPageAnalyticsSchema = createInsertSchema(pageAnalytics).omit(
   lastUpdated: true,
 });
 
+// 行銷模組 - 行銷項目表
+export const marketingTasks = pgTable("marketing_tasks", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content"),
+  status: text("status").notNull().default("未完成"), // 未完成、已完成
+  category: text("category").notNull(), // 一般、線上、線下、會議
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  reminderSent: boolean("reminder_sent").default(false),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertMarketingTaskSchema = createInsertSchema(marketingTasks).omit({
+  id: true,
+  reminderSent: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// 營運模組 - 營運項目表
+export const operationTasks = pgTable("operation_tasks", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content"),
+  status: text("status").notNull().default("未完成"), // 未完成、已完成
+  category: text("category").notNull(), // 一般、活動、測試、會議
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  reminderSent: boolean("reminder_sent").default(false),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertOperationTaskSchema = createInsertSchema(operationTasks).omit({
+  id: true,
+  reminderSent: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Onelink AppsFlyer 表
+export const onelinkFields = pgTable("onelink_fields", {
+  id: serial("id").primaryKey(),
+  platform: text("platform").notNull(), // Media Source (pid)
+  campaignCode: text("campaign_code").notNull(), // Campaign (c)
+  materialId: text("material_id").notNull(), // af_sub1
+  adSet: text("ad_set"), // af_adset
+  adName: text("ad_name"), // af_ad
+  audienceTag: text("audience_tag"), // af_sub2
+  creativeSize: text("creative_size"), // af_sub3
+  adPlacement: text("ad_placement"), // af_channel
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertOnelinkFieldSchema = createInsertSchema(onelinkFields).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// 廠商聯絡表
+export const vendors = pgTable("vendors", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  contactPerson: text("contact_person"),
+  phone: text("phone"),
+  email: text("email"),
+  chatApp: text("chat_app"), // 聊天軟體
+  chatId: text("chat_id"), // 聊天軟體ID
+  address: text("address"),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertVendorSchema = createInsertSchema(vendors).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -122,3 +214,15 @@ export type InsertPostAnalytics = z.infer<typeof insertPostAnalyticsSchema>;
 
 export type PageAnalytics = typeof pageAnalytics.$inferSelect;
 export type InsertPageAnalytics = z.infer<typeof insertPageAnalyticsSchema>;
+
+export type MarketingTask = typeof marketingTasks.$inferSelect;
+export type InsertMarketingTask = z.infer<typeof insertMarketingTaskSchema>;
+
+export type OperationTask = typeof operationTasks.$inferSelect;
+export type InsertOperationTask = z.infer<typeof insertOperationTaskSchema>;
+
+export type OnelinkField = typeof onelinkFields.$inferSelect;
+export type InsertOnelinkField = z.infer<typeof insertOnelinkFieldSchema>;
+
+export type Vendor = typeof vendors.$inferSelect;
+export type InsertVendor = z.infer<typeof insertVendorSchema>;

@@ -3,7 +3,11 @@ import {
   pages, type Page, type InsertPage,
   posts, type Post, type InsertPost,
   postAnalytics, type PostAnalytics, type InsertPostAnalytics,
-  pageAnalytics, type PageAnalytics, type InsertPageAnalytics
+  pageAnalytics, type PageAnalytics, type InsertPageAnalytics,
+  marketingTasks, type MarketingTask, type InsertMarketingTask,
+  operationTasks, type OperationTask, type InsertOperationTask,
+  onelinkFields, type OnelinkField, type InsertOnelinkField,
+  vendors, type Vendor, type InsertVendor
 } from "@shared/schema";
 
 export interface IStorage {
@@ -36,6 +40,7 @@ export interface IStorage {
   markReminderSent(id: number): Promise<Post>;
   markPostAsCompleted(id: number): Promise<Post>;
   getPostsDueForPublishing(): Promise<Post[]>;
+  publishToAllPlatforms(id: number): Promise<Post>; // 新增一鍵發布功能
 
   // Post Analytics operations
   getPostAnalytics(postId: string): Promise<PostAnalytics | undefined>;
@@ -46,6 +51,42 @@ export interface IStorage {
   getPageAnalytics(pageId: string): Promise<PageAnalytics | undefined>;
   createPageAnalytics(analytics: InsertPageAnalytics): Promise<PageAnalytics>;
   updatePageAnalytics(pageId: string, analytics: Partial<PageAnalytics>): Promise<PageAnalytics>;
+
+  // 行銷模組操作
+  getMarketingTasks(): Promise<MarketingTask[]>;
+  getMarketingTaskById(id: number): Promise<MarketingTask | undefined>;
+  getMarketingTasksByStatus(status: string): Promise<MarketingTask[]>;
+  getMarketingTasksByCategory(category: string): Promise<MarketingTask[]>;
+  createMarketingTask(task: InsertMarketingTask): Promise<MarketingTask>;
+  updateMarketingTask(id: number, task: Partial<MarketingTask>): Promise<MarketingTask>;
+  deleteMarketingTask(id: number): Promise<boolean>;
+  getMarketingTasksNeedingReminders(): Promise<MarketingTask[]>;
+  markMarketingTaskReminderSent(id: number): Promise<MarketingTask>;
+  
+  // 營運模組操作
+  getOperationTasks(): Promise<OperationTask[]>;
+  getOperationTaskById(id: number): Promise<OperationTask | undefined>;
+  getOperationTasksByStatus(status: string): Promise<OperationTask[]>;
+  getOperationTasksByCategory(category: string): Promise<OperationTask[]>;
+  createOperationTask(task: InsertOperationTask): Promise<OperationTask>;
+  updateOperationTask(id: number, task: Partial<OperationTask>): Promise<OperationTask>;
+  deleteOperationTask(id: number): Promise<boolean>;
+  getOperationTasksNeedingReminders(): Promise<OperationTask[]>;
+  markOperationTaskReminderSent(id: number): Promise<OperationTask>;
+  
+  // Onelink AppsFlyer 操作
+  getOnelinkFields(): Promise<OnelinkField[]>;
+  getOnelinkFieldById(id: number): Promise<OnelinkField | undefined>;
+  createOnelinkField(field: InsertOnelinkField): Promise<OnelinkField>;
+  updateOnelinkField(id: number, field: Partial<OnelinkField>): Promise<OnelinkField>;
+  deleteOnelinkField(id: number): Promise<boolean>;
+  
+  // 廠商聯絡表操作
+  getVendors(): Promise<Vendor[]>;
+  getVendorById(id: number): Promise<Vendor | undefined>;
+  createVendor(vendor: InsertVendor): Promise<Vendor>;
+  updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor>;
+  deleteVendor(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -54,12 +95,20 @@ export class MemStorage implements IStorage {
   private posts: Map<number, Post>;
   private postAnalytics: Map<number, PostAnalytics>;
   private pageAnalytics: Map<number, PageAnalytics>;
+  private marketingTasks: Map<number, MarketingTask>;
+  private operationTasks: Map<number, OperationTask>;
+  private onelinkFields: Map<number, OnelinkField>;
+  private vendors: Map<number, Vendor>;
   
   private userId: number;
   private pageId: number;
   private postId: number;
   private postAnalyticsId: number;
   private pageAnalyticsId: number;
+  private marketingTaskId: number;
+  private operationTaskId: number;
+  private onelinkFieldId: number;
+  private vendorId: number;
 
   constructor() {
     this.users = new Map();
@@ -67,12 +116,20 @@ export class MemStorage implements IStorage {
     this.posts = new Map();
     this.postAnalytics = new Map();
     this.pageAnalytics = new Map();
+    this.marketingTasks = new Map();
+    this.operationTasks = new Map();
+    this.onelinkFields = new Map();
+    this.vendors = new Map();
     
     this.userId = 1;
     this.pageId = 1;
     this.postId = 1;
     this.postAnalyticsId = 1;
     this.pageAnalyticsId = 1;
+    this.marketingTaskId = 1;
+    this.operationTaskId = 1;
+    this.onelinkFieldId = 1;
+    this.vendorId = 1;
     
     // Add sample data
     this.initSampleData();
