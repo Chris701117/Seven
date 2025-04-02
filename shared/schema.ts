@@ -121,9 +121,11 @@ export const insertPageAnalyticsSchema = createInsertSchema(pageAnalytics).omit(
 export const marketingTasks = pgTable("marketing_tasks", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  description: text("description"), // 任務描述
   content: text("content"),
-  status: text("status").notNull().default("未完成"), // 未完成、已完成
-  category: text("category").notNull(), // 一般、線上、線下、會議
+  status: text("status").notNull().default("pending"), // pending, in-progress, completed, cancelled
+  category: text("category").notNull(), // social-media, content, event, advertising, email, partnership, other
+  priority: text("priority").default("normal"), // low, normal, high
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
   reminderSent: boolean("reminder_sent").default(false),

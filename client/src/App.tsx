@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import ContentCalendar from "./pages/ContentCalendar";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import Marketing from "./pages/Marketing";
 import NotFound from "./pages/not-found";
 import FacebookSetupGuide from "./pages/FacebookSetupGuide";
 import Login from "./pages/Login";
@@ -16,7 +17,7 @@ import { PageProvider } from "./contexts/PageContext";
 import { User } from "@shared/schema";
 
 // 需要登入的路由
-const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup'];
+const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing'];
 
 function Router() {
   const [location, setLocation] = useLocation();
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/calendar" component={ContentCalendar} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/marketing" component={Marketing} />
       <Route path="/settings" component={Settings} />
       <Route path="/facebook-setup" component={FacebookSetupGuide} />
       
