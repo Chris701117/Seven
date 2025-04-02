@@ -8,8 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Bell, User, LogOut, Trash2, ListFilter } from "lucide-react";
+import { Facebook, Instagram, Bell, User, LogOut, Trash2, ListFilter } from "lucide-react";
+import { SiTiktok, SiX } from "react-icons/si";
 import FacebookConnect from "../components/FacebookConnect";
+import InstagramConnect from "../components/InstagramConnect";
+import TikTokConnect from "../components/TikTokConnect";
+import ThreadsConnect from "../components/ThreadsConnect";
+import XConnect from "../components/XConnect";
 import PageManagement from "../components/PageManagement";
 import { facebookApi } from "../lib/facebookApi";
 import { usePageContext } from "../contexts/PageContext";
@@ -239,33 +244,102 @@ const Settings = () => {
         </TabsContent>
         
         <TabsContent value="connections" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Facebook 連接</CardTitle>
-              <CardDescription>
-                連接您的 Facebook 帳號以管理您的粉絲專頁
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isConnected ? (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4 p-4 border border-green-100 bg-green-50 rounded-md">
-                    <Facebook className="h-6 w-6 text-primary" />
-                    <div>
-                      <p className="font-medium">已連接到 Facebook</p>
-                      <p className="text-sm text-gray-500">您的帳號已連接到 Facebook。</p>
+          <Tabs defaultValue="facebook" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="facebook" className="flex items-center justify-center">
+                <Facebook className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Facebook</span>
+              </TabsTrigger>
+              <TabsTrigger value="instagram" className="flex items-center justify-center">
+                <Instagram className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Instagram</span>
+              </TabsTrigger>
+              <TabsTrigger value="tiktok" className="flex items-center justify-center">
+                <SiTiktok className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">TikTok</span>
+              </TabsTrigger>
+              <TabsTrigger value="threads" className="flex items-center justify-center">
+                <svg viewBox="0 0 192 192" className="h-4 w-4 sm:mr-2">
+                  <path fill="currentColor" d="M141.537 88.988a66.667 66.667 0 0 0-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.076-10.548h.23c8.152.048 14.352 2.356 18.42 6.881 2.982 3.325 4.97 7.923 5.932 13.754a73.027 73.027 0 0 0-11.522-2.028c-13.365-1.67-24.965 1.28-32.532 8.287-5.065 4.682-7.857 10.833-7.927 17.434-.075 7.226 2.56 13.788 7.434 18.446 6.46 6.215 16.59 9.563 28.523 9.376 13.79-.215 24.24-5.12 30.98-14.537 4.842-6.767 7.407-15.707 7.618-26.605 3.168 1.688 5.94 3.557 8.265 5.595 5.566 4.89 8.674 10.23 9.494 16.334.83 6.203-.619 12.713-4.277 19.207-3.218 5.7-8.176 10.657-14.764 14.73-6.802 4.215-14.93 7.012-24.181 8.317a4.29 4.29 0 0 0-3.425 5.05 4.3 4.3 0 0 0 5.059 3.42c10.598-1.464 19.983-4.64 27.913-9.423 7.766-4.82 13.699-10.825 17.622-17.855 4.4-7.805 6.159-15.87 5.12-23.577-1.128-8.37-5.036-15.774-11.691-22.057a48.085 48.085 0 0 0-10.116-7.834zm-30.589 53.926c-9.179.145-16.984-2.398-21.928-7.135-2.741-2.629-4.055-6.156-4.005-10.72.035-3.314 1.376-6.167 3.972-8.533 4.485-4.083 12.588-6.023 22.9-4.71 3.907.497 7.736 1.413 11.437 2.669.035 1.221.058 2.47.068 3.75.125 10.093-1.505 17.56-4.97 22.75-4.282 6.458-11.055 9.733-20.96 9.888l7.486-8zm74.902 7.333c-6.037 0-10.944 4.902-10.944 10.94 0 6.037 4.907 10.943 10.944 10.943 6.038 0 10.943-4.906 10.943-10.944 0-6.037-4.905-10.939-10.943-10.939zm-48.502 10.94c0-6.038-4.902-10.94-10.94-10.94-6.037 0-10.939 4.902-10.939 10.94 0 6.037 4.902 10.943 10.94 10.943 6.037 0 10.939-4.906 10.939-10.944zm-73.963 0c0-6.038-4.903-10.94-10.94-10.94s-10.94 4.902-10.94 10.94c0 6.037 4.902 10.943 10.94 10.943 6.037 0 10.94-4.906 10.94-10.944z" />
+                </svg>
+                <span className="hidden sm:inline">Threads</span>
+              </TabsTrigger>
+              <TabsTrigger value="x" className="flex items-center justify-center">
+                <SiX className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">X</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="facebook" className="pt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Facebook 連接</CardTitle>
+                  <CardDescription>
+                    連接您的 Facebook 帳號以管理您的粉絲專頁
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isConnected ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4 p-4 border border-green-100 bg-green-50 rounded-md">
+                        <Facebook className="h-6 w-6 text-primary" />
+                        <div>
+                          <p className="font-medium">已連接到 Facebook</p>
+                          <p className="text-sm text-gray-500">您的帳號已連接到 Facebook。</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" onClick={handleDisconnectFacebook} className="w-full sm:w-auto">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        斷開 Facebook 連接
+                      </Button>
                     </div>
-                  </div>
-                  <Button variant="outline" onClick={handleDisconnectFacebook} className="w-full sm:w-auto">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    斷開 Facebook 連接
-                  </Button>
-                </div>
-              ) : (
-                <FacebookConnect onConnect={handleFacebookConnect} />
-              )}
-            </CardContent>
-          </Card>
+                  ) : (
+                    <FacebookConnect onConnect={handleFacebookConnect} />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="instagram" className="pt-6">
+              <InstagramConnect onConnect={() => {
+                toast({
+                  title: "連接成功",
+                  description: "您已成功連接 Instagram 帳號",
+                });
+                queryClient.invalidateQueries({ queryKey: ['/api/auth/instagram/status'] });
+              }} />
+            </TabsContent>
+            
+            <TabsContent value="tiktok" className="pt-6">
+              <TikTokConnect onConnect={() => {
+                toast({
+                  title: "連接成功",
+                  description: "您已成功連接 TikTok 帳號",
+                });
+                queryClient.invalidateQueries({ queryKey: ['/api/auth/tiktok/status'] });
+              }} />
+            </TabsContent>
+            
+            <TabsContent value="threads" className="pt-6">
+              <ThreadsConnect onConnect={() => {
+                toast({
+                  title: "連接成功",
+                  description: "您已成功連接 Threads 帳號",
+                });
+                queryClient.invalidateQueries({ queryKey: ['/api/auth/threads/status'] });
+              }} />
+            </TabsContent>
+            
+            <TabsContent value="x" className="pt-6">
+              <XConnect onConnect={() => {
+                toast({
+                  title: "連接成功",
+                  description: "您已成功連接 X 帳號",
+                });
+                queryClient.invalidateQueries({ queryKey: ['/api/auth/x/status'] });
+              }} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         
         <TabsContent value="pages" className="space-y-4">
