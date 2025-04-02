@@ -136,7 +136,10 @@ export default function Operations() {
 
       {/* 任務統計卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-md" 
+          onClick={() => setSelectedStatus('all')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium">總任務</CardTitle>
           </CardHeader>
@@ -147,7 +150,10 @@ export default function Operations() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-md" 
+          onClick={() => setSelectedStatus('進行中')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium">進行中</CardTitle>
           </CardHeader>
@@ -158,18 +164,24 @@ export default function Operations() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-md border-2 border-red-500 hover:border-red-600" 
+          onClick={() => setSelectedStatus('待處理')}
+        >
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">已完成</CardTitle>
+            <CardTitle className="text-base font-medium">待處理</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              已完成的任務 ({stats.completed ? ((stats.completed / stats.total) * 100).toFixed(0) : 0}%)
+              未開始的任務 ({stats.pending ? ((stats.pending / stats.total) * 100).toFixed(0) : 0}%)
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer transition-all hover:shadow-md" 
+          onClick={() => setSelectedStatus('已延遲')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-medium">已延遲</CardTitle>
           </CardHeader>
@@ -233,7 +245,7 @@ export default function Operations() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('待處理')}>
                 <div className="flex items-center">
                   <Badge className="bg-yellow-100 text-yellow-800">待處理</Badge>
                   <span className="ml-2 text-sm text-gray-600">{stats.pending} 個任務</span>
@@ -245,7 +257,7 @@ export default function Operations() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('進行中')}>
                 <div className="flex items-center">
                   <Badge className="bg-blue-100 text-blue-800">進行中</Badge>
                   <span className="ml-2 text-sm text-gray-600">{stats.inProgress} 個任務</span>
@@ -257,7 +269,7 @@ export default function Operations() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between cursor-pointer hover:bg-green-50 p-1 rounded-md" onClick={() => setSelectedStatus('已完成')}>
                 <div className="flex items-center">
                   <Badge className="bg-green-100 text-green-800">已完成</Badge>
                   <span className="ml-2 text-sm text-gray-600">{stats.completed} 個任務</span>
@@ -269,7 +281,7 @@ export default function Operations() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('已延遲')}>
                 <div className="flex items-center">
                   <Badge className="bg-red-100 text-red-800">已延遲</Badge>
                   <span className="ml-2 text-sm text-gray-600">{stats.delayed} 個任務</span>
@@ -281,7 +293,7 @@ export default function Operations() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('已取消')}>
                 <div className="flex items-center">
                   <Badge variant="outline">已取消</Badge>
                   <span className="ml-2 text-sm text-gray-600">{stats.cancelled} 個任務</span>
