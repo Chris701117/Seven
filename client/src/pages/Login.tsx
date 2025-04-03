@@ -45,11 +45,8 @@ export default function Login() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // 使用正確的參數形式調用apiRequest
-      const response = await apiRequest('/api/auth/login', {
-        method: 'POST',
-        data: values
-      });
+      // 使用新的參數形式調用apiRequest
+      const response = await apiRequest('POST', '/api/auth/login', values);
       
       // 登入成功
       toast({

@@ -80,50 +80,14 @@ export const facebookApi = {
     
     if (!FACEBOOK_APP_ID) {
       try {
-        const response = await fetch('/api/config/facebook');
+        // 使用apiRequest替代原始fetch調用
+        const data = await apiRequest("GET", '/api/config/facebook');
         
-        // 檢查響應狀態
-        if (!response.ok) {
-          console.warn(`Facebook App ID 獲取失敗: ${response.status} ${response.statusText}`);
-          console.warn('嘗試使用開發模式...');
-          
-          // 切換到開發模式
-          localStorage.setItem('fb_dev_mode', 'true');
-          FACEBOOK_APP_ID = 'DEV_MODE_APP_ID_123456789';
-          return FACEBOOK_APP_ID;
-        }
-        
-        // 檢查響應格式和內容
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('伺服器回應不是JSON格式:', contentType);
-          console.warn('嘗試使用開發模式...');
-          
-          // 切換到開發模式
-          localStorage.setItem('fb_dev_mode', 'true');
-          FACEBOOK_APP_ID = 'DEV_MODE_APP_ID_123456789';
-          return FACEBOOK_APP_ID;
-        }
-        
-        // 嘗試解析JSON
-        const text = await response.text();
-        console.log('原始回應:', text);
-        
-        try {
-          const data = JSON.parse(text);
-          if (data && data.appId) {
-            FACEBOOK_APP_ID = data.appId;
-            console.log('成功獲取 App ID:', FACEBOOK_APP_ID);
-          } else {
-            console.error('回應缺少appId屬性:', data);
-            console.warn('嘗試使用開發模式...');
-            
-            // 切換到開發模式
-            localStorage.setItem('fb_dev_mode', 'true');
-            FACEBOOK_APP_ID = 'DEV_MODE_APP_ID_123456789';
-          }
-        } catch (parseError) {
-          console.error('JSON解析錯誤:', parseError);
+        if (data && typeof data === 'object' && 'appId' in data) {
+          FACEBOOK_APP_ID = data.appId as string;
+          console.log('成功獲取 App ID:', FACEBOOK_APP_ID);
+        } else {
+          console.error('回應缺少appId屬性:', data);
           console.warn('嘗試使用開發模式...');
           
           // 切換到開發模式
@@ -484,22 +448,16 @@ export const facebookApi = {
     }
     
     // 否則正常調用API
-    return apiRequest(`/api/auth/facebook`, {
-      method: "POST",
-      data: { accessToken, fbUserId }
-    });
+    return apiRequest("POST", `/api/auth/facebook`, { accessToken, fbUserId });
   },
   
   // Pages related functions
   fetchUserPages: async () => {
-    return apiRequest(`/api/pages`);
+    return apiRequest("GET", `/api/pages`);
   },
   
   savePage: async (pageData: any) => {
-    return apiRequest(`/api/pages`, {
-      method: "POST",
-      data: pageData
-    });
+    return apiRequest("POST", `/api/pages`, pageData);
   },
   
   // Posts related functions
@@ -508,78 +466,62 @@ export const facebookApi = {
     if (status) {
       url += `?status=${status}`;
     }
-    return apiRequest(url);
+    return apiRequest("GET", url);
   },
   
   createPost: async (pageId: string, postData: any) => {
-    return apiRequest(`/api/pages/${pageId}/posts`, {
-      method: "POST",
-      data: postData
-    });
+    return apiRequest("POST", `/api/pages/${pageId}/posts`, postData);
   },
   
   updatePost: async (postId: number, postData: any) => {
-    return apiRequest(`/api/posts/${postId}`, {
-      method: "PATCH",
-      data: postData
-    });
+    return apiRequest("PATCH", `/api/posts/${postId}`, postData);
   },
   
   deletePost: async (postId: number) => {
-    return apiRequest(`/api/posts/${postId}`, {
-      method: "DELETE"
-    });
+    return apiRequest("DELETE", `/api/posts/${postId}`);
   },
   
   // 一鍵發布到所有平台
   publishToAllPlatforms: async (postId: number) => {
-    return apiRequest(`/api/posts/${postId}/publish-all`, {
-      method: "POST"
-    });
+    return apiRequest("POST", `/api/posts/${postId}/publish-all`);
   },
   
   // Analytics related functions
   fetchPostAnalytics: async (postId: string) => {
-    return apiRequest(`/api/posts/${postId}/analytics`);
+    return apiRequest("GET", `/api/posts/${postId}/analytics`);
   },
   
   fetchPageAnalytics: async (pageId: string) => {
-    return apiRequest(`/api/pages/${pageId}/analytics`);
+    return apiRequest("GET", `/api/pages/${pageId}/analytics`);
   },
   
   // Facebook Graph API integration functions
   syncPageInsights: async (pageId: string) => {
     // 實際實現中，這會向Facebook Graph API請求數據，然後更新我們的數據庫
     // 目前我們將模擬此操作，以示例界面功能
-    return apiRequest(`/api/pages/${pageId}/sync`, {
-      method: "POST",
-      data: { source: "facebook_graph_api" }
-    });
+    return apiRequest("POST", `/api/pages/${pageId}/sync`, { source: "facebook_graph_api" });
   },
   
   fetchAudienceData: async (pageId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取受眾數據
     // 目前返回模擬數據
-    return apiRequest(`/api/pages/${pageId}/audience`);
+    return apiRequest("GET", `/api/pages/${pageId}/audience`);
   },
   
   fetchEngagementByTime: async (pageId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取按時間的互動數據
     // 目前返回模擬數據
-    return apiRequest(`/api/pages/${pageId}/engagement-time`);
+    return apiRequest("GET", `/api/pages/${pageId}/engagement-time`);
   },
   
   fetchPostPerformance: async (postId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取特定貼文的詳細表現數據
     // 目前返回模擬數據
-    return apiRequest(`/api/posts/${postId}/performance`);
+    return apiRequest("GET", `/api/posts/${postId}/performance`);
   },
   
   // 此方法將用於後續實現批量同步或定期同步功能
   scheduleSyncJob: async (pageId: string, frequency: "daily" | "weekly") => {
-    return apiRequest(`/api/pages/${pageId}/sync/schedule`, {
-      method: "POST",
-      data: { frequency }
-    });
+    return apiRequest("POST", `/api/pages/${pageId}/sync/schedule`, { frequency });
   }
 };
