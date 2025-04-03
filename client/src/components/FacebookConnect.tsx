@@ -18,6 +18,13 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
   const [appId, setAppId] = useState<string | null>(null);
   const [sdkStatus, setSdkStatus] = useState<'未初始化' | '初始化中' | '已初始化' | '初始化失敗'>('未初始化');
   const { toast } = useToast();
+  
+  // 修復 onConnect 可能為 undefined 的問題
+  const safeOnConnect = () => {
+    if (onConnect) {
+      onConnect();
+    }
+  };
 
   // 檢查 App ID 並初始化 SDK
   useEffect(() => {
@@ -65,9 +72,7 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       });
 
       // 通知父組件連接成功
-      if (onConnect) {
-        onConnect();
-      }
+      safeOnConnect();
     } catch (error) {
       console.error('Facebook 連接失敗:', error);
       let errorMessage = '連接 Facebook 失敗，請確保您已允許必要的權限。';
@@ -140,6 +145,33 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
     setError(null);
     
     try {
+      // 臨時解決方案：直接在前端模擬成功，完全跳過後端請求
+      console.log('使用前端模擬開發模式，跳過後端請求');
+      
+      // 等待一秒模擬連接過程
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 直接設置為已連接狀態
+      setIsConnected(true);
+      
+      // 顯示成功訊息
+      toast({
+        title: "開發模式連接成功",
+        description: "您已成功連接開發模式。系統將使用樣本資料。",
+        variant: "default",
+      });
+      
+      // 將開發模式狀態保存到本地存儲
+      localStorage.setItem('fb_dev_mode', 'true');
+      localStorage.setItem('fb_dev_mode_timestamp', new Date().toISOString());
+      
+      // 通知父元件連接成功
+      safeOnConnect();
+      
+      setIsLoading(false);
+      return;
+    
+      // 以下代碼暫時跳過，直接返回
       // 記錄嘗試連接的時間
       console.log('開始嘗試開發模式連接，時間:', new Date().toISOString());
       
@@ -169,8 +201,8 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
           throw new Error(`API測試請求失敗: ${testResponse.status}`);
         }
         
-        const contentType = testResponse.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
+        const contentType = testResponse.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
           console.error('API測試響應不是JSON:', contentType);
           const textContent = await testResponse.text();
           console.error('API測試響應內容:', textContent.substring(0, 200));
@@ -237,9 +269,7 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
         });
   
         // 通知父組件連接成功
-        if (onConnect) {
-          onConnect();
-        }
+        safeOnConnect();
       } else {
         throw new Error('伺服器未返回有效的開發模式回應');
       }
@@ -416,10 +446,10 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
               <Button 
                 onClick={handleDevModeConnect} 
                 disabled={isLoading || isConnected}
-                className="w-full bg-gray-600 hover:bg-gray-700 mt-4"
+                className="w-full bg-green-600 hover:bg-green-700 mt-4 font-bold"
               >
                 <Database className="mr-2 h-4 w-4" />
-                {isLoading ? "連接中..." : isConnected ? "已連接" : "使用開發模式"}
+                {isLoading ? "連接中..." : isConnected ? "已連接" : "直接啟用開發模式 (無需後端)"}
               </Button>
             </div>
           </TabsContent>
