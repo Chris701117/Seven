@@ -41,7 +41,7 @@ export const posts = pgTable("posts", {
   postId: text("post_id"),
   pageId: text("page_id").notNull(),
   content: text("content").notNull(),
-  status: text("status").notNull(), // published, scheduled, draft, completed
+  status: text("status").notNull(), // published, scheduled, draft, completed, deleted
   category: text("category"), // 資訊、活動、公告
   scheduledTime: timestamp("scheduled_time"), // 開始發布時間
   endTime: timestamp("end_time"), // 貼文結束時間（進行區間結束）
@@ -58,6 +58,8 @@ export const posts = pgTable("posts", {
   reminderTime: timestamp("reminder_time"), // When reminder should be sent
   isCompleted: boolean("is_completed").default(false), // Track if post was actually published
   completedTime: timestamp("completed_time"), // When the post was marked as completed
+  isDeleted: boolean("is_deleted").default(false), // 用於軟刪除，標記貼文為已刪除
+  deletedAt: timestamp("deleted_at"), // 記錄刪除時間
   createdAt: timestamp("created_at").notNull().defaultNow(),
   publishedTime: timestamp("published_time"),
   updatedAt: timestamp("updated_at"),
@@ -74,6 +76,8 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   reminderSent: true,
   isCompleted: true,
   completedTime: true,
+  isDeleted: true,
+  deletedAt: true,
 });
 
 // Post Analytics schema
