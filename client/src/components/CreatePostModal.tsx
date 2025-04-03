@@ -343,7 +343,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       console.log(`Creating post for page: ${values.pageId}`);
       console.log("Post data being sent:", JSON.stringify(postData, null, 2));
       // 修改URL格式，確保與伺服器路由匹配
-      return apiRequest("POST", `/api/pages/${values.pageId}/posts`, postData);
+      return apiRequest(`/api/pages/${values.pageId}/posts`, { method: "POST", data: postData });
     },
     onSuccess: () => {
       toast({
@@ -441,7 +441,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         platformStatus: values.multiPlatform ? values.platformStatus : null,
       };
       
-      return apiRequest("PATCH", `/api/posts/${post.id}`, postData);
+      return apiRequest(`/api/posts/${post.id}`, { method: "PATCH", data: postData });
     },
     onSuccess: () => {
       toast({
