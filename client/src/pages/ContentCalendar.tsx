@@ -180,8 +180,20 @@ const ContentCalendar = () => {
   
   // Handle slot selection (empty time slot)
   const handleSelectSlot = ({ start }: { start: Date }) => {
-    setSelectedDate(start);
-    setIsCreateModalOpen(true);
+    // 清空之前選擇的貼文，確保打開空白的創建表單
+    console.log("選中的貼文變更:", null);
+    setSelectedEvent(null);
+    
+    // 設置選擇的日期和時間
+    const selectedDateTime = new Date(start);
+    selectedDateTime.setHours(12, 0, 0, 0); // 默認設置為中午12點
+    
+    setSelectedDate(selectedDateTime);
+    
+    // 短暫延遲以確保狀態更新
+    setTimeout(() => {
+      setIsCreateModalOpen(true);
+    }, 100);
   };
   
   // Custom event component for the calendar
@@ -250,8 +262,15 @@ const ContentCalendar = () => {
             </TabsList>
           </Tabs>
           <Button onClick={() => {
+            // 清空所有選中的狀態
+            console.log("選中的貼文變更:", null);
             setSelectedEvent(null);
-            setIsCreateModalOpen(true);
+            setSelectedDate(null);
+            
+            // 短暫延遲確保狀態已更新
+            setTimeout(() => {
+              setIsCreateModalOpen(true);
+            }, 100);
           }}>
             安排貼文
           </Button>
@@ -331,12 +350,13 @@ const ContentCalendar = () => {
                       }
                     };
                   }}
-                  // 設置每個事件之間的間距
+                  // 使用"no-overlap"佈局算法，確保事件不會相互覆蓋
                   dayLayoutAlgorithm="no-overlap"
-                  // 開啟彈出顯示更多事件的功能
+                  // 配置「更多」彈出窗口中的事件顯示方式
                   popup
-                  // 顯示多少天事件觸發"更多"按鈕，設置較大的值如6可以顯示更多事件
-                  popupOffset={20}
+                  // 設置最大顯示事件數量，會顯示「更多」按鈕
+                  // 移除max參數，改用樣式控制
+                  // 自定義更多彈出窗口設置
                   // 區域設置為中文
                   culture="zh-TW"
                 />
@@ -443,7 +463,17 @@ const ContentCalendar = () => {
                 <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">沒有排程貼文</h3>
                 <p className="text-gray-500 mb-4">開始安排貼文以在此處查看。</p>
-                <Button onClick={() => setIsCreateModalOpen(true)}>安排貼文</Button>
+                <Button onClick={() => {
+                  // 清空之前選擇的貼文，確保打開空白的創建表單
+                  console.log("選中的貼文變更:", null);
+                  setSelectedEvent(null);
+                  setSelectedDate(null);
+                  
+                  // 短暫延遲確保狀態已更新
+                  setTimeout(() => {
+                    setIsCreateModalOpen(true);
+                  }, 100);
+                }}>安排貼文</Button>
               </div>
             )}
           </CardContent>
@@ -466,7 +496,17 @@ const ContentCalendar = () => {
                 <BarChart4 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">沒有排程活動</h3>
                 <p className="text-gray-500 mb-4">安排貼文以在甘特圖中查看。</p>
-                <Button onClick={() => setIsCreateModalOpen(true)}>安排貼文</Button>
+                <Button onClick={() => {
+                  // 清空之前選擇的貼文，確保打開空白的創建表單
+                  console.log("選中的貼文變更:", null);
+                  setSelectedEvent(null);
+                  setSelectedDate(null);
+                  
+                  // 短暫延遲確保狀態已更新
+                  setTimeout(() => {
+                    setIsCreateModalOpen(true);
+                  }, 100);
+                }}>安排貼文</Button>
               </div>
             )}
           </CardContent>
