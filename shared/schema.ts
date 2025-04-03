@@ -124,7 +124,8 @@ export const posts = pgTable("posts", {
   publishedBy: text("published_by"), // 發布者
 });
 
-export const insertPostSchema = createInsertSchema(posts).omit({
+// 創建基本schema
+const baseInsertPostSchema = createInsertSchema(posts).omit({
   id: true,
   postId: true,
   createdAt: true,
@@ -135,6 +136,26 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   completedTime: true,
   isDeleted: true,
   deletedAt: true,
+});
+
+// 自定義schema，添加對ISO日期字符串的支持
+export const insertPostSchema = baseInsertPostSchema.extend({
+  // 讓scheduledTime和endTime接受Date對象或ISO日期字符串
+  scheduledTime: z.union([
+    z.date(),
+    z.string().refine(
+      (val) => !isNaN(new Date(val).getTime()),
+      { message: "必須是有效的日期字符串" }
+    ).transform(val => new Date(val))
+  ]).nullable().optional(),
+  
+  endTime: z.union([
+    z.date(),
+    z.string().refine(
+      (val) => !isNaN(new Date(val).getTime()),
+      { message: "必須是有效的日期字符串" }
+    ).transform(val => new Date(val))
+  ]).nullable().optional(),
 });
 
 // Post Analytics schema
