@@ -142,19 +142,28 @@ const ContentCalendar = () => {
   };
   
   // Custom event component for the calendar
-  const EventComponent = ({ event }: any) => {
+  const EventComponent = ({ event, continuesPrior, continuesAfter, slotStart, slotEnd, isAllDay }: any) => {
     const category = event.resource?.category || "default";
     const bgColor = getPostColor(category);
     
+    // 判斷事件是否被縮短了
+    const isCompact = event._isCompacted;
+    
     return (
       <div
-        className="rounded px-2 py-1 truncate text-white text-sm"
-        style={{ backgroundColor: bgColor }}
+        className={`rounded px-2 ${isCompact ? 'py-0' : 'py-1'} truncate text-white ${isCompact ? 'text-xs' : 'text-sm'}`}
+        style={{ 
+          backgroundColor: bgColor,
+          maxHeight: isCompact ? '1.5rem' : 'none',
+          overflow: 'hidden'
+        }}
       >
-        <div className="font-semibold">{event.title}</div>
-        <div className="text-xs opacity-90">
-          {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
-        </div>
+        <div className={`${isCompact ? '' : 'font-semibold'} truncate`}>{event.title}</div>
+        {!isCompact && (
+          <div className="text-xs opacity-90 truncate">
+            {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+          </div>
+        )}
       </div>
     );
   };
