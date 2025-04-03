@@ -1,5 +1,5 @@
 import { 
-  users, type User, type InsertUser,
+  users, type User, type InsertUser, UserRole,
   pages, type Page, type InsertPage,
   posts, type Post, type InsertPost,
   postAnalytics, type PostAnalytics, type InsertPostAnalytics,
@@ -8,15 +8,47 @@ import {
   operationTasks, type OperationTask, type InsertOperationTask,
   onelinkFields, type OnelinkField, type InsertOnelinkField,
   vendors, type Vendor, type InsertVendor,
+  invitations, type InsertInvitation,
+  authCodes, type InsertAuthCode,
   type PlatformContent, type PlatformStatus
 } from "@shared/schema";
 
+// 引入會話和內存存儲相關庫
+import session from "express-session";
+import createMemoryStore from "memorystore";
+const MemoryStore = createMemoryStore(session);
+
 export interface IStorage {
+  // 會話存儲
+  sessionStore: session.Store;
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User>;
   updateUserAccessToken(id: number, accessToken: string, fbUserId: string): Promise<User>;
+  
+  // 用戶認證相關
+  verifyUserEmail(userId: number): Promise<User>;
+  setEmailVerificationCode(userId: number, code: string, expiresAt: Date): Promise<User>;
+  checkEmailVerificationCode(userId: number, code: string): Promise<boolean>;
+  setTwoFactorSecret(userId: number, secret: string): Promise<User>;
+  enableTwoFactor(userId: number): Promise<User>;
+  disableTwoFactor(userId: number): Promise<User>;
+  updateUserPassword(userId: number, password: string): Promise<User>;
+  
+  // 邀請相關
+  createInvitation(invitation: InsertInvitation): Promise<typeof invitations.$inferSelect>;
+  getInvitationByToken(token: string): Promise<typeof invitations.$inferSelect | undefined>;
+  getInvitationsByInviter(inviterId: number): Promise<typeof invitations.$inferSelect[]>;
+  markInvitationAsAccepted(token: string): Promise<typeof invitations.$inferSelect>;
+  
+  // 驗證碼相關
+  createAuthCode(authCode: InsertAuthCode): Promise<typeof authCodes.$inferSelect>;
+  getAuthCodeByUserIdAndCode(userId: number, code: string): Promise<typeof authCodes.$inferSelect | undefined>;
+  markAuthCodeAsUsed(id: number): Promise<typeof authCodes.$inferSelect>;
 
   // Page operations
   getPages(userId: number): Promise<Page[]>;
@@ -103,7 +135,9 @@ export class MemStorage implements IStorage {
   private operationTasks: Map<number, OperationTask>;
   private onelinkFields: Map<number, OnelinkField>;
   private vendors: Map<number, Vendor>;
-  
+  private invitations: Map<number, typeof invitations.$inferSelect>;
+  private authCodes: Map<number, typeof authCodes.$inferSelect>;
+
   private userId: number;
   private pageId: number;
   private postId: number;
@@ -113,6 +147,10 @@ export class MemStorage implements IStorage {
   private operationTaskId: number;
   private onelinkFieldId: number;
   private vendorId: number;
+  private invitationId: number;
+  private authCodeId: number;
+  
+  public sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -124,6 +162,8 @@ export class MemStorage implements IStorage {
     this.operationTasks = new Map();
     this.onelinkFields = new Map();
     this.vendors = new Map();
+    this.invitations = new Map();
+    this.authCodes = new Map();
     
     this.userId = 1;
     this.pageId = 1;
@@ -134,6 +174,13 @@ export class MemStorage implements IStorage {
     this.operationTaskId = 1;
     this.onelinkFieldId = 1;
     this.vendorId = 1;
+    this.invitationId = 1;
+    this.authCodeId = 1;
+    
+    // 初始化會話存儲
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // 每24小時清理過期會話
+    });
     
     // Add sample data
     this.initSampleData();
@@ -144,13 +191,23 @@ export class MemStorage implements IStorage {
   }
 
   private initSampleData() {
-    // Create a sample user
+    // Create a sample user with new fields
     const user: User = {
       id: this.userId++,
       username: "demouser",
       password: "password123",
       displayName: "示範用戶",
       email: "demo@example.com",
+      role: UserRole.ADMIN,
+      isEmailVerified: true, 
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
+      isTwoFactorEnabled: false,
+      twoFactorSecret: null,
+      lastLoginAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: null,
+      invitedBy: null,
       accessToken: "sample_fb_access_token",
       fbUserId: "10123456789"
     };
@@ -469,6 +526,12 @@ export class MemStorage implements IStorage {
       (user) => user.username === username
     );
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email
+    );
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
@@ -476,23 +539,237 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       displayName: insertUser.displayName || null,
-      email: insertUser.email || null,
+      isEmailVerified: false,
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
+      isTwoFactorEnabled: false,
+      twoFactorSecret: null,
+      lastLoginAt: null,
+      createdAt: new Date(),
+      updatedAt: null,
+      invitedBy: insertUser.invitedBy || null,
       accessToken: null, 
       fbUserId: null 
     };
     this.users.set(id, user);
     return user;
   }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) {
+      throw new Error(`User with id ${id} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      ...userData,
+      updatedAt: new Date()
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
 
+  async verifyUserEmail(userId: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      isEmailVerified: true,
+      emailVerificationCode: null,
+      emailVerificationExpires: null,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async setEmailVerificationCode(userId: number, code: string, expiresAt: Date): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      emailVerificationCode: code,
+      emailVerificationExpires: expiresAt,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async checkEmailVerificationCode(userId: number, code: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user || !user.emailVerificationCode || !user.emailVerificationExpires) {
+      return false;
+    }
+    
+    if (user.emailVerificationCode !== code) {
+      return false;
+    }
+    
+    if (user.emailVerificationExpires < new Date()) {
+      return false; // 驗證碼已過期
+    }
+    
+    return true;
+  }
+  
+  async setTwoFactorSecret(userId: number, secret: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      twoFactorSecret: secret,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async enableTwoFactor(userId: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    if (!user.twoFactorSecret) {
+      throw new Error(`User with id ${userId} has no two factor secret set`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      isTwoFactorEnabled: true,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async disableTwoFactor(userId: number): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      isTwoFactorEnabled: false,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserPassword(userId: number, password: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      password,
+      updatedAt: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
   async updateUserAccessToken(id: number, accessToken: string, fbUserId: string): Promise<User> {
     const user = await this.getUser(id);
     if (!user) {
       throw new Error(`User with id ${id} not found`);
     }
     
-    const updatedUser = { ...user, accessToken, fbUserId };
+    const updatedUser = { 
+      ...user, 
+      accessToken, 
+      fbUserId,
+      updatedAt: new Date()
+    };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  // 邀請相關
+  async createInvitation(invitation: InsertInvitation): Promise<typeof invitations.$inferSelect> {
+    const id = this.invitationId++;
+    const invitationRecord = {
+      id,
+      ...invitation,
+      isAccepted: false,
+      createdAt: new Date()
+    };
+    this.invitations.set(id, invitationRecord);
+    return invitationRecord;
+  }
+  
+  async getInvitationByToken(token: string): Promise<typeof invitations.$inferSelect | undefined> {
+    return Array.from(this.invitations.values()).find(
+      (invitation) => invitation.token === token
+    );
+  }
+  
+  async getInvitationsByInviter(inviterId: number): Promise<typeof invitations.$inferSelect[]> {
+    return Array.from(this.invitations.values()).filter(
+      (invitation) => invitation.invitedBy === inviterId
+    );
+  }
+  
+  async markInvitationAsAccepted(token: string): Promise<typeof invitations.$inferSelect> {
+    const invitation = await this.getInvitationByToken(token);
+    if (!invitation) {
+      throw new Error(`Invitation with token ${token} not found`);
+    }
+    
+    const updatedInvitation = {
+      ...invitation,
+      isAccepted: true
+    };
+    this.invitations.set(invitation.id, updatedInvitation);
+    return updatedInvitation;
+  }
+  
+  // 驗證碼相關
+  async createAuthCode(authCode: InsertAuthCode): Promise<typeof authCodes.$inferSelect> {
+    const id = this.authCodeId++;
+    const authCodeRecord = {
+      id,
+      ...authCode,
+      isUsed: false,
+      createdAt: new Date()
+    };
+    this.authCodes.set(id, authCodeRecord);
+    return authCodeRecord;
+  }
+  
+  async getAuthCodeByUserIdAndCode(userId: number, code: string): Promise<typeof authCodes.$inferSelect | undefined> {
+    return Array.from(this.authCodes.values()).find(
+      (authCode) => authCode.userId === userId && authCode.code === code && !authCode.isUsed && authCode.expiresAt > new Date()
+    );
+  }
+  
+  async markAuthCodeAsUsed(id: number): Promise<typeof authCodes.$inferSelect> {
+    const authCode = this.authCodes.get(id);
+    if (!authCode) {
+      throw new Error(`Auth code with id ${id} not found`);
+    }
+    
+    const updatedAuthCode = {
+      ...authCode,
+      isUsed: true
+    };
+    this.authCodes.set(id, updatedAuthCode);
+    return updatedAuthCode;
   }
 
   // Page operations
@@ -609,7 +886,11 @@ export class MemStorage implements IStorage {
       throw new Error(`Post with id ${id} not found`);
     }
     
-    const updatedPost = { ...post, ...updateData, updatedAt: new Date() };
+    const updatedPost = { 
+      ...post, 
+      ...updateData,
+      updatedAt: new Date()
+    };
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
@@ -619,87 +900,97 @@ export class MemStorage implements IStorage {
     if (!post) {
       return false;
     }
-    // 軟刪除 - 標記為已刪除而不是實際刪除
+    
     const updatedPost = { 
       ...post, 
-      status: "deleted", 
-      isDeleted: true, 
+      isDeleted: true,
       deletedAt: new Date(),
       updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
     return true;
   }
-  
+
   async restorePost(id: number): Promise<Post> {
     const post = await this.getPostById(id);
     if (!post) {
-      throw new Error("Post not found");
+      throw new Error(`Post with id ${id} not found`);
     }
-    // 如果貼文被標記為已刪除，還原為之前的狀態
-    if (post.isDeleted) {
-      const restoredStatus = post.scheduledTime && new Date(post.scheduledTime) > new Date() 
-        ? "scheduled" 
-        : (post.content ? "draft" : "draft");
-      
-      const updatedPost = { 
-        ...post, 
-        status: restoredStatus, 
-        isDeleted: false, 
-        deletedAt: null,
-        updatedAt: new Date()
-      };
-      this.posts.set(id, updatedPost);
-      return updatedPost;
+    
+    if (!post.isDeleted) {
+      throw new Error(`Post with id ${id} is not deleted`);
     }
-    return post;
+    
+    const updatedPost = { 
+      ...post, 
+      isDeleted: false,
+      deletedAt: null,
+      updatedAt: new Date()
+    };
+    this.posts.set(id, updatedPost);
+    return updatedPost;
   }
-  
+
   async getDeletedPosts(pageId: string): Promise<Post[]> {
-    return Array.from(this.posts.values()).filter(
-      post => post.pageId === pageId && post.isDeleted === true
-    );
+    return Array.from(this.posts.values())
+      .filter((post) => post.pageId === pageId && post.isDeleted)
+      .sort((a, b) => {
+        // 按刪除時間排序，最近刪除的放在前面
+        return (b.deletedAt?.getTime() || 0) - (a.deletedAt?.getTime() || 0);
+      });
   }
-  
+
   async permanentlyDeletePost(id: number): Promise<boolean> {
-    // 永久刪除貼文
+    const post = await this.getPostById(id);
+    if (!post) {
+      return false;
+    }
+    
     return this.posts.delete(id);
   }
 
   async getPostsByStatus(pageId: string, status: string): Promise<Post[]> {
-    return (await this.getPosts(pageId)).filter(post => post.status === status);
+    return Array.from(this.posts.values())
+      .filter((post) => post.pageId === pageId && post.status === status && !post.isDeleted)
+      .sort((a, b) => {
+        if (status === "scheduled" && a.scheduledTime && b.scheduledTime) {
+          return a.scheduledTime.getTime() - b.scheduledTime.getTime();
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
   }
 
   async getScheduledPosts(pageId: string): Promise<Post[]> {
-    return (await this.getPosts(pageId)).filter(
-      post => post.status === "scheduled" && post.scheduledTime !== null
-    );
+    return this.getPostsByStatus(pageId, "scheduled");
   }
-  
-  // Get posts that need reminders
+
   async getPostsNeedingReminders(): Promise<Post[]> {
     const now = new Date();
     return Array.from(this.posts.values()).filter(
-      post => post.status === "scheduled" && 
-              post.reminderTime !== null && 
-              !post.reminderSent &&
-              post.reminderTime <= now
+      (post) => 
+        post.status === "scheduled" && 
+        !post.reminderSent && 
+        post.reminderTime !== null && 
+        post.reminderTime <= now &&
+        !post.isDeleted
     );
   }
-  
-  // Mark a post as having had its reminder sent
+
   async markReminderSent(id: number): Promise<Post> {
     const post = await this.getPostById(id);
     if (!post) {
       throw new Error(`Post with id ${id} not found`);
     }
     
-    const updatedPost = { ...post, reminderSent: true, updatedAt: new Date() };
+    const updatedPost = { 
+      ...post, 
+      reminderSent: true,
+      updatedAt: new Date()
+    };
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
-  
-  // Mark a post as completed (actually published)
+
   async markPostAsCompleted(id: number): Promise<Post> {
     const post = await this.getPostById(id);
     if (!post) {
@@ -708,57 +999,53 @@ export class MemStorage implements IStorage {
     
     const updatedPost = { 
       ...post, 
-      isCompleted: true, 
+      isCompleted: true,
       completedTime: new Date(),
-      updatedAt: new Date() 
+      updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
-  
-  // Get posts that are due to be published
+
   async getPostsDueForPublishing(): Promise<Post[]> {
     const now = new Date();
     return Array.from(this.posts.values()).filter(
-      post => post.status === "scheduled" && 
-              post.scheduledTime !== null && 
-              !post.isCompleted &&
-              post.scheduledTime <= now
+      (post) => 
+        post.status === "scheduled" && 
+        post.scheduledTime !== null && 
+        post.scheduledTime <= now &&
+        !post.isDeleted
     );
   }
-  
-  // 一鍵發布功能（發布到所有平台）
+
   async publishToAllPlatforms(id: number): Promise<Post> {
     const post = await this.getPostById(id);
     if (!post) {
       throw new Error(`Post with id ${id} not found`);
     }
     
-    // 更新各平台狀態
-    const updatedPlatformStatus: PlatformStatus = post.platformStatus 
-      ? { ...post.platformStatus as PlatformStatus }
-      : { fb: false, ig: false, tiktok: false, threads: false, x: false };
-      
-    updatedPlatformStatus.fb = true;
-    updatedPlatformStatus.ig = true;
-    updatedPlatformStatus.tiktok = true;
-    updatedPlatformStatus.threads = true;
-    updatedPlatformStatus.x = true;
+    // 在實際情況中，這裡會調用社交媒體API進行發布
+    // 這裡我們只是模擬發布成功
+    const updatedPlatformStatus: PlatformStatus = { 
+      fb: true, 
+      ig: true, 
+      tiktok: true, 
+      threads: true, 
+      x: true 
+    };
     
     const updatedPost = { 
       ...post, 
-      status: "published", 
       platformStatus: updatedPlatformStatus,
-      isCompleted: true, 
-      completedTime: new Date(),
+      status: "published",
       publishedTime: new Date(),
-      updatedAt: new Date() 
+      updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
 
-  // Post Analytics operations
+  // Post Analytics Operations
   async getPostAnalytics(postId: string): Promise<PostAnalytics | undefined> {
     return Array.from(this.postAnalytics.values()).find(
       (analytics) => analytics.postId === postId
@@ -767,8 +1054,8 @@ export class MemStorage implements IStorage {
 
   async createPostAnalytics(insertAnalytics: InsertPostAnalytics): Promise<PostAnalytics> {
     const id = this.postAnalyticsId++;
-    const analytics: PostAnalytics = {
-      ...insertAnalytics,
+    const analytics: PostAnalytics = { 
+      ...insertAnalytics, 
       id,
       likeCount: insertAnalytics.likeCount || 0,
       commentCount: insertAnalytics.commentCount || 0,
@@ -778,7 +1065,7 @@ export class MemStorage implements IStorage {
       comments: insertAnalytics.comments || 0,
       shares: insertAnalytics.shares || 0,
       reach: insertAnalytics.reach || 0,
-      engagementRate: insertAnalytics.engagementRate || null,
+      engagementRate: insertAnalytics.engagementRate || "0",
       clickCount: insertAnalytics.clickCount || 0,
       lastUpdated: new Date()
     };
@@ -789,11 +1076,11 @@ export class MemStorage implements IStorage {
   async updatePostAnalytics(postId: string, updateData: Partial<PostAnalytics>): Promise<PostAnalytics> {
     const analytics = await this.getPostAnalytics(postId);
     if (!analytics) {
-      throw new Error(`Analytics for post ${postId} not found`);
+      throw new Error(`PostAnalytics for post ${postId} not found`);
     }
     
-    const updatedAnalytics = {
-      ...analytics,
+    const updatedAnalytics = { 
+      ...analytics, 
       ...updateData,
       lastUpdated: new Date()
     };
@@ -801,7 +1088,7 @@ export class MemStorage implements IStorage {
     return updatedAnalytics;
   }
 
-  // Page Analytics operations
+  // Page Analytics Operations
   async getPageAnalytics(pageId: string): Promise<PageAnalytics | undefined> {
     return Array.from(this.pageAnalytics.values()).find(
       (analytics) => analytics.pageId === pageId
@@ -810,16 +1097,16 @@ export class MemStorage implements IStorage {
 
   async createPageAnalytics(insertAnalytics: InsertPageAnalytics): Promise<PageAnalytics> {
     const id = this.pageAnalyticsId++;
-    const analytics: PageAnalytics = {
-      ...insertAnalytics,
+    const analytics: PageAnalytics = { 
+      ...insertAnalytics, 
       id,
       totalLikes: insertAnalytics.totalLikes || 0,
       totalComments: insertAnalytics.totalComments || 0,
       totalShares: insertAnalytics.totalShares || 0,
       pageViews: insertAnalytics.pageViews || 0,
       reachCount: insertAnalytics.reachCount || 0,
-      engagementRate: insertAnalytics.engagementRate || null,
-      demographicsData: insertAnalytics.demographicsData || null,
+      engagementRate: insertAnalytics.engagementRate || "0",
+      demographicsData: insertAnalytics.demographicsData || "{}",
       lastUpdated: new Date()
     };
     this.pageAnalytics.set(id, analytics);
@@ -829,11 +1116,11 @@ export class MemStorage implements IStorage {
   async updatePageAnalytics(pageId: string, updateData: Partial<PageAnalytics>): Promise<PageAnalytics> {
     const analytics = await this.getPageAnalytics(pageId);
     if (!analytics) {
-      throw new Error(`Analytics for page ${pageId} not found`);
+      throw new Error(`PageAnalytics for page ${pageId} not found`);
     }
     
-    const updatedAnalytics = {
-      ...analytics,
+    const updatedAnalytics = { 
+      ...analytics, 
       ...updateData,
       lastUpdated: new Date()
     };
@@ -841,162 +1128,405 @@ export class MemStorage implements IStorage {
     return updatedAnalytics;
   }
 
-  // 行銷模組操作
-  async getMarketingTasks(): Promise<MarketingTask[]> {
-    return Array.from(this.marketingTasks.values()).sort((a, b) => {
-      if (a.status === "已完成" && b.status !== "已完成") return 1;
-      if (a.status !== "已完成" && b.status === "已完成") return -1;
-      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-    });
+  private initSampleMarketingTasks() {
+    // Marketing tasks sample data
+    const marketingTask1: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "社群媒體贈品活動",
+      description: "設計並執行一項社群媒體贈品活動，以增加品牌知名度和參與度",
+      content: "活動將包括用戶分享我們的貼文並標記朋友的要求。我們將贈送5份產品套裝給隨機選中的參與者。",
+      status: "pending",
+      category: "social-media",
+      priority: "high",
+      startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "行銷經理",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.marketingTasks.set(marketingTask1.id, marketingTask1);
+    
+    const marketingTask2: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "電子郵件行銷活動",
+      description: "建立一個電子郵件序列，向訂閱者推廣我們的夏季銷售",
+      content: "設計一系列5封電子郵件，逐步介紹我們的新產品線和特別優惠。每週發送一次，為期5週。",
+      status: "in-progress",
+      category: "email",
+      priority: "normal",
+      startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "內容策略師",
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    };
+    this.marketingTasks.set(marketingTask2.id, marketingTask2);
+    
+    const marketingTask3: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "與影響者合作",
+      description: "與行業影響者合作推廣我們的產品",
+      content: "確定5位相關影響者，與他們聯繫關於產品評論和推廣的事宜。準備產品樣品和簡報材料。",
+      status: "pending",
+      category: "partnership",
+      priority: "normal",
+      startTime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "社群媒體經理",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.marketingTasks.set(marketingTask3.id, marketingTask3);
+    
+    const marketingTask4: MarketingTask = {
+      id: this.marketingTaskId++,
+      title: "內容行事曆開發",
+      description: "為下一季度建立詳細的內容行事曆",
+      content: "建立一個包括博客文章、社群媒體更新、電子郵件通訊和其他內容資產的詳細時間表。與產品和銷售團隊協調，確保內容與整體業務目標一致。",
+      status: "completed",
+      category: "content",
+      priority: "high",
+      startTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdBy: "內容經理",
+      createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    };
+    this.marketingTasks.set(marketingTask4.id, marketingTask4);
   }
-
+  
+  private initSampleOperationTasks() {
+    // Operation tasks sample data
+    const operationTask1: OperationTask = {
+      id: this.operationTaskId++,
+      title: "更新網站安全措施",
+      content: "升級網站的安全協議，包括實施HTTPS和更新密碼策略",
+      status: "待處理",
+      category: "一般",
+      priority: "高",
+      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "IT主管",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.operationTasks.set(operationTask1.id, operationTask1);
+    
+    const operationTask2: OperationTask = {
+      id: this.operationTaskId++,
+      title: "辦公設備維護",
+      content: "按照維護計劃檢查和維護所有辦公設備",
+      status: "進行中",
+      category: "設備維護",
+      priority: "中",
+      startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "辦公室管理員",
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    };
+    this.operationTasks.set(operationTask2.id, operationTask2);
+    
+    const operationTask3: OperationTask = {
+      id: this.operationTaskId++,
+      title: "招聘新的社群媒體專員",
+      content: "編寫職位描述，發布職位，審核申請人，並進行面試",
+      status: "待處理",
+      category: "人員調度",
+      priority: "高",
+      startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "人力資源經理",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.operationTasks.set(operationTask3.id, operationTask3);
+    
+    const operationTask4: OperationTask = {
+      id: this.operationTaskId++,
+      title: "更新供應鏈管理軟件",
+      content: "評估，選擇並實施新的供應鏈管理系統",
+      status: "已延遲",
+      category: "一般",
+      priority: "中",
+      startTime: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdBy: "運營經理",
+      createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    };
+    this.operationTasks.set(operationTask4.id, operationTask4);
+    
+    const operationTask5: OperationTask = {
+      id: this.operationTaskId++,
+      title: "辦公用品採購",
+      content: "訂購紙張、筆、墨水和其他必要的辦公用品",
+      status: "已完成",
+      category: "物資管理",
+      priority: "低",
+      startTime: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      reminderSent: true,
+      createdBy: "辦公室管理員",
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+    };
+    this.operationTasks.set(operationTask5.id, operationTask5);
+    
+    const operationTask6: OperationTask = {
+      id: this.operationTaskId++,
+      title: "年度預算規劃",
+      content: "編制下一財年的運營預算",
+      status: "待處理",
+      category: "一般",
+      priority: "高",
+      startTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      reminderSent: false,
+      createdBy: "財務總監",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.operationTasks.set(operationTask6.id, operationTask6);
+  }
+  
+  private initSampleOnelinkFields() {
+    // Onelink fields sample data
+    const onelinkField1: OnelinkField = {
+      id: this.onelinkFieldId++,
+      platform: "facebook",
+      campaignCode: "spring_promo_23",
+      materialId: "ad_set_001",
+      adSet: "interests_garden",
+      adName: "spring_collection_ad1",
+      audienceTag: "homeowners",
+      creativeSize: "1200x628",
+      adPlacement: "feed",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.onelinkFields.set(onelinkField1.id, onelinkField1);
+    
+    const onelinkField2: OnelinkField = {
+      id: this.onelinkFieldId++,
+      platform: "instagram",
+      campaignCode: "summer_sale_23",
+      materialId: "story_ad_002",
+      adSet: "age_25_34",
+      adName: "summer_discount_story",
+      audienceTag: "gardening_enthusiasts",
+      creativeSize: "1080x1920",
+      adPlacement: "story",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.onelinkFields.set(onelinkField2.id, onelinkField2);
+  }
+  
+  private initSampleVendors() {
+    // Vendors sample data
+    const vendor1: Vendor = {
+      id: this.vendorId++,
+      name: "花園用品供應商",
+      contactPerson: "王經理",
+      phone: "0912345678",
+      email: "wang@gardensupp.example.com",
+      chatApp: "Line",
+      chatId: "wang_garden",
+      address: "台北市信義區松仁路100號",
+      note: "主要園藝工具和花園用品供應商，通常需要提前兩週下訂單",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.vendors.set(vendor1.id, vendor1);
+    
+    const vendor2: Vendor = {
+      id: this.vendorId++,
+      name: "綠色植物批發商",
+      contactPerson: "林小姐",
+      phone: "0987654321",
+      email: "lin@greenplant.example.com",
+      chatApp: "WeChat",
+      chatId: "lin_plant",
+      address: "新北市三重區重新路200號",
+      note: "各種室內和室外植物的批發商，每週一和週四有新貨",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.vendors.set(vendor2.id, vendor2);
+  }
+  
+  // 營銷模組操作
+  async getMarketingTasks(): Promise<MarketingTask[]> {
+    return Array.from(this.marketingTasks.values());
+  }
+  
   async getMarketingTaskById(id: number): Promise<MarketingTask | undefined> {
     return this.marketingTasks.get(id);
   }
-
+  
   async getMarketingTasksByStatus(status: string): Promise<MarketingTask[]> {
     return Array.from(this.marketingTasks.values()).filter(
-      task => task.status === status
+      (task) => task.status === status
     );
   }
-
+  
   async getMarketingTasksByCategory(category: string): Promise<MarketingTask[]> {
     return Array.from(this.marketingTasks.values()).filter(
-      task => task.category === category
+      (task) => task.category === category
     );
   }
-
+  
   async createMarketingTask(task: InsertMarketingTask): Promise<MarketingTask> {
     const id = this.marketingTaskId++;
     const newTask: MarketingTask = {
       ...task,
       id,
+      status: task.status || "pending",
+      content: task.content || null,
+      description: task.description || null,
+      priority: task.priority || "normal",
       reminderSent: false,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      createdBy: task.createdBy || null
     };
     this.marketingTasks.set(id, newTask);
     return newTask;
   }
-
+  
   async updateMarketingTask(id: number, task: Partial<MarketingTask>): Promise<MarketingTask> {
     const existingTask = await this.getMarketingTaskById(id);
     if (!existingTask) {
       throw new Error(`Marketing task with id ${id} not found`);
     }
     
-    const updatedTask = {
-      ...existingTask,
+    const updatedTask = { 
+      ...existingTask, 
       ...task,
       updatedAt: new Date()
     };
     this.marketingTasks.set(id, updatedTask);
     return updatedTask;
   }
-
+  
   async deleteMarketingTask(id: number): Promise<boolean> {
     return this.marketingTasks.delete(id);
   }
-
+  
   async getMarketingTasksNeedingReminders(): Promise<MarketingTask[]> {
     const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     return Array.from(this.marketingTasks.values()).filter(
-      task => task.status !== "completed" && 
-              !task.reminderSent &&
-              new Date(task.startTime) <= tomorrow
+      (task) => 
+        !task.reminderSent && 
+        task.startTime > now && 
+        task.startTime < tomorrow
     );
   }
-
+  
   async markMarketingTaskReminderSent(id: number): Promise<MarketingTask> {
     const task = await this.getMarketingTaskById(id);
     if (!task) {
       throw new Error(`Marketing task with id ${id} not found`);
     }
     
-    const updatedTask = { ...task, reminderSent: true, updatedAt: new Date() };
+    const updatedTask = { 
+      ...task, 
+      reminderSent: true,
+      updatedAt: new Date()
+    };
     this.marketingTasks.set(id, updatedTask);
     return updatedTask;
   }
   
   // 營運模組操作
   async getOperationTasks(): Promise<OperationTask[]> {
-    return Array.from(this.operationTasks.values()).sort((a, b) => {
-      if (a.status === "已完成" && b.status !== "已完成") return 1;
-      if (a.status !== "已完成" && b.status === "已完成") return -1;
-      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-    });
+    return Array.from(this.operationTasks.values());
   }
-
+  
   async getOperationTaskById(id: number): Promise<OperationTask | undefined> {
     return this.operationTasks.get(id);
   }
-
+  
   async getOperationTasksByStatus(status: string): Promise<OperationTask[]> {
     return Array.from(this.operationTasks.values()).filter(
-      task => task.status === status
+      (task) => task.status === status
     );
   }
-
+  
   async getOperationTasksByCategory(category: string): Promise<OperationTask[]> {
     return Array.from(this.operationTasks.values()).filter(
-      task => task.category === category
+      (task) => task.category === category
     );
   }
-
+  
   async createOperationTask(task: InsertOperationTask): Promise<OperationTask> {
     const id = this.operationTaskId++;
     const newTask: OperationTask = {
       ...task,
       id,
+      status: task.status || "待處理",
+      content: task.content || null,
+      priority: task.priority || "中",
       reminderSent: false,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      createdBy: task.createdBy || null
     };
     this.operationTasks.set(id, newTask);
     return newTask;
   }
-
+  
   async updateOperationTask(id: number, task: Partial<OperationTask>): Promise<OperationTask> {
     const existingTask = await this.getOperationTaskById(id);
     if (!existingTask) {
       throw new Error(`Operation task with id ${id} not found`);
     }
     
-    const updatedTask = {
-      ...existingTask,
+    const updatedTask = { 
+      ...existingTask, 
       ...task,
       updatedAt: new Date()
     };
     this.operationTasks.set(id, updatedTask);
     return updatedTask;
   }
-
+  
   async deleteOperationTask(id: number): Promise<boolean> {
     return this.operationTasks.delete(id);
   }
-
+  
   async getOperationTasksNeedingReminders(): Promise<OperationTask[]> {
     const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     return Array.from(this.operationTasks.values()).filter(
-      task => task.status !== "已完成" && 
-              !task.reminderSent &&
-              new Date(task.startTime) <= tomorrow
+      (task) => 
+        !task.reminderSent && 
+        task.startTime > now && 
+        task.startTime < tomorrow
     );
   }
-
+  
   async markOperationTaskReminderSent(id: number): Promise<OperationTask> {
     const task = await this.getOperationTaskById(id);
     if (!task) {
       throw new Error(`Operation task with id ${id} not found`);
     }
     
-    const updatedTask = { ...task, reminderSent: true, updatedAt: new Date() };
+    const updatedTask = { 
+      ...task, 
+      reminderSent: true,
+      updatedAt: new Date()
+    };
     this.operationTasks.set(id, updatedTask);
     return updatedTask;
   }
@@ -1005,38 +1535,43 @@ export class MemStorage implements IStorage {
   async getOnelinkFields(): Promise<OnelinkField[]> {
     return Array.from(this.onelinkFields.values());
   }
-
+  
   async getOnelinkFieldById(id: number): Promise<OnelinkField | undefined> {
     return this.onelinkFields.get(id);
   }
-
+  
   async createOnelinkField(field: InsertOnelinkField): Promise<OnelinkField> {
     const id = this.onelinkFieldId++;
     const newField: OnelinkField = {
       ...field,
       id,
+      adSet: field.adSet || null,
+      adName: field.adName || null,
+      audienceTag: field.audienceTag || null,
+      creativeSize: field.creativeSize || null,
+      adPlacement: field.adPlacement || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
     this.onelinkFields.set(id, newField);
     return newField;
   }
-
+  
   async updateOnelinkField(id: number, field: Partial<OnelinkField>): Promise<OnelinkField> {
     const existingField = await this.getOnelinkFieldById(id);
     if (!existingField) {
       throw new Error(`Onelink field with id ${id} not found`);
     }
     
-    const updatedField = {
-      ...existingField,
+    const updatedField = { 
+      ...existingField, 
       ...field,
       updatedAt: new Date()
     };
     this.onelinkFields.set(id, updatedField);
     return updatedField;
   }
-
+  
   async deleteOnelinkField(id: number): Promise<boolean> {
     return this.onelinkFields.delete(id);
   }
@@ -1045,276 +1580,47 @@ export class MemStorage implements IStorage {
   async getVendors(): Promise<Vendor[]> {
     return Array.from(this.vendors.values());
   }
-
+  
   async getVendorById(id: number): Promise<Vendor | undefined> {
     return this.vendors.get(id);
   }
-
+  
   async createVendor(vendor: InsertVendor): Promise<Vendor> {
     const id = this.vendorId++;
     const newVendor: Vendor = {
       ...vendor,
       id,
+      contactPerson: vendor.contactPerson || null,
+      phone: vendor.phone || null,
+      email: vendor.email || null,
+      chatApp: vendor.chatApp || null,
+      chatId: vendor.chatId || null,
+      address: vendor.address || null,
+      note: vendor.note || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
     this.vendors.set(id, newVendor);
     return newVendor;
   }
-
+  
   async updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor> {
     const existingVendor = await this.getVendorById(id);
     if (!existingVendor) {
       throw new Error(`Vendor with id ${id} not found`);
     }
     
-    const updatedVendor = {
-      ...existingVendor,
+    const updatedVendor = { 
+      ...existingVendor, 
       ...vendor,
       updatedAt: new Date()
     };
     this.vendors.set(id, updatedVendor);
     return updatedVendor;
   }
-
+  
   async deleteVendor(id: number): Promise<boolean> {
     return this.vendors.delete(id);
-  }
-
-  private initSampleMarketingTasks() {
-    // 建立範例行銷任務
-    const marketingTask1: MarketingTask = {
-      id: this.marketingTaskId++,
-      title: "夏季促銷活動",
-      description: "夏季專屬促銷活動企劃與執行，目標提升夏季銷售額 20%",
-      status: "進行中",
-      content: "策劃夏季促銷活動，包括社交媒體宣傳和電子郵件營銷",
-      category: "廣告投放",
-      priority: "高",
-      startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-      reminderSent: false,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      createdBy: "行銷部門"
-    };
-    this.marketingTasks.set(marketingTask1.id, marketingTask1);
-
-    const marketingTask2: MarketingTask = {
-      id: this.marketingTaskId++,
-      title: "內容創作計畫",
-      description: "下個月內容行銷策略規劃，包含社群平台內容排程與部落格文章計畫",
-      status: "已完成",
-      content: "為下個月準備部落格和社交媒體的內容計畫",
-      category: "一般",
-      priority: "中",
-      startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      reminderSent: true,
-      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      createdBy: "內容團隊"
-    };
-    this.marketingTasks.set(marketingTask2.id, marketingTask2);
-
-    const marketingTask3: MarketingTask = {
-      id: this.marketingTaskId++,
-      title: "新產品發布會",
-      description: "新品牌系列產品發表會籌備，包含媒體邀請與市場宣傳規劃",
-      status: "待處理",
-      content: "為新產品發布會準備營銷材料和媒體宣傳",
-      category: "會議",
-      priority: "高",
-      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-      reminderSent: false,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      createdBy: "產品經理"
-    };
-    this.marketingTasks.set(marketingTask3.id, marketingTask3);
-    
-    const marketingTask4: MarketingTask = {
-      id: this.marketingTaskId++,
-      title: "社群媒體互動活動",
-      description: "設計並執行社群媒體互動活動，提高粉絲互動率和品牌黏著度",
-      status: "進行中",
-      content: "策劃社群互動遊戲，制定獎品機制，提高用戶參與度",
-      category: "地面推廣",
-      priority: "中",
-      startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      reminderSent: false,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      createdBy: "社群經理"
-    };
-    this.marketingTasks.set(marketingTask4.id, marketingTask4);
-  }
-
-  private initSampleOperationTasks() {
-    // 建立範例營運任務
-    const operationTask1: OperationTask = {
-      id: this.operationTaskId++,
-      title: "伺服器系統更新維護",
-      status: "待處理",
-      content: "計畫進行服務器和系統的定期維護，包括系統更新、安全補丁安裝和效能優化",
-      category: "測試",
-      priority: "高",
-      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      reminderSent: false,
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      createdBy: "IT部門"
-    };
-    this.operationTasks.set(operationTask1.id, operationTask1);
-
-    const operationTask2: OperationTask = {
-      id: this.operationTaskId++,
-      title: "新進人員招募面試",
-      status: "進行中",
-      content: "招募市場行銷部門新進人員，安排面試和能力測試",
-      category: "會議",
-      priority: "中",
-      startTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      reminderSent: true,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      createdBy: "人資部門"
-    };
-    this.operationTasks.set(operationTask2.id, operationTask2);
-
-    const operationTask3: OperationTask = {
-      id: this.operationTaskId++,
-      title: "辦公設備採購",
-      status: "已完成",
-      content: "採購新辦公設備，包括電腦、顯示器和辦公桌椅",
-      category: "活動",
-      priority: "低",
-      startTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 27 * 24 * 60 * 60 * 1000),
-      reminderSent: true,
-      createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-      createdBy: "行政部門"
-    };
-    this.operationTasks.set(operationTask3.id, operationTask3);
-    
-    const operationTask4: OperationTask = {
-      id: this.operationTaskId++,
-      title: "網路系統升級",
-      status: "已延遲",
-      content: "升級公司內部網路系統，提高連線穩定性和速度",
-      category: "測試",
-      priority: "高",
-      startTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      reminderSent: true,
-      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-      createdBy: "IT部門"
-    };
-    this.operationTasks.set(operationTask4.id, operationTask4);
-    
-    const operationTask5: OperationTask = {
-      id: this.operationTaskId++,
-      title: "季度團隊活動安排",
-      status: "待處理",
-      content: "規劃並安排季度員工團隊建設活動，包括地點選擇和行程規劃",
-      category: "活動",
-      priority: "中",
-      startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      reminderSent: false,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      updatedAt: null,
-      createdBy: "人資部門"
-    };
-    this.operationTasks.set(operationTask5.id, operationTask5);
-    
-    const operationTask6: OperationTask = {
-      id: this.operationTaskId++,
-      title: "災難恢復演練",
-      status: "已取消",
-      content: "進行年度災難恢復和業務連續性計劃演練",
-      category: "會議",
-      priority: "低",
-      startTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      reminderSent: true,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-      createdBy: "營運部門"
-    };
-    this.operationTasks.set(operationTask6.id, operationTask6);
-  }
-
-  private initSampleOnelinkFields() {
-    // 建立範例 Onelink 欄位設定
-    const onelinkField1: OnelinkField = {
-      id: this.onelinkFieldId++,
-      platform: "Facebook",
-      campaignCode: "FB_SUM2023",
-      materialId: "FB001",
-      adSet: "Summer_Conversion",
-      adName: "Summer_Sale_Carousel",
-      audienceTag: "Interest_Garden",
-      creativeSize: "1200x628",
-      adPlacement: "Feed",
-      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    };
-    this.onelinkFields.set(onelinkField1.id, onelinkField1);
-
-    const onelinkField2: OnelinkField = {
-      id: this.onelinkFieldId++,
-      platform: "Instagram",
-      campaignCode: "IG_SUM2023",
-      materialId: "IG001",
-      adSet: "Summer_Awareness",
-      adName: "Summer_Collection_Story",
-      audienceTag: "Lookalike_Customers",
-      creativeSize: "1080x1920",
-      adPlacement: "Stories",
-      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
-    };
-    this.onelinkFields.set(onelinkField2.id, onelinkField2);
-  }
-
-  private initSampleVendors() {
-    // 建立範例廠商聯絡資料
-    const vendor1: Vendor = {
-      id: this.vendorId++,
-      name: "綠色園藝用品有限公司",
-      contactPerson: "張小明",
-      phone: "02-2345-6789",
-      email: "contact@greengardeningtools.com",
-      chatApp: "Line",
-      chatId: "@greengardening",
-      address: "台北市信義區花園路123號",
-      note: "主要供應花園工具和戶外家具",
-      createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-    };
-    this.vendors.set(vendor1.id, vendor1);
-
-    const vendor2: Vendor = {
-      id: this.vendorId++,
-      name: "瑞富植栽集團",
-      contactPerson: "李大華",
-      phone: "02-8765-4321",
-      email: "sales@richplants.com",
-      chatApp: "WhatsApp",
-      chatId: "+886912345678",
-      address: "新北市三重區植物街45號",
-      note: "室內植物和種子專業供應商",
-      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
-    };
-    this.vendors.set(vendor2.id, vendor2);
   }
 }
 
