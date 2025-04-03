@@ -2201,18 +2201,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "找不到 Onelink 欄位" });
       }
       
-      // 構建基本參數
+      // 構建基本參數 (簡化版本)
       const params = new URLSearchParams();
       params.append("pid", onelinkField.platform);
       params.append("c", onelinkField.campaignCode);
       params.append("af_sub1", onelinkField.materialId);
       
-      // 添加可選參數（如果存在）
-      if (onelinkField.adSet) params.append("af_adset", onelinkField.adSet);
-      if (onelinkField.adName) params.append("af_ad", onelinkField.adName);
-      if (onelinkField.audienceTag) params.append("af_sub2", onelinkField.audienceTag);
-      if (onelinkField.creativeSize) params.append("af_sub3", onelinkField.creativeSize);
-      if (onelinkField.adPlacement) params.append("af_channel", onelinkField.adPlacement);
+      // 添加廣告群組參數（如果存在）
+      if (onelinkField.groupId) params.append("af_sub4", onelinkField.groupId);
       
       // 添加自定義參數
       if (customParams && typeof customParams === "object") {
