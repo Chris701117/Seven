@@ -143,14 +143,33 @@ const queryClient = new QueryClient({
 });
 
 // 通用 API 請求函數，支持兩種調用模式
+// 舊式調用: apiRequest(method, url, body)
+// 新式調用: apiRequest(url, { method, data })
 async function apiRequest(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-  url: string,
-  body?: any
+  urlOrMethod: string | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+  bodyOrOptions?: any | { method: string; data?: any },
+  maybeBody?: any
 ) {
+  let method: string;
+  let url: string;
+  let body: any;
+
+  // 檢測調用方式並標準化參數
+  if (typeof bodyOrOptions === 'object' && bodyOrOptions !== null && 'method' in bodyOrOptions) {
+    // 新式調用: apiRequest(url, { method, data })
+    url = urlOrMethod as string;
+    method = bodyOrOptions.method;
+    body = bodyOrOptions.data;
+  } else {
+    // 舊式調用: apiRequest(method, url, body)
+    method = urlOrMethod as string;
+    url = bodyOrOptions as string;
+    body = maybeBody;
+  }
+
   // 構建完整 URL
-  const apiUrl = url.startsWith('http') ? url : 
-                url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+  const apiUrl = typeof url === 'string' && url.startsWith('http') ? url : 
+                typeof url === 'string' && url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
                 
   console.log(`Making ${method} request to: ${apiUrl}`);
                 
