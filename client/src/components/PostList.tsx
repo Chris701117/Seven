@@ -325,7 +325,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       
       {isLoading ? (
         // Loading state
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {[...Array(4)].map((_, index) => (
             <div key={index} className="bg-white shadow rounded-lg overflow-hidden">
               <div className="p-4 border-b border-gray-200">
@@ -350,7 +350,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
         </div>
       ) : filteredPosts && filteredPosts.length > 0 ? (
         // Data loaded
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {filteredPosts.map((post) => (
             <PostCard 
               key={post.id} 
