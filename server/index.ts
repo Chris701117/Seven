@@ -48,9 +48,19 @@ app.get('/api/test', (req, res) => {
 
 // 提供 Facebook App ID 給前端使用
 app.get('/api/config/facebook', (req, res) => {
-  res.status(200).json({ 
-    appId: process.env.FACEBOOK_APP_ID 
-  });
+  // 設置適當的 Content-Type
+  res.set('Content-Type', 'application/json; charset=utf-8');
+  
+  try {
+    const response = {
+      appId: process.env.FACEBOOK_APP_ID || ''
+    };
+    // 將物件轉換為 JSON 並發送
+    res.status(200).send(JSON.stringify(response));
+  } catch (error) {
+    console.error('Facebook App ID 發送錯誤:', error);
+    res.status(500).json({ error: 'Failed to get Facebook configuration' });
+  }
 });
 
 (async () => {
