@@ -612,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { pageId } = req.params;
-      const { status } = req.query;
+      const { status, all } = req.query;
       
       const page = await storage.getPageByPageId(pageId);
       if (!page) {
@@ -624,7 +624,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let posts;
-      if (status) {
+      if (all === 'true') {
+        // 獲取所有狀態的貼文，包括草稿、排程和已發布
+        const publishedPosts = await storage.getPostsByStatus(pageId, 'published');
+        const scheduledPosts = await storage.getPostsByStatus(pageId, 'scheduled');
+        const draftPosts = await storage.getPostsByStatus(pageId, 'draft');
+        posts = [...publishedPosts, ...scheduledPosts, ...draftPosts];
+      } else if (status) {
         posts = await storage.getPostsByStatus(pageId, status as string);
       } else {
         posts = await storage.getPosts(pageId);

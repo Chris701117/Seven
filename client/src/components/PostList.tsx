@@ -40,6 +40,11 @@ const PostList = ({ pageId, filter }: PostListProps) => {
   // 獲取貼文數據
   const { data: posts, isLoading, refetch } = useQuery<Post[]>({
     queryKey: [`/api/pages/${pageId}/posts`],
+    queryFn: async () => {
+      if (!pageId) return [];
+      const response = await apiRequest(`/api/pages/${pageId}/posts?all=true`);
+      return response || [];
+    },
     enabled: !!pageId,
   });
   
