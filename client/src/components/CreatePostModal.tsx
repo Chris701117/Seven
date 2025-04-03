@@ -72,7 +72,7 @@ const formSchema = insertPostSchema.extend({
   endDate: z.string().optional(),
   endTime: z.string().optional(),
   hasImage: z.boolean().default(false),
-  hasLink: z.boolean().default(true),
+  hasLink: z.boolean().default(false),
   category: z.enum(["promotion", "event", "announcement"]).optional(),
 }).superRefine((data, ctx) => {
   if (data.schedulePost) {
@@ -273,7 +273,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       endDate: post?.endTime ? new Date(post.endTime).toISOString().split('T')[0] : "",
       endTime: post?.endTime ? new Date(post.endTime).toTimeString().split(' ')[0].substring(0, 5) : "",
       hasImage: !!post?.imageUrl,
-      hasLink: post ? !!post.linkUrl : true,
+      hasLink: post ? !!post.linkUrl : false,
       multiPlatform: true,
       category: post?.category as "promotion" | "event" | "announcement" | undefined,
       platformContent: post?.platformContent || {
@@ -590,7 +590,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder={`${activePageData?.pageName || "你"}在想什麼？`}
-                          className="resize-vertical min-h-[200px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                          className="resize-vertical min-h-[240px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 w-full"
                           {...field}
                           onChange={(e) => {
                             field.onChange(e);
@@ -659,42 +659,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </div>
                 )}
                 
-                {/* Link Preview */}
-                {form.watch("hasLink") && form.watch("linkUrl") && (
-                  <div className="mt-3 border border-gray-200 rounded-md overflow-hidden">
-                    <div className="absolute top-2 right-2 z-10">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="icon"
-                        className="h-8 w-8 rounded-full bg-gray-800/60 hover:bg-gray-800/80 text-white"
-                        onClick={() => {
-                          form.setValue("hasLink", false);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {form.watch("linkImageUrl") && (
-                      <img 
-                        src={form.watch("linkImageUrl") || ''} 
-                        alt="連結預覽" 
-                        className="w-full h-[160px] object-cover" 
-                      />
-                    )}
-                    <div className="p-3">
-                      <div className="text-xs uppercase text-gray-500 mb-1">
-                        {new URL(form.watch("linkUrl") || "https://example.com").hostname}
-                      </div>
-                      <div className="font-medium line-clamp-1">{form.watch("linkTitle") || "連結標題"}</div>
-                      {form.watch("linkDescription") && (
-                        <div className="text-sm text-gray-600 mt-1 line-clamp-2">
-                          {form.watch("linkDescription")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+
               </div>
               
               {/* Color Background Options (similar to Facebook) */}
@@ -944,7 +909,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Facebook 專用內容..."
-                                  className="min-h-[140px] resize-vertical"
+                                  className="min-h-[170px] resize-vertical w-full"
                                   {...field}
                                 />
                               </FormControl>
@@ -967,7 +932,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Instagram 專用內容..."
-                                  className="min-h-[140px] resize-vertical"
+                                  className="min-h-[170px] resize-vertical w-full"
                                   {...field}
                                 />
                               </FormControl>
@@ -990,7 +955,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 TikTok 專用內容..."
-                                  className="min-h-[140px] resize-vertical"
+                                  className="min-h-[170px] resize-vertical w-full"
                                   {...field}
                                 />
                               </FormControl>
@@ -1013,7 +978,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Threads 專用內容..."
-                                  className="min-h-[140px] resize-vertical"
+                                  className="min-h-[170px] resize-vertical w-full"
                                   {...field}
                                 />
                               </FormControl>
@@ -1036,7 +1001,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 X (Twitter) 專用內容..."
-                                  className="min-h-[140px] resize-vertical"
+                                  className="min-h-[170px] resize-vertical w-full"
                                   {...field}
                                 />
                               </FormControl>
@@ -1564,70 +1529,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </div>
                 </div>
               
-              {/* Link Panel */}
-              {form.watch("hasLink") && (
-                <div className="px-4 py-2 border-t border-gray-200">
-                  <div className="flex items-center mb-2">
-                    <LinkIcon className="h-5 w-5 mr-2 text-blue-500" />
-                    <h4 className="font-medium">添加連結</h4>
-                  </div>
-                  <div className="space-y-3">
-                    <FormField
-                      control={form.control}
-                      name="linkUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input placeholder="https://..." {...field} value={field.value || ''} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="linkTitle"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="連結標題..." {...field} value={field.value || ''} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="linkImageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input placeholder="圖片網址..." {...field} value={field.value || ''} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={form.control}
-                      name="linkDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input placeholder="連結描述..." {...field} value={field.value || ''} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
+
               
               {/* Footer Actions */}
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 mt-auto sticky bottom-0 z-10">
