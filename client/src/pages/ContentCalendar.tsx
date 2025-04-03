@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Page, Post } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,12 +28,20 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CreatePostModal from "@/components/CreatePostModal";
 import ContentGanttChart from "@/components/ContentGanttChart";
 import { formatDateDisplay } from "@/lib/utils";
 
 const ContentCalendar = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [calendarView, setCalendarView] = useState<"month" | "list" | "gantt">("month");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -367,10 +375,49 @@ const ContentCalendar = () => {
       ) : calendarView === "list" ? (
         <Card>
           <CardHeader>
-            <CardTitle>待發佈貼文</CardTitle>
+            <CardTitle>貼文列表</CardTitle>
             <CardDescription>
-              所有即將發佈的貼文，依時間順序排列
+              可依類別和狀態篩選所有貼文
             </CardDescription>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <Select 
+                defaultValue="all" 
+                onValueChange={(value) => {
+                  const filteredPosts = value === "all" 
+                    ? posts || [] 
+                    : (posts || []).filter(post => post.category === value);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[150px]">
+                  <SelectValue placeholder="貼文類別" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">所有類別</SelectItem>
+                  <SelectItem value="promotion">宣傳</SelectItem>
+                  <SelectItem value="event">活動</SelectItem>
+                  <SelectItem value="announcement">公告</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select 
+                defaultValue="scheduled" 
+                onValueChange={(value) => {
+                  const filteredPosts = value === "all" 
+                    ? posts || [] 
+                    : (posts || []).filter(post => post.status === value);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[150px]">
+                  <SelectValue placeholder="貼文狀態" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">所有狀態</SelectItem>
+                  <SelectItem value="published">已發布</SelectItem>
+                  <SelectItem value="scheduled">排程中</SelectItem>
+                  <SelectItem value="draft">草稿</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoadingPosts || isLoadingPages ? (
@@ -379,12 +426,25 @@ const ContentCalendar = () => {
                   <Skeleton key={index} className="h-20 w-full" />
                 ))}
               </div>
-            ) : scheduledPosts.length > 0 ? (
+            ) : posts && posts.length > 0 ? (
               <div className="space-y-4">
-                {scheduledPosts
+                {posts
                   .sort((a, b) => {
-                    if (!a.scheduledTime || !b.scheduledTime) return 0;
-                    return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+                    // 針對不同狀態的貼文使用適當的日期字段
+                    const getDateForSort = (post: Post): string => {
+                      if (post.status === 'published' && post.publishedTime) return post.publishedTime;
+                      if (post.status === 'scheduled' && post.scheduledTime) return post.scheduledTime;
+                      return post.createdAt || '';
+                    };
+                    
+                    const dateA = getDateForSort(a);
+                    const dateB = getDateForSort(b);
+                    
+                    // 確保日期值有效
+                    const timeA = dateA ? new Date(dateA).getTime() : 0;
+                    const timeB = dateB ? new Date(dateB).getTime() : 0;
+                    
+                    return timeA - timeB; // 升序排序，優先顯示即將到來的貼文
                   })
                   .map((post) => (
                     <div 
@@ -450,7 +510,34 @@ const ContentCalendar = () => {
                                 setIsCreateModalOpen(true);
                               });
                           }}>編輯</Button>
-                          <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("確定要刪除此貼文嗎？")) {
+                                apiRequest(`/api/posts/${post.id}`, {
+                                  method: 'DELETE'
+                                })
+                                .then(() => {
+                                  toast({
+                                    title: "成功",
+                                    description: "貼文已成功刪除",
+                                  });
+                                  // 重新載入貼文列表
+                                  queryClient.invalidateQueries({ queryKey: [`/api/pages/${activePageId}/posts`] });
+                                })
+                                .catch((error) => {
+                                  toast({
+                                    title: "錯誤",
+                                    description: "刪除貼文失敗，請稍後再試",
+                                    variant: "destructive",
+                                  });
+                                });
+                              }
+                            }}
+                          >
                             刪除
                           </Button>
                         </div>

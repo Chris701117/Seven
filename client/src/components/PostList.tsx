@@ -172,17 +172,22 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     const sorted = [...filtered].sort((a, b) => {
       // 針對不同狀態的貼文使用適當的日期字段
       const getDateForSort = (post: Post): string => {
-        if (post.status === 'published') return post.publishedTime || post.createdAt || '';
-        if (post.status === 'scheduled') return post.scheduledTime || post.createdAt || '';
+        // 使用適當的日期字段並確保返回字符串類型
+        if (post.status === 'published' && post.publishedTime) return post.publishedTime;
+        if (post.status === 'scheduled' && post.scheduledTime) return post.scheduledTime;
         return post.createdAt || ''; // 草稿和其他狀態
       };
       
       const dateA = getDateForSort(a);
       const dateB = getDateForSort(b);
       
-      // 確保日期值有效
-      const timeA = dateA ? new Date(dateA).getTime() : 0;
-      const timeB = dateB ? new Date(dateB).getTime() : 0;
+      // 確保日期值有效且安全地解析
+      const dateObjA = dateA ? new Date(dateA) : new Date(0);
+      const dateObjB = dateB ? new Date(dateB) : new Date(0);
+      
+      // 檢查是否為有效日期對象，避免時間戳為NaN
+      const timeA = !isNaN(dateObjA.getTime()) ? dateObjA.getTime() : 0;
+      const timeB = !isNaN(dateObjB.getTime()) ? dateObjB.getTime() : 0;
       
       if (sortOrder === 'newest') {
         return timeB - timeA; // 最新排序 (降序)
