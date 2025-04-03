@@ -907,7 +907,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     </div>
                     <div className="text-xs text-gray-500 mt-1 ml-7">
                       <Info className="h-3 w-3 inline mr-1" />
-                      選擇要發佈的平台，點擊「暫存草稿」或「立即發佈」時會將內容發佈到所選平台。您可以使用「全部開啟」或「全部關閉」來快速設置。
+                      這裡可讓您調整每個社群平台的文字內容，預設全部開啟，您可隨時修改各平台的專屬內容。儲存為草稿或排程時系統會為所有選取的平台保存內容。
                     </div>
                   </div>
                   <div className="flex space-x-2">
