@@ -326,16 +326,10 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         throw new Error("請選擇一個頁面來發布貼文");
       }
       
-      // 把日期時間處理成ISO字符串以便在API請求中正確序列化
+      // 處理日期對象 - 注意：傳給API的必須是Date對象而不是字符串
       let scheduledTimeValue = null;
       if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
-        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
-        scheduledTimeValue = scheduledDate.toISOString();
-      }
-      
-      let endTimeValue = null;
-      if (endTime) {
-        endTimeValue = endTime.toISOString();
+        scheduledTimeValue = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
       }
       
       const postData = {
@@ -343,8 +337,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: scheduledTimeValue,
-        endTime: endTimeValue,
+        scheduledTime: scheduledTimeValue, // 直接使用Date對象
+        endTime: endTime, // 直接使用Date對象
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
@@ -435,25 +429,23 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       if (!post) return;
       
       // 計算結束時間
-      let endTimeValue = null;
+      let endTime = null;
       if (values.schedulePost && values.endDate && values.endTime) {
-        const endTime = new Date(`${values.endDate}T${values.endTime}`);
-        endTimeValue = endTime.toISOString();
+        endTime = new Date(`${values.endDate}T${values.endTime}`);
       }
       
       // 準備排程時間（如果需要）
       let scheduledTimeValue = null;
       if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
-        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
-        scheduledTimeValue = scheduledDate.toISOString();
+        scheduledTimeValue = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
       }
       
       const postData = {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: scheduledTimeValue,
-        endTime: endTimeValue,
+        scheduledTime: scheduledTimeValue, // 直接使用Date對象
+        endTime: endTime, // 直接使用Date對象
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
