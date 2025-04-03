@@ -552,7 +552,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-visible max-h-none">
+      <DialogContent className="sm:max-w-[800px] p-0 overflow-auto max-h-[90vh]">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-xl font-bold text-center">
             {post ? "編輯貼文" : "建立新貼文"}
