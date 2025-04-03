@@ -113,24 +113,7 @@ const Dashboard = () => {
         </Button>
       </div>
       
-      {activePageData && (
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center">
-            <div className="font-medium">貼文總覽</div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-blue-600 border-blue-600 hover:bg-blue-50 bg-white"
-              onClick={() => {
-                // 將所有篩選設為 "all"，這樣就會顯示所有貼文
-                // 你可以根據需要添加其他邏輯
-              }}
-            >
-              查看全部貼文
-            </Button>
-          </div>
-        </div>
-      )}
+
       
       {/* 貼文列表包含排序和篩選功能 */}
       {activePageData ? (
