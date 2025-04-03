@@ -251,7 +251,10 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                     
                     return (
                       <div key={task.id} className="flex border-b hover:bg-gray-50">
-                        <div className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer">
+                        <div 
+                          className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer"
+                          onClick={() => handleTaskClick(task)}
+                        >
                           {category}
                         </div>
                         <div 
@@ -274,7 +277,7 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                           ))}
                           
                           {/* 任務條 */}
-                          {startIdx >= 0 && taskDays.length > 0 && (
+                          {startIdx >= 0 && (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -284,7 +287,7 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                                     }`}
                                     style={{
                                       left: `${startIdx * 40}px`,
-                                      width: `${taskDays.length * 40}px`,
+                                      width: `${Math.max(taskDays.length, 1) * 40}px`,
                                     }}
                                     onClick={() => handleTaskClick(task)}
                                   >
