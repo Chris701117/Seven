@@ -6,88 +6,81 @@ import CalendarPreview from "@/components/CalendarPreview";
 import { Page, Post } from "@shared/schema";
 import PostCard from "@/components/PostCard";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Calendar, Clock } from "lucide-react";
 import CreatePostModal from "@/components/CreatePostModal";
 import { usePageContext } from "@/contexts/PageContext";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
+import { zhTW } from "date-fns/locale";
 
 const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { activePageData } = usePageContext();
   const { toast } = useToast();
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   
-  // Sample posts for preview
-  const [samplePosts, setSamplePosts] = useState<Post[]>([
-    {
-      id: 1,
-      pageId: "page_123456",
-      postId: "post_123456",
-      content: "這是一個已發佈的貼文示例。這裡展示了我們新設計的Facebook風格貼文界面。您可以看到這個界面非常接近Facebook的設計，包括頭像、名稱、時間戳以及貼文內容。",
-      status: "published",
-      publishedTime: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      imageUrl: "https://images.unsplash.com/photo-1705849336823-6fa967941b42?q=80&w=2662&auto=format&fit=crop",
-      category: "announcement",
-      scheduledTime: null,
-      videoUrl: null,
-      linkUrl: null,
-      linkTitle: null,
-      linkDescription: null,
-      linkImageUrl: null,
-      reminderSent: false,
-      isCompleted: true,
-      reminderTime: null,
-      completedTime: new Date(),
+  // 查詢最近發布的貼文
+  const { data: recentlyPublishedPosts, isLoading: isLoadingPublished } = useQuery<Post[]>({
+    queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'published'],
+    queryFn: async () => {
+      if (!activePageData) return [];
+      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=published&limit=5`);
+      return response || [];
     },
-    {
-      id: 2,
-      pageId: "page_123456",
-      postId: null,
-      content: "這是一個排程貼文的示例。我們可以設定特定的時間來發佈這個貼文。這個界面展示了排程貼文的狀態和操作按鈕。",
-      status: "scheduled",
-      scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      imageUrl: null,
-      videoUrl: null,
-      linkUrl: null,
-      linkTitle: null,
-      linkDescription: null,
-      linkImageUrl: null,
-      category: "event",
-      reminderSent: true,
-      isCompleted: false,
-      reminderTime: new Date(),
-      completedTime: null,
-      publishedTime: null,
+    enabled: !!activePageData,
+  });
+  
+  // 查詢排程中的貼文
+  const { data: scheduledPosts, isLoading: isLoadingScheduled } = useQuery<Post[]>({
+    queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'scheduled'],
+    queryFn: async () => {
+      if (!activePageData) return [];
+      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=scheduled&limit=5`);
+      return response || [];
     },
-    {
-      id: 3,
-      pageId: "page_123456",
-      postId: null,
-      content: "這是一個連結貼文的示例。您可以在Facebook風格的界面中看到連結的預覽效果。",
-      status: "draft",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      scheduledTime: null,
-      imageUrl: null,
-      videoUrl: null,
-      linkUrl: "https://replit.com",
-      linkTitle: "Replit - 在瀏覽器中寫程式碼",
-      linkDescription: "Replit 是一個協作瀏覽器IDE，可以讓您在任何地方用任何設備寫程式碼。",
-      linkImageUrl: "https://replit.com/public/images/ogBanner.png",
-      category: "promotion",
-      reminderSent: false,
-      isCompleted: false,
-      reminderTime: null,
-      completedTime: null,
-      publishedTime: null,
+    enabled: !!activePageData,
+  });
+  
+  // 查詢草稿貼文
+  const { data: draftPosts, isLoading: isLoadingDrafts } = useQuery<Post[]>({
+    queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'draft'],
+    queryFn: async () => {
+      if (!activePageData) return [];
+      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=draft&limit=5`);
+      return response || [];
+    },
+    enabled: !!activePageData,
+  });
+  
+  // 格式化日期顯示
+  const formatPostDate = (date: Date | string | null) => {
+    if (!date) return "日期未設定";
+    return format(new Date(date), 'yyyy/MM/dd HH:mm', { locale: zhTW });
+  };
+  
+  // 啟動編輯貼文
+  const handleEditPost = async (post: Post) => {
+    try {
+      // 從API獲取最新的貼文詳情
+      const updatedPost = await apiRequest(`/api/posts/${post.id}`);
+      console.log("獲取貼文詳情:", updatedPost);
+      setSelectedPost(updatedPost);
+      setIsCreateModalOpen(true);
+    } catch (error) {
+      console.error("獲取貼文詳情失敗:", error);
+      // 如果無法獲取詳情，使用當前的資料
+      setSelectedPost(post);
+      setIsCreateModalOpen(true);
     }
-  ]);
+  };
   
-  const handleDeletePost = (postId: number) => {
-    setSamplePosts(samplePosts.filter(post => post.id !== postId));
+  // 處理模態框關閉
+  const handleModalClose = () => {
+    setIsCreateModalOpen(false);
+    setSelectedPost(null);
   };
   
   return (
@@ -104,6 +97,7 @@ const Dashboard = () => {
               });
               return;
             }
+            setSelectedPost(null); // 確保創建新貼文時清空選中狀態
             setIsCreateModalOpen(true);
           }}
           className="bg-blue-600 hover:bg-blue-700"
@@ -113,7 +107,198 @@ const Dashboard = () => {
         </Button>
       </div>
       
+      {activePageData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* 最近發佈的貼文 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  最近發佈
+                </CardTitle>
+              </div>
+              <CardDescription>最近發佈的 5 篇文章</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingPublished ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center p-3 border rounded-lg animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recentlyPublishedPosts && recentlyPublishedPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {recentlyPublishedPosts.map((post) => (
+                    <div 
+                      key={post.id} 
+                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleEditPost(post)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{post.content.substring(0, 60)}{post.content.length > 60 ? '...' : ''}</p>
+                        <div className="flex items-center mt-1">
+                          <Badge 
+                            className="mr-2" 
+                            variant="outline"
+                            style={{
+                              borderColor: post.category === 'promotion' ? '#4ade80' :
+                                          post.category === 'event' ? '#60a5fa' :
+                                          post.category === 'announcement' ? '#f97316' : '#e2e8f0',
+                              color: post.category === 'promotion' ? '#16a34a' :
+                                    post.category === 'event' ? '#2563eb' :
+                                    post.category === 'announcement' ? '#ea580c' : '#64748b'
+                            }}
+                          >
+                            {post.category === 'promotion' ? '宣傳' :
+                             post.category === 'event' ? '活動' :
+                             post.category === 'announcement' ? '公告' : '未分類'}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {post.publishedTime ? formatPostDate(post.publishedTime) : formatPostDate(post.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500">尚無發佈的貼文</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          {/* 排程中的貼文 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-green-500" />
+                  排程中
+                </CardTitle>
+              </div>
+              <CardDescription>排程等待發佈的貼文</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingScheduled ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center p-3 border rounded-lg animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : scheduledPosts && scheduledPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {scheduledPosts.map((post) => (
+                    <div 
+                      key={post.id} 
+                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleEditPost(post)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{post.content.substring(0, 60)}{post.content.length > 60 ? '...' : ''}</p>
+                        <div className="flex items-center mt-1">
+                          <Badge 
+                            className="mr-2" 
+                            variant="outline"
+                            style={{
+                              borderColor: post.category === 'promotion' ? '#4ade80' :
+                                          post.category === 'event' ? '#60a5fa' :
+                                          post.category === 'announcement' ? '#f97316' : '#e2e8f0',
+                              color: post.category === 'promotion' ? '#16a34a' :
+                                    post.category === 'event' ? '#2563eb' :
+                                    post.category === 'announcement' ? '#ea580c' : '#64748b'
+                            }}
+                          >
+                            {post.category === 'promotion' ? '宣傳' :
+                             post.category === 'event' ? '活動' :
+                             post.category === 'announcement' ? '公告' : '未分類'}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {post.scheduledTime ? formatPostDate(post.scheduledTime) : '無排程時間'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500">尚無排程中的貼文</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {/* 草稿貼文 */}
+      {activePageData && (
+        <div className="mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-gray-500" />
+                  草稿貼文
+                </CardTitle>
+              </div>
+              <CardDescription>尚未排程或發佈的草稿</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingDrafts ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center p-3 border rounded-lg animate-pulse">
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : draftPosts && draftPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {draftPosts.map((post) => (
+                    <div 
+                      key={post.id} 
+                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleEditPost(post)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{post.content.substring(0, 60)}{post.content.length > 60 ? '...' : ''}</p>
+                        <div className="flex items-center mt-1">
+                          <Badge className="mr-2" variant="secondary">草稿</Badge>
+                          <span className="text-xs text-gray-500">
+                            {formatPostDate(post.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500">尚無草稿貼文</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
       
       {/* 貼文列表包含排序和篩選功能 */}
       {activePageData ? (
@@ -124,21 +309,12 @@ const Dashboard = () => {
         </div>
       )}
       
-      {/* 示例貼文，可以在真實API準備好後移除 */}
-      {(!activePageData && samplePosts.length > 0) && (
-        <div className="space-y-4 mt-8">
-          <h3 className="text-lg font-semibold">示例貼文</h3>
-          {samplePosts.map((post) => (
-            <PostCard key={post.id} post={post} onPostDeleted={handleDeletePost} />
-          ))}
-        </div>
-      )}
-      
       {/* Add Create Post Modal */}
       {activePageData && (
         <CreatePostModal 
           isOpen={isCreateModalOpen} 
-          onClose={() => setIsCreateModalOpen(false)} 
+          onClose={handleModalClose} 
+          post={selectedPost || undefined}
         />
       )}
     </div>
