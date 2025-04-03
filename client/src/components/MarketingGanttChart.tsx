@@ -211,7 +211,7 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                 return (
                   <div
                     key={idx}
-                    className={`w-10 flex-shrink-0 text-center p-1 border-r text-xs ${
+                    className={`w-10 h-12 flex-shrink-0 text-center p-1 border-r text-xs flex flex-col justify-center ${
                       isToday ? 'bg-blue-100 font-bold' : 
                       isWeekend ? 'bg-gray-100' : 
                       !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
@@ -272,7 +272,7 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                         onClick={() => handleTaskClick(task)}
                       >
                         <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={task.title}>
-                          {task.title}
+                          {task.title.length > 7 ? `${task.title.slice(0, 7)}...` : task.title}
                         </div>
                         <div className="text-xs text-gray-500 whitespace-nowrap">
                           {format(new Date(task.startTime), 'MM/dd')} - {format(new Date(task.endTime), 'MM/dd')}
