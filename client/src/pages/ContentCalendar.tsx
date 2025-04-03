@@ -134,16 +134,29 @@ const ContentCalendar = () => {
   
   // Handle event selection
   const handleSelectEvent = (event: any) => {
+    // 先重置選中的事件，避免顯示之前的數據
+    setSelectedEvent(null);
+    
     // 在設置選擇的事件之前，從API獲取最新的貼文數據
     if (event.resource && event.resource.id) {
       console.log("嘗試獲取貼文數據，ID:", event.resource.id);
+      
+      // 使用toast顯示加載狀態
+      toast({
+        title: "載入中",
+        description: "正在獲取貼文數據...",
+        duration: 1500,
+      });
+      
       // 使用apiRequest幫助函數來確保一致的錯誤處理
       apiRequest(`/api/posts/${event.resource.id}`)
         .then(post => {
           console.log("成功獲取貼文數據:", post);
           // 設置獲取到的完整貼文數據
-          setSelectedEvent(post);
-          setIsCreateModalOpen(true);
+          setTimeout(() => {
+            setSelectedEvent(post);
+            setIsCreateModalOpen(true);
+          }, 200); // 短暫延遲以確保UI狀態更新
         })
         .catch(error => {
           console.error('獲取貼文失敗:', error);
@@ -153,8 +166,10 @@ const ContentCalendar = () => {
             variant: "destructive",
           });
           // 如果獲取失敗，則使用事件中的基本信息
-          setSelectedEvent(event.resource);
-          setIsCreateModalOpen(true);
+          setTimeout(() => {
+            setSelectedEvent(event.resource);
+            setIsCreateModalOpen(true);
+          }, 200); // 短暫延遲以確保UI狀態更新
         });
     } else {
       // 如果没有id，直接使用事件資源

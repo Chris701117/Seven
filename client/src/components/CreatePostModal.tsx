@@ -1664,12 +1664,13 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     取消
                   </Button>
                   
-                  {/* 若是編輯已存在的貼文且不是排程模式，顯示「立即發布」按鈕 */}
-                  {post && !form.watch("schedulePost") && post.status !== "published" && (
+                  {/* 若是編輯已存在的貼文，顯示「立即發布」按鈕 */}
+                  {post && post.status === "scheduled" && (
                     <Button 
                       type="button" 
                       onClick={() => {
                         const values = form.getValues();
+                        // 不直接設置publishedTime，而是通過後端邏輯處理
                         updatePostMutation.mutate({
                           ...values,
                           status: "published"
