@@ -50,15 +50,8 @@ const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
             </div>
           </div>
           <div className="flex items-center">
-            <Button 
-              className="ml-3 flex items-center" 
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              建立貼文
-            </Button>
             {/* 通知菜單 */}
-            {user && <div className="ml-3">
+            {user && <div>
               <NotificationsMenu />
             </div>}
             <div className="ml-4 relative flex-shrink-0">

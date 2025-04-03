@@ -56,7 +56,8 @@ import {
   FileImage,
   FileBadge,
   ChevronDown,
-  AtSign
+  AtSign,
+  Info
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -780,7 +781,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       }}
                     >
                       <Calendar className="h-5 w-5 mr-2" />
-                      <span>排程</span>
+                      <span>設定提醒</span>
                     </Button>
                     
                     <Button
@@ -1088,7 +1089,11 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                 <div className="px-4 py-2 border-t border-gray-200">
                   <div className="flex items-center mb-2">
                     <Calendar className="h-5 w-5 mr-2 text-blue-500" />
-                    <h4 className="font-medium">設定發佈時間</h4>
+                    <h4 className="font-medium">設定發佈提醒時間</h4>
+                  </div>
+                  <div className="text-xs text-gray-500 mb-2">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    系統將在設定的時間提醒您發佈貼文，而非自動發佈。
                   </div>
                   <div className="mb-4">
                     <div className="text-sm text-gray-600 mb-1">開始時間：</div>
