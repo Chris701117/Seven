@@ -98,10 +98,30 @@ export async function apiRequest<T = any>(
   
   // 解析 JSON 響應
   try {
+    // 先檢查 Content-Type 頭部
+    const contentType = res.headers.get('content-type');
+    
+    // 如果不是 JSON 格式，拋出更明確的錯誤
+    if (contentType && !contentType.includes('application/json')) {
+      console.error(`API 響應不是 JSON 格式，而是 ${contentType}`);
+      const errorText = await res.text();
+      throw new Error(`API 響應格式錯誤: 預期為 JSON，實際為 ${contentType}。服務端可能返回了 HTML 或其他格式。`);
+    }
+    
     return await res.json() as T;
   } catch (error) {
     console.error('無法解析 API 響應為 JSON:', error);
-    throw new Error(`API 響應無法解析為 JSON: ${error instanceof Error ? error.message : '未知錯誤'}`);
+    
+    // 提供更具體的錯誤信息以便調試
+    if (error instanceof Error) {
+      // 檢查錯誤是否包含常見的 JSON 解析錯誤模式
+      if (error.message.includes('Unexpected token')) {
+        throw new Error(`API 響應格式無效 JSON: 服務端可能返回了錯誤頁面或非 JSON 格式。請檢查 API 路由和請求格式是否正確。`);
+      }
+      throw new Error(`API 響應無法解析為 JSON: ${error.message}`);
+    }
+    
+    throw new Error(`API 響應無法解析為 JSON: 未知錯誤`);
   }
 }
 

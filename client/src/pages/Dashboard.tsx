@@ -113,12 +113,24 @@ const Dashboard = () => {
         </Button>
       </div>
       
-      {/* Sample Posts to Showcase UI */}
-      <div className="space-y-4">
-        {samplePosts.map((post) => (
-          <PostCard key={post.id} post={post} onPostDeleted={handleDeletePost} />
-        ))}
-      </div>
+      {/* 貼文列表包含排序和篩選功能 */}
+      {activePageData ? (
+        <PostList pageId={activePageData.pageId} />
+      ) : (
+        <div className="text-center p-6 bg-white rounded-lg shadow-sm">
+          <p className="text-gray-500">請先選擇一個粉絲專頁以查看貼文</p>
+        </div>
+      )}
+      
+      {/* 示例貼文，可以在真實API準備好後移除 */}
+      {(!activePageData && samplePosts.length > 0) && (
+        <div className="space-y-4 mt-8">
+          <h3 className="text-lg font-semibold">示例貼文</h3>
+          {samplePosts.map((post) => (
+            <PostCard key={post.id} post={post} onPostDeleted={handleDeletePost} />
+          ))}
+        </div>
+      )}
       
       {/* Add Create Post Modal */}
       {activePageData && (
