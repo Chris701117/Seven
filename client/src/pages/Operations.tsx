@@ -114,7 +114,7 @@ export default function Operations() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">營運管理</h1>
           <p className="text-muted-foreground">
-            管理公司內部營運相關任務，包括設備維護、人員調度和物資管理等。
+            管理公司營運相關任務，包括活動、測試、會議等。
           </p>
         </div>
         <div className="flex items-center gap-2">
