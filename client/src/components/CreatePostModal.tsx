@@ -301,16 +301,59 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     }
   }, [activePageData, form]);
   
-  // Initialize media preview if post has an image
+  // 當 post 變更時重置表單
   useEffect(() => {
+    console.log("選中的貼文變更:", post);
+    
+    // 清空媒體預覽
+    setMediaPreview(null);
+    setUploadedMediaType(null);
+    
+    // 根據 post 重設所有表單值
+    form.reset({
+      pageId: post?.pageId || activePageData?.pageId || "page_123456",
+      content: post?.content || "",
+      status: post?.status || "draft",
+      scheduledTime: post?.scheduledTime ? new Date(post.scheduledTime) : undefined,
+      imageUrl: post?.imageUrl || "",
+      linkUrl: post?.linkUrl || "",
+      linkTitle: post?.linkTitle || "",
+      linkDescription: post?.linkDescription || "",
+      linkImageUrl: post?.linkImageUrl || "",
+      schedulePost: post?.scheduledTime ? true : false,
+      scheduleDate: post?.scheduledTime ? new Date(post.scheduledTime).toISOString().split('T')[0] : "",
+      scheduleTime: post?.scheduledTime ? new Date(post.scheduledTime).toTimeString().split(' ')[0].substring(0, 5) : "",
+      endDate: post?.endTime ? new Date(post.endTime).toISOString().split('T')[0] : "",
+      endTime: post?.endTime ? new Date(post.endTime).toTimeString().split(' ')[0].substring(0, 5) : "",
+      hasImage: !!post?.imageUrl,
+      hasLink: post ? !!post.linkUrl : false,
+      multiPlatform: true,
+      category: post?.category as "promotion" | "event" | "announcement" | undefined,
+      platformContent: post?.platformContent || {
+        fb: '',
+        ig: '',
+        tiktok: '',
+        threads: '',
+        x: ''
+      },
+      platformStatus: post?.platformStatus || {
+        fb: true,
+        ig: false,
+        tiktok: false,
+        threads: false,
+        x: false
+      },
+    });
+    
+    // 初始化媒體預覽
     if (post?.imageUrl) {
       setMediaPreview(post.imageUrl);
-      // Try to determine if it's an image or video based on file extension
+      // 嘗試確定是圖片還是視頻
       const fileExtension = post.imageUrl.split('.').pop()?.toLowerCase();
       const videoExtensions = ['mp4', 'mov', 'avi', 'webm'];
       setUploadedMediaType(videoExtensions.includes(fileExtension || '') ? 'video' : 'image');
     }
-  }, [post]);
+  }, [post, activePageData, form]);
 
   // Create post mutation
   const createPostMutation = useMutation({
