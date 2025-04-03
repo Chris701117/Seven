@@ -590,7 +590,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder={`${activePageData?.pageName || "你"}在想什麼？`}
-                          className="resize-none min-h-[120px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                          className="resize-vertical min-h-[200px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
                           {...field}
                           onChange={(e) => {
                             field.onChange(e);
@@ -848,9 +848,15 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
               {form.watch("multiPlatform") && (
                 <div className="px-4 py-2 border-t border-gray-200">
                   <div className="flex items-center mb-2 justify-between">
-                    <div className="flex items-center">
-                      <Share className="h-5 w-5 mr-2 text-red-500" />
-                      <h4 className="font-medium">多平台設置</h4>
+                    <div className="flex flex-col">
+                      <div className="flex items-center">
+                        <Share className="h-5 w-5 mr-2 text-red-500" />
+                        <h4 className="font-medium">多平台設置</h4>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 ml-7">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        選擇要發佈的平台，點擊「暫存草稿」或「立即發佈」時會將內容發佈到所選平台。您可以使用「全部開啟」或「全部關閉」來快速設置。
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       <Button
@@ -976,7 +982,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Facebook 專用內容..."
-                                  className="min-h-[100px]"
+                                  className="min-h-[140px] resize-vertical"
                                   {...field}
                                 />
                               </FormControl>
@@ -999,7 +1005,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Instagram 專用內容..."
-                                  className="min-h-[100px]"
+                                  className="min-h-[140px] resize-vertical"
                                   {...field}
                                 />
                               </FormControl>
@@ -1022,7 +1028,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 TikTok 專用內容..."
-                                  className="min-h-[100px]"
+                                  className="min-h-[140px] resize-vertical"
                                   {...field}
                                 />
                               </FormControl>
@@ -1045,7 +1051,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Threads 專用內容..."
-                                  className="min-h-[100px]"
+                                  className="min-h-[140px] resize-vertical"
                                   {...field}
                                 />
                               </FormControl>
@@ -1068,7 +1074,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 X (Twitter) 專用內容..."
-                                  className="min-h-[100px]"
+                                  className="min-h-[140px] resize-vertical"
                                   {...field}
                                 />
                               </FormControl>
@@ -1093,7 +1099,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </div>
                   <div className="text-xs text-gray-500 mb-2">
                     <Info className="h-3 w-3 inline mr-1" />
-                    系統將在設定的時間提醒您發佈貼文，而非自動發佈。
+                    系統將在設定的時間提醒您發佈貼文，而非自動發佈。您將會在設定時間的前一天收到通知，並在發佈日當天再次收到提醒。
                   </div>
                   <div className="mb-4">
                     <div className="text-sm text-gray-600 mb-1">開始時間：</div>
@@ -1491,7 +1497,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </div>
 
                   <div className="mt-3 text-xs text-gray-500">
-                    選擇要發佈的平台。每個平台可以有不同的內容，預設與主要內容相同。
+                    <Info className="h-3 w-3 inline mr-1" />
+                    選擇要發佈的平台。每個平台可以有不同的內容，預設與主貼文內容相同。如不需要修改，可保留空白。
                   </div>
                   
                   <div className="mt-3">
@@ -1514,7 +1521,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                   placeholder="Facebook 專屬內容（如不填則使用主貼文內容）" 
                                   {...field}
                                   value={field.value || ''}
-                                  className="resize-none h-24 mt-2"
+                                  className="resize-vertical min-h-[140px] mt-2"
                                 />
                               </FormControl>
                             </FormItem>
@@ -1532,7 +1539,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                   placeholder="Instagram 專屬內容（如不填則使用主貼文內容）" 
                                   {...field}
                                   value={field.value || ''}
-                                  className="resize-none h-24 mt-2"
+                                  className="resize-vertical min-h-[140px] mt-2"
                                 />
                               </FormControl>
                             </FormItem>
@@ -1550,7 +1557,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                   placeholder="TikTok 專屬內容（如不填則使用主貼文內容）" 
                                   {...field}
                                   value={field.value || ''}
-                                  className="resize-none h-24 mt-2"
+                                  className="resize-vertical min-h-[140px] mt-2"
                                 />
                               </FormControl>
                             </FormItem>
@@ -1568,7 +1575,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                   placeholder="Threads 專屬內容（如不填則使用主貼文內容）" 
                                   {...field}
                                   value={field.value || ''}
-                                  className="resize-none h-24 mt-2"
+                                  className="resize-vertical min-h-[140px] mt-2"
                                 />
                               </FormControl>
                             </FormItem>
@@ -1586,7 +1593,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                                   placeholder="X (Twitter) 專屬內容（如不填則使用主貼文內容）" 
                                   {...field}
                                   value={field.value || ''}
-                                  className="resize-none h-24 mt-2"
+                                  className="resize-vertical min-h-[140px] mt-2"
                                 />
                               </FormControl>
                             </FormItem>
