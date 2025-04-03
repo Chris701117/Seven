@@ -954,9 +954,15 @@ export class MemStorage implements IStorage {
       .filter((post) => post.pageId === pageId && post.status === status && !post.isDeleted)
       .sort((a, b) => {
         if (status === "scheduled" && a.scheduledTime && b.scheduledTime) {
-          return a.scheduledTime.getTime() - b.scheduledTime.getTime();
+          // 確保日期是Date對象
+          const timeA = a.scheduledTime instanceof Date ? a.scheduledTime : new Date(a.scheduledTime);
+          const timeB = b.scheduledTime instanceof Date ? b.scheduledTime : new Date(b.scheduledTime);
+          return timeA.getTime() - timeB.getTime();
         }
-        return b.createdAt.getTime() - a.createdAt.getTime();
+        // 確保createdAt也是Date對象
+        const createdAtA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+        const createdAtB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+        return createdAtB.getTime() - createdAtA.getTime();
       });
   }
 
@@ -967,12 +973,18 @@ export class MemStorage implements IStorage {
   async getPostsNeedingReminders(): Promise<Post[]> {
     const now = new Date();
     return Array.from(this.posts.values()).filter(
-      (post) => 
-        post.status === "scheduled" && 
-        !post.reminderSent && 
-        post.reminderTime !== null && 
-        post.reminderTime <= now &&
-        !post.isDeleted
+      (post) => {
+        if (post.status !== "scheduled" || post.reminderTime === null || post.reminderSent || post.isDeleted) {
+          return false;
+        }
+        
+        // 確保reminderTime是Date對象
+        const reminderTime = post.reminderTime instanceof Date 
+          ? post.reminderTime 
+          : new Date(post.reminderTime);
+        
+        return reminderTime <= now;
+      }
     );
   }
 
@@ -1010,11 +1022,17 @@ export class MemStorage implements IStorage {
   async getPostsDueForPublishing(): Promise<Post[]> {
     const now = new Date();
     return Array.from(this.posts.values()).filter(
-      (post) => 
-        post.status === "scheduled" && 
-        post.scheduledTime !== null && 
-        post.scheduledTime <= now &&
-        !post.isDeleted
+      (post) => {
+        if (post.status !== "scheduled" || post.scheduledTime === null || post.isDeleted) {
+          return false;
+        }
+        // 確保排程時間是Date對象
+        const scheduledTime = post.scheduledTime instanceof Date 
+          ? post.scheduledTime 
+          : new Date(post.scheduledTime);
+        
+        return scheduledTime <= now;
+      }
     );
   }
 
