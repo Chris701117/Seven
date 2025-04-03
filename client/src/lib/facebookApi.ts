@@ -230,16 +230,22 @@ export const facebookApi = {
   
   // Auth related functions
   saveAccessToken: async (accessToken: string, fbUserId: string) => {
-    return apiRequest("POST", "/api/auth/facebook", { accessToken, fbUserId });
+    return apiRequest(`/api/auth/facebook`, {
+      method: "POST",
+      data: { accessToken, fbUserId }
+    });
   },
   
   // Pages related functions
   fetchUserPages: async () => {
-    return apiRequest("GET", "/api/pages");
+    return apiRequest(`/api/pages`);
   },
   
   savePage: async (pageData: any) => {
-    return apiRequest("POST", "/api/pages", pageData);
+    return apiRequest(`/api/pages`, {
+      method: "POST",
+      data: pageData
+    });
   },
   
   // Posts related functions
@@ -248,66 +254,78 @@ export const facebookApi = {
     if (status) {
       url += `?status=${status}`;
     }
-    return apiRequest("GET", url);
+    return apiRequest(url);
   },
   
   createPost: async (pageId: string, postData: any) => {
-    return apiRequest("POST", `/api/pages/${pageId}/posts`, postData);
+    return apiRequest(`/api/pages/${pageId}/posts`, {
+      method: "POST",
+      data: postData
+    });
   },
   
   updatePost: async (postId: number, postData: any) => {
-    return apiRequest("PATCH", `/api/posts/${postId}`, postData);
+    return apiRequest(`/api/posts/${postId}`, {
+      method: "PATCH",
+      data: postData
+    });
   },
   
   deletePost: async (postId: number) => {
-    return apiRequest("DELETE", `/api/posts/${postId}`);
+    return apiRequest(`/api/posts/${postId}`, {
+      method: "DELETE"
+    });
   },
   
   // 一鍵發布到所有平台
   publishToAllPlatforms: async (postId: number) => {
-    return apiRequest("POST", `/api/posts/${postId}/publish-all`);
+    return apiRequest(`/api/posts/${postId}/publish-all`, {
+      method: "POST"
+    });
   },
   
   // Analytics related functions
   fetchPostAnalytics: async (postId: string) => {
-    return apiRequest("GET", `/api/posts/${postId}/analytics`);
+    return apiRequest(`/api/posts/${postId}/analytics`);
   },
   
   fetchPageAnalytics: async (pageId: string) => {
-    return apiRequest("GET", `/api/pages/${pageId}/analytics`);
+    return apiRequest(`/api/pages/${pageId}/analytics`);
   },
   
   // Facebook Graph API integration functions
   syncPageInsights: async (pageId: string) => {
     // 實際實現中，這會向Facebook Graph API請求數據，然後更新我們的數據庫
     // 目前我們將模擬此操作，以示例界面功能
-    return apiRequest("POST", `/api/pages/${pageId}/sync`, { 
-      source: "facebook_graph_api" 
+    return apiRequest(`/api/pages/${pageId}/sync`, {
+      method: "POST",
+      data: { source: "facebook_graph_api" }
     });
   },
   
   fetchAudienceData: async (pageId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取受眾數據
     // 目前返回模擬數據
-    return apiRequest("GET", `/api/pages/${pageId}/audience`);
+    return apiRequest(`/api/pages/${pageId}/audience`);
   },
   
   fetchEngagementByTime: async (pageId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取按時間的互動數據
     // 目前返回模擬數據
-    return apiRequest("GET", `/api/pages/${pageId}/engagement-time`);
+    return apiRequest(`/api/pages/${pageId}/engagement-time`);
   },
   
   fetchPostPerformance: async (postId: string) => {
     // 實際實現中，這會從Facebook Graph API獲取特定貼文的詳細表現數據
     // 目前返回模擬數據
-    return apiRequest("GET", `/api/posts/${postId}/performance`);
+    return apiRequest(`/api/posts/${postId}/performance`);
   },
   
   // 此方法將用於後續實現批量同步或定期同步功能
   scheduleSyncJob: async (pageId: string, frequency: "daily" | "weekly") => {
-    return apiRequest("POST", `/api/pages/${pageId}/sync/schedule`, { 
-      frequency 
+    return apiRequest(`/api/pages/${pageId}/sync/schedule`, {
+      method: "POST",
+      data: { frequency }
     });
   }
 };
