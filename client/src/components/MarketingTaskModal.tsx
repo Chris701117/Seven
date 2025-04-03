@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,12 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { X, Calendar } from "lucide-react";
 
 // UI components
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -58,20 +58,39 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
 
   // Prepare default values for the form
   const defaultValues: Partial<MarketingTaskFormValues> = {
-    title: task?.title || "",
-    content: task?.content || "",
-    description: task?.description || "",
-    category: task?.category || "一般",
-    status: task?.status || "待處理",
-    priority: task?.priority || "中",
-    startTime: task?.startTime ? new Date(task.startTime) : new Date(),
-    endTime: task?.endTime ? new Date(task.endTime) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week later
+    title: "",
+    content: "",
+    description: "",
+    category: "一般",
+    status: "待處理",
+    priority: "中",
+    startTime: new Date(),
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week later
   };
 
   const form = useForm<MarketingTaskFormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
   });
+  
+  // Reset form when editing an existing task
+  useEffect(() => {
+    if (task && open) {
+      const taskStartTime = new Date(task.startTime);
+      const taskEndTime = new Date(task.endTime);
+      
+      form.reset({
+        title: task.title,
+        content: task.content || '',
+        description: task.description || '',
+        status: task.status,
+        category: task.category,
+        priority: task.priority || '中',
+        startTime: taskStartTime,
+        endTime: taskEndTime,
+      });
+    }
+  }, [task, open, form]);
 
   // Create task mutation
   const createMutation = useMutation({
@@ -134,18 +153,14 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {isEditing ? "編輯行銷任務" : "新增行銷任務"}
-          </DialogTitle>
-          <button
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">關閉</span>
-          </button>
+          <DialogTitle>{isEditing ? "編輯行銷任務" : "新增行銷任務"}</DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? '更新任務的詳細信息並保存您的更改。' 
+              : '填寫以下表格以創建一個新的行銷任務。'}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -155,10 +170,13 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">任務標題</FormLabel>
+                  <FormLabel>任務標題</FormLabel>
                   <FormControl>
-                    <Input placeholder="請輸入任務標題" {...field} />
+                    <Input placeholder="輸入行銷任務標題" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    簡潔明了的任務標題，能清楚描述任務內容
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -170,7 +188,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">類別</FormLabel>
+                    <FormLabel>類別</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -194,7 +212,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">狀態</FormLabel>
+                    <FormLabel>狀態</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -220,7 +238,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               name="priority"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">優先級</FormLabel>
+                  <FormLabel>優先級</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -244,7 +262,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 name="startTime"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-base">開始日期</FormLabel>
+                    <FormLabel>開始日期</FormLabel>
                     <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -281,7 +299,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 name="endTime"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel className="text-base">結束日期</FormLabel>
+                    <FormLabel>結束日期</FormLabel>
                     <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -319,7 +337,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">任務內容</FormLabel>
+                  <FormLabel>任務內容</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="請輸入任務內容"
@@ -342,7 +360,7 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">任務描述</FormLabel>
+                  <FormLabel>任務描述</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="請輸入任務詳細描述"
