@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown, HelpCircle, Megaphone, Clipboard, Link2 } from "lucide-react";
+import { Facebook, Home, Calendar, BarChart2, Settings, ChevronDown, HelpCircle, Megaphone, Clipboard, Link2, Trash2 } from "lucide-react";
 import { Page } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
             <Link href="/">
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Home className="h-5 w-5 mr-3" />
-                <span>貼文總覽</span>
+                <span>貼文管理</span>
               </a>
             </Link>
             <Link href="/calendar">
@@ -66,6 +66,12 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
               <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/onelink' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <Link2 className="h-5 w-5 mr-3" />
                 <span>Onelink 管理</span>
+              </a>
+            </Link>
+            <Link href="/recycle-bin">
+              <a className={`sidebar-item flex items-center px-4 py-3 rounded-md ${location === '/recycle-bin' ? 'active bg-blue-50 border-l-4 border-primary text-gray-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Trash2 className="h-5 w-5 mr-3" />
+                <span>還原區</span>
               </a>
             </Link>
             <Link href="/settings">
