@@ -72,7 +72,7 @@ const formSchema = insertPostSchema.extend({
   endDate: z.string().optional(),
   endTime: z.string().optional(),
   hasImage: z.boolean().default(false),
-  hasLink: z.boolean().default(false),
+  hasLink: z.boolean().default(true),
   category: z.enum(["promotion", "event", "announcement"]).optional(),
 }).superRefine((data, ctx) => {
   if (data.schedulePost) {
@@ -273,7 +273,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       endDate: post?.endTime ? new Date(post.endTime).toISOString().split('T')[0] : "",
       endTime: post?.endTime ? new Date(post.endTime).toTimeString().split(' ')[0].substring(0, 5) : "",
       hasImage: !!post?.imageUrl,
-      hasLink: !!post?.linkUrl,
+      hasLink: post ? !!post.linkUrl : true,
       multiPlatform: true,
       category: post?.category as "promotion" | "event" | "announcement" | undefined,
       platformContent: post?.platformContent || {
@@ -808,20 +808,20 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
               </div>
               
               {/* Multi-Platform Panel */}
-                <div className="px-4 py-2 border-t border-gray-200">
-                  <div className="flex items-center mb-2 justify-between">
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <Share className="h-5 w-5 mr-2 text-red-500" />
-                        <h4 className="font-medium">多平台設置</h4>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1 ml-7">
-                        <Info className="h-3 w-3 inline mr-1" />
-                        選擇要發佈的平台，點擊「暫存草稿」或「立即發佈」時會將內容發佈到所選平台。您可以使用「全部開啟」或「全部關閉」來快速設置。
-                      </div>
+              <div className="px-4 py-2 border-t border-gray-200">
+                <div className="flex items-center mb-2 justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-center">
+                      <Share className="h-5 w-5 mr-2 text-red-500" />
+                      <h4 className="font-medium">多平台設置</h4>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button
+                    <div className="text-xs text-gray-500 mt-1 ml-7">
+                      <Info className="h-3 w-3 inline mr-1" />
+                      選擇要發佈的平台，點擊「暫存草稿」或「立即發佈」時會將內容發佈到所選平台。您可以使用「全部開啟」或「全部關閉」來快速設置。
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
                         type="button"
                         variant="outline"
                         size="sm"
@@ -1563,7 +1563,6 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     </Tabs>
                   </div>
                 </div>
-              )}
               
               {/* Link Panel */}
               {form.watch("hasLink") && (
