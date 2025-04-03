@@ -57,7 +57,8 @@ import {
   FileBadge,
   ChevronDown,
   AtSign,
-  Info
+  Info,
+  Send
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -1543,6 +1544,25 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   >
                     取消
                   </Button>
+                  
+                  {/* 若是編輯已存在的貼文且不是排程模式，顯示「立即發布」按鈕 */}
+                  {post && !form.watch("schedulePost") && post.status !== "published" && (
+                    <Button 
+                      type="button" 
+                      onClick={() => {
+                        const values = form.getValues();
+                        updatePostMutation.mutate({
+                          ...values,
+                          status: "published"
+                        });
+                      }}
+                      disabled={createPostMutation.isPending || updatePostMutation.isPending || !form.watch("content")}
+                      className="bg-green-600 hover:bg-green-700 flex items-center"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      立即發佈
+                    </Button>
+                  )}
                   
                   <Button 
                     type="submit" 
