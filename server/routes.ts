@@ -635,6 +635,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Server error" });
     }
   });
+  
+  // 獲取已刪除的貼文
+  app.get("/api/pages/:pageId/deleted-posts", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { pageId } = req.params;
+      
+      const page = await storage.getPageByPageId(pageId);
+      if (!page) {
+        return res.status(404).json({ message: "Page not found" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      const deletedPosts = await storage.getDeletedPosts(pageId);
+      res.json(deletedPosts);
+    } catch (error) {
+      console.error("獲取已刪除貼文錯誤:", error);
+      res.status(500).json({ message: "獲取已刪除貼文時發生錯誤" });
+    }
+  });
 
   // File upload route for posts
   app.post("/api/upload", upload.single("media"), async (req, res) => {
@@ -1039,7 +1065,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      // Delete image from Cloudinary if it exists
+      // 軟刪除 - 不實際刪除圖片，只標記為已刪除
+      const deleted = await storage.deletePost(postId);
+      if (!deleted) {
+        return res.status(500).json({ message: "刪除貼文時發生錯誤" });
+      }
+
+      res.json({ message: "Post deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // 還原被刪除的貼文
+  app.post("/api/posts/:id/restore", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPostById(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      const page = await storage.getPageByPageId(post.pageId);
+      if (!page || page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      if (!post.isDeleted) {
+        return res.status(400).json({ message: "This post is not deleted" });
+      }
+      
+      const restoredPost = await storage.restorePost(postId);
+      res.json({ message: "Post restored successfully", post: restoredPost });
+    } catch (error) {
+      console.error("還原貼文錯誤:", error);
+      res.status(500).json({ message: "還原貼文時發生錯誤" });
+    }
+  });
+  
+  // 永久刪除貼文
+  app.delete("/api/posts/:id/permanent", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPostById(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      const page = await storage.getPageByPageId(post.pageId);
+      if (!page || page.userId !== req.session.userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // 刪除 Cloudinary 圖片 (如果存在)
       if (post.imageUrl) {
         try {
           const publicId = getPublicIdFromUrl(post.imageUrl);
@@ -1052,10 +1140,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      await storage.deletePost(postId);
-      res.json({ message: "Post deleted" });
+      // 永久刪除
+      const deleted = await storage.permanentlyDeletePost(postId);
+      if (!deleted) {
+        return res.status(500).json({ message: "永久刪除貼文時發生錯誤" });
+      }
+      
+      res.json({ message: "Post permanently deleted" });
     } catch (error) {
-      res.status(500).json({ message: "Server error" });
+      console.error("永久刪除貼文錯誤:", error);
+      res.status(500).json({ message: "永久刪除貼文時發生錯誤" });
     }
   });
 
