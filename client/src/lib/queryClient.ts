@@ -82,46 +82,63 @@ export async function apiRequest<T = any>(
   
   console.log(`Making ${method} request to: ${apiUrl}`);
   
-  const res = await fetch(apiUrl, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  
-  // 對於 204 No Content 響應，返回空對象
-  if (res.status === 204) {
-    return {} as T;
-  }
-  
-  // 解析 JSON 響應
   try {
-    // 先檢查 Content-Type 頭部
+    const res = await fetch(apiUrl, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+
+    // 確保響應格式正確
+    await throwIfResNotOk(res);
+    
+    // 對於 204 No Content 響應，返回空對象
+    if (res.status === 204) {
+      return {} as T;
+    }
+    
+    // 檢查 Content-Type 頭部
     const contentType = res.headers.get('content-type');
     
     // 如果不是 JSON 格式，拋出更明確的錯誤
-    if (contentType && !contentType.includes('application/json')) {
+    if (!contentType || !contentType.includes('application/json')) {
       console.error(`API 響應不是 JSON 格式，而是 ${contentType}`);
-      const errorText = await res.text();
-      throw new Error(`API 響應格式錯誤: 預期為 JSON，實際為 ${contentType}。服務端可能返回了 HTML 或其他格式。`);
+      const textResponse = await res.text();
+      console.error('原始回應內容:', textResponse);
+      throw new Error(`API 響應格式錯誤: 預期為 JSON，實際為 ${contentType || '未指定'}。服務端可能返回了 HTML 或其他格式。`);
     }
     
-    return await res.json() as T;
-  } catch (error) {
-    console.error('無法解析 API 響應為 JSON:', error);
+    // 以文本形式獲取響應，然後嘗試手動解析
+    const textResponse = await res.text();
     
-    // 提供更具體的錯誤信息以便調試
-    if (error instanceof Error) {
-      // 檢查錯誤是否包含常見的 JSON 解析錯誤模式
-      if (error.message.includes('Unexpected token')) {
-        throw new Error(`API 響應格式無效 JSON: 服務端可能返回了錯誤頁面或非 JSON 格式。請檢查 API 路由和請求格式是否正確。`);
+    if (!textResponse || textResponse.trim() === '') {
+      console.warn('API 回應是空的');
+      return {} as T;
+    }
+    
+    try {
+      return JSON.parse(textResponse) as T;
+    } catch (parseError) {
+      console.error('JSON 解析錯誤:', parseError);
+      console.error('原始回應內容:', textResponse);
+      
+      if (textResponse.includes('<!DOCTYPE html>') || textResponse.includes('<html>')) {
+        throw new Error('API 回應為 HTML 頁面，而非預期的 JSON 數據。請檢查 API 路由是否正確。');
       }
-      throw new Error(`API 響應無法解析為 JSON: ${error.message}`);
+      
+      throw new Error(`無法解析 API 響應為 JSON: ${parseError instanceof Error ? parseError.message : '未知錯誤'}`);
+    }
+  } catch (error) {
+    console.error('API 請求失敗:', error);
+    
+    // 網絡錯誤處理
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error(`網絡請求失敗: 服務器無法訪問或網絡連接中斷`);
     }
     
-    throw new Error(`API 響應無法解析為 JSON: 未知錯誤`);
+    // 重新拋出已處理的錯誤
+    throw error;
   }
 }
 
@@ -138,16 +155,59 @@ export const getQueryFn: <T>(options: {
     
     console.log(`Fetching data from: ${apiUrl}`);
     
-    const res = await fetch(apiUrl, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(apiUrl, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      
+      // 檢查 Content-Type 頭部
+      const contentType = res.headers.get('content-type');
+      
+      // 如果不是 JSON 格式，拋出更明確的錯誤
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error(`API 響應不是 JSON 格式，而是 ${contentType}`);
+        const textResponse = await res.text();
+        console.error('原始回應內容:', textResponse);
+        throw new Error(`API 響應格式錯誤: 預期為 JSON，實際為 ${contentType || '未指定'}。服務端可能返回了 HTML 或其他格式。`);
+      }
+      
+      // 以文本形式獲取響應，然後嘗試手動解析
+      const textResponse = await res.text();
+      
+      if (!textResponse || textResponse.trim() === '') {
+        console.warn('API 回應是空的');
+        return {} as T;
+      }
+      
+      try {
+        return JSON.parse(textResponse) as T;
+      } catch (parseError) {
+        console.error('JSON 解析錯誤:', parseError);
+        console.error('原始回應內容:', textResponse);
+        
+        if (textResponse.includes('<!DOCTYPE html>') || textResponse.includes('<html>')) {
+          throw new Error('API 回應為 HTML 頁面，而非預期的 JSON 數據。請檢查 API 路由是否正確。');
+        }
+        
+        throw new Error(`無法解析 API 響應為 JSON: ${parseError instanceof Error ? parseError.message : '未知錯誤'}`);
+      }
+    } catch (error) {
+      console.error('API 請求失敗:', error);
+      
+      // 網絡錯誤處理
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error(`網絡請求失敗: 服務器無法訪問或網絡連接中斷`);
+      }
+      
+      // 重新拋出已處理的錯誤
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
