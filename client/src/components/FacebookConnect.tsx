@@ -6,8 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, AlertCircle, Facebook, RefreshCcw, Info, Database, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { facebookApi } from "../lib/facebookApi";
-import { queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 interface FacebookConnectProps {
   onConnect?: () => void;
@@ -472,15 +471,9 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
                         };
                         const response = await apiRequest('POST', '/api/facebook/create-test-page', body);
                         
-                        if (!response.ok) {
-                          throw new Error(`伺服器錯誤: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        
                         toast({
                           title: "測試頁面已創建",
-                          description: data.message || "測試頁面創建成功！",
+                          description: "測試頁面創建成功！",
                           variant: "default",
                         });
                         
