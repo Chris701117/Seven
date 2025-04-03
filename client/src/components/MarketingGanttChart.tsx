@@ -95,14 +95,28 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
     const startTaskDate = new Date(task.startTime);
     const endTaskDate = new Date(task.endTime);
     
-    // 為單日任務添加一個適當的結束時間 (設為當天23:59:59)
+    // 為單日任務確保至少有一天的顯示
     const adjustedEndDate = isSameDay(startTaskDate, endTaskDate) 
       ? new Date(endTaskDate.getFullYear(), endTaskDate.getMonth(), endTaskDate.getDate(), 23, 59, 59) 
       : endTaskDate;
     
-    return daysInMonth.filter(day => 
+    const daysInRange = daysInMonth.filter(day => 
       isWithinInterval(day, { start: startTaskDate, end: adjustedEndDate })
     );
+    
+    // 如果是單日任務但找不到匹配天數，確保至少返回開始日期
+    if (isSameDay(startTaskDate, endTaskDate) && daysInRange.length === 0) {
+      // 找到最接近的日期
+      const closestDayIndex = daysInMonth.findIndex(day => 
+        format(day, 'yyyy-MM-dd') === format(startTaskDate, 'yyyy-MM-dd')
+      );
+      
+      if (closestDayIndex >= 0) {
+        return [daysInMonth[closestDayIndex]];
+      }
+    }
+    
+    return daysInRange;
   };
 
   // 按類別分組任務
@@ -254,11 +268,13 @@ export default function MarketingGanttChart({ tasks }: MarketingGanttChartProps)
                         {category}
                       </div>
                       <div 
-                        className="w-48 flex-shrink-0 border-r p-2 truncate cursor-pointer"
+                        className="w-48 flex-shrink-0 border-r p-2 cursor-pointer"
                         onClick={() => handleTaskClick(task)}
                       >
-                        <div className="font-medium truncate">{task.title}</div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={task.title}>
+                          {task.title}
+                        </div>
+                        <div className="text-xs text-gray-500 whitespace-nowrap">
                           {format(new Date(task.startTime), 'MM/dd')} - {format(new Date(task.endTime), 'MM/dd')}
                         </div>
                       </div>
