@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import CreatePostModal from '@/components/CreatePostModal';
+import { getCategoryDisplayName } from '@/lib/utils';
 
 interface ContentGanttChartProps {
   posts: Post[];
@@ -95,11 +96,12 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
 
   // 按類別分組貼文
   const postsByCategory = posts.reduce<Record<string, Post[]>>((acc, post) => {
-    const category = post.category || '未分類';
-    if (!acc[category]) {
-      acc[category] = [];
+    const categoryKey = post.category || '未分類';
+    const displayCategory = getCategoryDisplayName(categoryKey);
+    if (!acc[displayCategory]) {
+      acc[displayCategory] = [];
     }
-    acc[category].push(post);
+    acc[displayCategory].push(post);
     return acc;
   }, {});
 
@@ -238,7 +240,10 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
                     
                     return (
                       <div key={post.id} className="flex border-b hover:bg-gray-50">
-                        <div className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer">
+                        <div 
+                          className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer"
+                          onClick={() => handlePostClick(post)}
+                        >
                           {category}
                         </div>
                         <div 
@@ -270,7 +275,7 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
                                     className="absolute top-0 h-full flex items-center cursor-pointer opacity-90"
                                     style={{
                                       left: `${startIdx * 40}px`,
-                                      width: `${postDays.length * 40}px`,
+                                      width: `${Math.max(postDays.length, 1) * 40}px`,
                                     }}
                                     onClick={() => handlePostClick(post)}
                                   >
@@ -286,7 +291,7 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
                                     {post.endTime && (
                                       <p>結束時間: {format(new Date(post.endTime), 'yyyy/MM/dd HH:mm')}</p>
                                     )}
-                                    <p>類別: {post.category || '未分類'}</p>
+                                    <p>類別: {getCategoryDisplayName(post.category)}</p>
                                     <p>狀態: {post.status === 'published' ? '已發布' : (post.scheduledTime && new Date(post.scheduledTime) > new Date() ? '待發布' : '草稿')}</p>
                                   </div>
                                 </TooltipContent>

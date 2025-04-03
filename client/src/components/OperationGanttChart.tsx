@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, addMonths, isSameMonth } from 'date-fns';
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, addMonths, isSameMonth, isSameDay } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { OperationTask } from '@shared/schema';
 import { Edit, Calendar, AlertTriangle, CheckSquare, ArrowLeft, ArrowRight, ArrowUpDown } from 'lucide-react';
@@ -95,8 +95,13 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
     const startTaskDate = new Date(task.startTime);
     const endTaskDate = new Date(task.endTime);
     
+    // 為單日任務添加一個適當的結束時間 (設為當天23:59:59)
+    const adjustedEndDate = isSameDay(startTaskDate, endTaskDate) 
+      ? new Date(endTaskDate.getFullYear(), endTaskDate.getMonth(), endTaskDate.getDate(), 23, 59, 59) 
+      : endTaskDate;
+    
     return daysInMonth.filter(day => 
-      isWithinInterval(day, { start: startTaskDate, end: endTaskDate })
+      isWithinInterval(day, { start: startTaskDate, end: adjustedEndDate })
     );
   };
 
