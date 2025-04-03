@@ -7,6 +7,8 @@ import {
   List,
   BarChart4
 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   format,
   parseISO,
@@ -31,6 +33,7 @@ import ContentGanttChart from "@/components/ContentGanttChart";
 import { formatDateDisplay } from "@/lib/utils";
 
 const ContentCalendar = () => {
+  const { toast } = useToast();
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [calendarView, setCalendarView] = useState<"month" | "list" | "gantt">("month");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -133,20 +136,22 @@ const ContentCalendar = () => {
   const handleSelectEvent = (event: any) => {
     // 在設置選擇的事件之前，從API獲取最新的貼文數據
     if (event.resource && event.resource.id) {
-      fetch(`/api/posts/${event.resource.id}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('無法獲取貼文數據');
-          }
-          return response.json();
-        })
+      console.log("嘗試獲取貼文數據，ID:", event.resource.id);
+      // 使用apiRequest幫助函數來確保一致的錯誤處理
+      apiRequest(`/api/posts/${event.resource.id}`)
         .then(post => {
+          console.log("成功獲取貼文數據:", post);
           // 設置獲取到的完整貼文數據
           setSelectedEvent(post);
           setIsCreateModalOpen(true);
         })
         .catch(error => {
           console.error('獲取貼文失敗:', error);
+          toast({
+            title: "錯誤",
+            description: "無法獲取貼文數據，請稍後再試",
+            variant: "destructive",
+          });
           // 如果獲取失敗，則使用事件中的基本信息
           setSelectedEvent(event.resource);
           setIsCreateModalOpen(true);
@@ -319,19 +324,20 @@ const ContentCalendar = () => {
                       className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                       onClick={() => {
                         // 在設置選擇的事件之前，從API獲取最新的貼文數據
-                        fetch(`/api/posts/${post.id}`)
-                          .then(response => {
-                            if (!response.ok) {
-                              throw new Error('無法獲取貼文數據');
-                            }
-                            return response.json();
-                          })
+                        console.log("列表視圖: 嘗試獲取貼文數據，ID:", post.id);
+                        apiRequest(`/api/posts/${post.id}`)
                           .then(updatedPost => {
+                            console.log("列表視圖: 成功獲取貼文數據:", updatedPost);
                             setSelectedEvent(updatedPost);
                             setIsCreateModalOpen(true);
                           })
                           .catch(error => {
                             console.error('獲取貼文失敗:', error);
+                            toast({
+                              title: "錯誤",
+                              description: "無法獲取貼文數據，請稍後再試",
+                              variant: "destructive",
+                            });
                             setSelectedEvent(post);
                             setIsCreateModalOpen(true);
                           });
@@ -358,19 +364,20 @@ const ContentCalendar = () => {
                           <Button variant="outline" size="sm" onClick={(e) => {
                             e.stopPropagation();
                             // 在設置選擇的事件之前，從API獲取最新的貼文數據
-                            fetch(`/api/posts/${post.id}`)
-                              .then(response => {
-                                if (!response.ok) {
-                                  throw new Error('無法獲取貼文數據');
-                                }
-                                return response.json();
-                              })
+                            console.log("編輯按鈕: 嘗試獲取貼文數據，ID:", post.id);
+                            apiRequest(`/api/posts/${post.id}`)
                               .then(updatedPost => {
+                                console.log("編輯按鈕: 成功獲取貼文數據:", updatedPost);
                                 setSelectedEvent(updatedPost);
                                 setIsCreateModalOpen(true);
                               })
                               .catch(error => {
                                 console.error('獲取貼文失敗:', error);
+                                toast({
+                                  title: "錯誤",
+                                  description: "無法獲取貼文數據，請稍後再試",
+                                  variant: "destructive",
+                                });
                                 setSelectedEvent(post);
                                 setIsCreateModalOpen(true);
                               });
