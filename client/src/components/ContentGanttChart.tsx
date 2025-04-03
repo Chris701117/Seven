@@ -166,8 +166,11 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
         <div className="min-w-max">
           {/* 標題列 - 日期 */}
           <div className="flex border-b">
+            <div className="w-24 flex-shrink-0 border-r bg-gray-50 p-2 font-medium">
+              類別
+            </div>
             <div className="w-48 flex-shrink-0 border-r bg-gray-50 p-2 font-medium">
-              類別 / 貼文
+              貼文內容
             </div>
             <div className="flex flex-grow">
               {daysInMonth.map((day, idx) => {
@@ -203,8 +206,11 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
                 <div key={category}>
                   {/* 類別標題行 */}
                   <div className="flex border-t border-b bg-gray-50">
-                    <div className="w-48 flex-shrink-0 border-r p-2 font-medium truncate">
+                    <div className="w-24 flex-shrink-0 border-r p-2 font-medium truncate">
                       {category}
+                    </div>
+                    <div className="w-48 flex-shrink-0 border-r p-2 font-medium truncate">
+                      內容項目
                     </div>
                     <div className="flex flex-grow">
                       {daysInMonth.map((_, idx) => (
@@ -232,11 +238,14 @@ export default function ContentGanttChart({ posts }: ContentGanttChartProps) {
                     
                     return (
                       <div key={post.id} className="flex border-b hover:bg-gray-50">
+                        <div className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer">
+                          {category}
+                        </div>
                         <div 
                           className="w-48 flex-shrink-0 border-r p-2 truncate cursor-pointer"
                           onClick={() => handlePostClick(post)}
                         >
-                          <div className="font-medium truncate">{post.content.substring(0, 50)}</div>
+                          <div className="font-medium truncate">{post.content.substring(0, 40)}</div>
                           <div className="text-xs text-gray-500 truncate">
                             {format(new Date(post.scheduledTime!), 'MM/dd')}
                             {post.endTime && ` - ${format(new Date(post.endTime), 'MM/dd')}`}
