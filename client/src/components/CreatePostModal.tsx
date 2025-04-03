@@ -318,7 +318,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       // 計算結束時間
       let endTime = null;
       if (values.schedulePost && values.endDate && values.endTime) {
-        endTime = new Date(`${values.endDate}T${values.endTime}`);
+        const endTimeDate = new Date(`${values.endDate}T${values.endTime}`);
+        endTime = endTimeDate.toISOString(); // 轉換為ISO字符串
       }
       
       // 檢查 pageId 是否有效
@@ -326,19 +327,22 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         throw new Error("請選擇一個頁面來發布貼文");
       }
       
-      // 處理日期對象 - 注意：傳給API的必須是Date對象而不是字符串
+      // 處理日期對象 - 使用ISO字符串格式
       let scheduledTimeValue = null;
       if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
-        scheduledTimeValue = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        scheduledTimeValue = scheduledDate.toISOString(); // 轉換為ISO字符串
       }
+      
+      console.log("排程時間ISO:", scheduledTimeValue, "結束時間ISO:", endTime);
       
       const postData = {
         pageId: values.pageId,
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: scheduledTimeValue, // 直接使用Date對象
-        endTime: endTime, // 直接使用Date對象
+        scheduledTime: scheduledTimeValue, // 使用ISO字符串
+        endTime: endTime, // 使用ISO字符串
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
@@ -428,24 +432,28 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
     mutationFn: async (values: FormValues) => {
       if (!post) return;
       
-      // 計算結束時間
+      // 計算結束時間 - 使用ISO字符串格式
       let endTime = null;
       if (values.schedulePost && values.endDate && values.endTime) {
-        endTime = new Date(`${values.endDate}T${values.endTime}`);
+        const endTimeDate = new Date(`${values.endDate}T${values.endTime}`);
+        endTime = endTimeDate.toISOString(); // 轉換為ISO字符串
       }
       
-      // 準備排程時間（如果需要）
+      // 準備排程時間（如果需要）- 使用ISO字符串格式
       let scheduledTimeValue = null;
       if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
-        scheduledTimeValue = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        scheduledTimeValue = scheduledDate.toISOString(); // 轉換為ISO字符串
       }
+      
+      console.log("更新貼文 - 排程時間ISO:", scheduledTimeValue, "結束時間ISO:", endTime);
       
       const postData = {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: scheduledTimeValue, // 直接使用Date對象
-        endTime: endTime, // 直接使用Date對象
+        scheduledTime: scheduledTimeValue, // 使用ISO字符串
+        endTime: endTime, // 使用ISO字符串
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
