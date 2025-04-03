@@ -242,10 +242,71 @@ const Settings = () => {
                           <p className="text-sm text-gray-500">您的帳號已連接到 Facebook。</p>
                         </div>
                       </div>
-                      <Button variant="outline" onClick={handleDisconnectFacebook} className="w-full sm:w-auto">
-                        <LogOut className="h-4 w-4 mr-2" />
-                        斷開 Facebook 連接
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleDisconnectFacebook} 
+                          className="w-full sm:w-auto"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          斷開 Facebook 連接
+                        </Button>
+                        
+                        <Button 
+                          variant="default" 
+                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                          onClick={async () => {
+                            try {
+                              toast({
+                                title: "創建測試頁面",
+                                description: "正在為您建立測試頁面，請稍後..."
+                              });
+                              
+                              // 呼叫後端API創建測試頁面
+                              const response = await fetch('/api/facebook/create-test-page', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  pageName: '測試粉絲專頁',
+                                  pageDescription: '這是一個由系統自動生成的測試用粉絲專頁'
+                                }),
+                                credentials: 'include'
+                              });
+                              
+                              if (!response.ok) {
+                                const errorText = await response.text();
+                                throw new Error(errorText || `伺服器錯誤: ${response.status}`);
+                              }
+                              
+                              const data = await response.json();
+                              
+                              // 顯示成功訊息
+                              toast({
+                                title: "測試頁面已創建",
+                                description: data.message || "測試頁面創建成功！",
+                                variant: "default",
+                              });
+                              
+                              // 刷新頁面列表
+                              queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+                            } catch (error) {
+                              console.error("創建測試頁面失敗:", error);
+                              toast({
+                                title: "創建失敗",
+                                description: error instanceof Error 
+                                  ? error.message
+                                  : "創建測試頁面時發生錯誤，請稍後再試",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          <Facebook className="h-4 w-4 mr-2" />
+                          創建測試粉絲專頁
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <FacebookConnect onConnect={handleFacebookConnect} />
