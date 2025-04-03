@@ -2,15 +2,54 @@ import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// 用戶角色枚舉
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  PM = 'PM',
+  USER = 'USER',
+}
+
 // User schema for authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  displayName: text("display_name"),
-  email: text("email"),
-  accessToken: text("access_token"),
-  fbUserId: text("fb_user_id"),
+  username: text("username").notNull().unique(), // 用户名
+  password: text("password").notNull(), // 加密密碼
+  displayName: text("display_name"), // 顯示名稱
+  email: text("email").notNull().unique(), // 電子郵件 (必須)
+  role: text("role").notNull().default('USER'), // 角色: ADMIN, PM, USER
+  isEmailVerified: boolean("is_email_verified").default(false), // 電子郵件是否已驗證
+  emailVerificationCode: text("email_verification_code"), // 電子郵件驗證碼
+  emailVerificationExpires: timestamp("email_verification_expires"), // 驗證碼過期時間
+  isTwoFactorEnabled: boolean("is_two_factor_enabled").default(false), // 是否啟用兩步驗證
+  twoFactorSecret: text("two_factor_secret"), // 兩步驗證秘鑰
+  lastLoginAt: timestamp("last_login_at"), // 上次登入時間
+  createdAt: timestamp("created_at").notNull().defaultNow(), // 創建時間
+  updatedAt: timestamp("updated_at"), // 更新時間
+  invitedBy: integer("invited_by"), // 邀請者ID
+  accessToken: text("access_token"), // Facebook 訪問令牌
+  fbUserId: text("fb_user_id"), // Facebook 用戶ID
+});
+
+// 邀請連結表
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(), // 被邀請者電子郵件
+  token: text("token").notNull(), // 邀請令牌
+  role: text("role").notNull().default('USER'), // 指定角色
+  invitedBy: integer("invited_by").notNull(), // 邀請者ID
+  isAccepted: boolean("is_accepted").default(false), // 是否已接受
+  expiresAt: timestamp("expires_at").notNull(), // 過期時間
+  createdAt: timestamp("created_at").notNull().defaultNow(), // 創建時間
+});
+
+// 登入驗證碼表
+export const authCodes = pgTable("auth_codes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // 用戶ID
+  code: text("code").notNull(), // 驗證碼
+  expiresAt: timestamp("expires_at").notNull(), // 過期時間
+  isUsed: boolean("is_used").default(false), // 是否已使用
+  createdAt: timestamp("created_at").notNull().defaultNow(), // 創建時間
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -18,7 +57,25 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   displayName: true,
   email: true,
+  role: true,
 });
+
+export const insertInvitationSchema = createInsertSchema(invitations).pick({
+  email: true,
+  token: true,
+  role: true,
+  invitedBy: true,
+  expiresAt: true,
+});
+
+export const insertAuthCodeSchema = createInsertSchema(authCodes).pick({
+  userId: true,
+  code: true,
+  expiresAt: true,
+});
+
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type InsertAuthCode = z.infer<typeof insertAuthCodeSchema>;
 
 // Facebook Pages
 export const pages = pgTable("pages", {
