@@ -4,30 +4,40 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-// Better CORS settings for Replit environment
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) return callback(null, true);
+
+// 確保了Express能適當解析請求體
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// 添加調試中間件，顯示請求體和響應類型
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  res.send = function(body) {
+    // 記錄發送的響應內容類型
+    console.log(`響應類型: ${res.getHeader('Content-Type')}`);
     
-    // Parse origin to handle possible variations
-    const hostname = new URL(origin).hostname;
-    
-    // Allow any Replit domains or localhost for development
-    if (hostname.includes('.replit.app') || 
-        hostname.includes('.repl.co') || 
-        hostname === 'localhost' || 
-        hostname === '127.0.0.1') {
-      return callback(null, true);
+    // 如果是POST請求，記錄請求體（但不記錄敏感數據）
+    if (req.method === 'POST' && req.path.includes('/api/')) {
+      const safeBody = { ...req.body };
+      // 移除敏感數據
+      if (safeBody.password) safeBody.password = '[REDACTED]';
+      if (safeBody.accessToken) safeBody.accessToken = '[TOKEN]';
+      
+      console.log(`請求體 (${req.path}):`, JSON.stringify(safeBody).substring(0, 100) + '...');
     }
     
-    callback(null, true); // Allow all origins for flexibility during development
-  },
+    return originalSend.call(this, body);
+  };
+  next();
+});
+
+// CORS 設置 - 允許所有來源，但確保 credentials 適當工作
+app.use(cors({
+  origin: true, // 允許所有來源
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Content-Type']
 }));
 
 // Basic request logging

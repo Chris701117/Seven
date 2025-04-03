@@ -210,18 +210,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           const { password, ...userWithoutPassword } = updatedUser;
-          return res.json({ 
+          
+          // 明確設置回應標頭
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          
+          // 使用 JSON.stringify 確保正確編碼
+          const responseData = {
             message: "開發模式已啟用，使用模擬數據", 
             user: userWithoutPassword,
             devMode: true
-          });
+          };
+          
+          console.log('返回開發模式回應:', JSON.stringify(responseData).substring(0, 100) + '...');
+          return res.status(200).send(JSON.stringify(responseData));
         } catch (devModeError) {
           console.error('開發模式處理錯誤:', devModeError);
-          return res.status(500).json({ 
+          
+          // 明確設置回應標頭
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          
+          // 使用 JSON.stringify 確保正確編碼
+          const errorResponse = { 
             message: "開發模式設置失敗", 
             error: devModeError instanceof Error ? devModeError.message : "未知錯誤",
             devMode: false
-          });
+          };
+          
+          return res.status(500).send(JSON.stringify(errorResponse));
         }
       }
       

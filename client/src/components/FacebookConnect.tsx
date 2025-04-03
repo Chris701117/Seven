@@ -172,11 +172,18 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       
       console.log('請求數據:', requestData);
       
-      // 使用原始 fetch 而非 facebookApi 幫助函數，以便更精確控制
-      const response = await fetch('/api/auth/facebook', {
+      // 使用完整的 URL 路徑，防止路徑解析問題
+      const currentUrl = window.location.origin;
+      console.log('當前URL基礎路徑:', currentUrl);
+      
+      const fullUrl = `${currentUrl}/api/auth/facebook`;
+      console.log('完整請求URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json' // 明確指定接受 JSON 格式回應
         },
         body: JSON.stringify(requestData),
         credentials: 'include'
