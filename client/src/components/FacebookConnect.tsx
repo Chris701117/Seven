@@ -140,16 +140,64 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
     setError(null);
     
     try {
+      // 記錄嘗試連接的時間
+      console.log('開始嘗試開發模式連接，時間:', new Date().toISOString());
+      
       // 模擬成功連接，使用臨時令牌
       const accessToken = "DEV_MODE_TOKEN_" + Date.now();
       const fbUserId = "DEV_MODE_USER_" + Date.now();
       
-      // 儲存令牌到我們的系統
-      const response = await facebookApi.saveAccessToken(accessToken, fbUserId);
-      console.log('開發模式連接響應:', response);
+      // 顯示調試信息
+      console.log('使用開發模式令牌:', accessToken.substring(0, 15) + '...');
+      console.log('使用開發模式用戶ID:', fbUserId);
       
-      // response 現在是已解析的 JSON 對象
-      if (response && response.devMode) {
+      // 嘗試向 Facebook 授權端點發送請求前的測試
+      try {
+        // 測試服務器端點是否可達
+        const testResponse = await fetch('/api/test');
+        const testData = await testResponse.json();
+        console.log('API 測試響應:', testData);
+      } catch (testError) {
+        console.error('API 測試失敗:', testError);
+      }
+      
+      // 儲存令牌到我們的系統
+      console.log('正在向伺服器發送開發模式授權請求...');
+      
+      // 使用明確定義的請求參數
+      const requestData = {
+        accessToken,
+        fbUserId,
+      };
+      
+      console.log('請求數據:', requestData);
+      
+      // 使用原始 fetch 而非 facebookApi 幫助函數，以便更精確控制
+      const response = await fetch('/api/auth/facebook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+        credentials: 'include'
+      });
+      
+      console.log('伺服器響應狀態:', response.status);
+      console.log('伺服器響應類型:', response.headers.get('content-type'));
+      
+      // 檢查響應是否成功
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('伺服器錯誤響應:', errorText);
+        throw new Error(`伺服器錯誤: ${response.status} ${response.statusText}`);
+      }
+      
+      // 解析 JSON 響應
+      const responseData = await response.json();
+      console.log('開發模式連接響應:', responseData);
+      
+      // 檢查開發模式標誌
+      if (responseData && responseData.devMode) {
         setIsConnected(true);
         toast({
           title: "開發模式連接成功",
