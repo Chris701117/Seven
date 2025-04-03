@@ -43,6 +43,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     queryFn: async () => {
       if (!pageId) return [];
       const response = await apiRequest(`/api/pages/${pageId}/posts?all=true`);
+      console.log("[獲取到的貼文數量]", response?.length || 0);
       return response || [];
     },
     enabled: !!pageId,
