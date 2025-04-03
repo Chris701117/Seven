@@ -72,10 +72,7 @@ export default function Login() {
     }
   }
 
-  // 註冊功能
-  const handleRegister = () => {
-    setLocation('/register');
-  };
+  // 邀請制系統不再提供註冊功能
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
@@ -126,11 +123,8 @@ export default function Login() {
           </Form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
-          <div className="text-center text-sm">
-            還沒有帳號？
-            <Button variant="link" className="px-2 py-0" onClick={handleRegister}>
-              立即註冊
-            </Button>
+          <div className="text-center text-sm text-muted-foreground">
+            本系統為邀請制，如需帳號請聯繫管理員
           </div>
         </CardFooter>
       </Card>
