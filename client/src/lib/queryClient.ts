@@ -9,6 +9,7 @@ const getBaseUrl = () => {
   return '';
 };
 
+// 處理響應錯誤的輔助函數
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     // 保存原始響應狀態碼和狀態文本
@@ -28,65 +29,77 @@ async function throwIfResNotOk(res: Response) {
       extendedError.statusText = statusText;
       extendedError.data = errorData;
       
-      // 對於特定的錯誤碼添加更友好的信息
-      if (status === 404) {
-        extendedError.friendlyMessage = "找不到請求的資源。請檢查URL是否正確。";
-      } else if (status === 401) {
-        extendedError.friendlyMessage = "您需要登錄才能訪問此資源。";
-      } else if (status === 403) {
-        extendedError.friendlyMessage = "您沒有權限訪問此資源。";
-      } else if (status === 500) {
-        extendedError.friendlyMessage = "伺服器內部錯誤。請稍後再試。";
-      }
-      
+      // 拋出擴展錯誤
       throw extendedError;
-      
-    } catch (e) {
-      // 如果無法解析為 JSON 或處理過程中出現錯誤
-      if (e instanceof Error && (e as any).status) {
-        // 如果已經是我們的擴展錯誤，則直接拋出
-        throw e;
-      }
-      
-      // 否則嘗試獲取文本內容並創建新的擴展錯誤
+    } catch (parseError) {
+      // 如果無法解析為 JSON，可能是服務器錯誤或網絡問題
+      // 嘗試獲取響應文本
       try {
-        const text = await res.text() || statusText;
-        const extendedError: any = new Error(`${status}: ${text}`);
-        extendedError.status = status;
-        extendedError.statusText = statusText;
-        throw extendedError;
+        const text = await res.text();
+        if (text) {
+          console.error('響應文本:', text);
+          const plainError: any = new Error(`${status}: ${statusText} - ${text}`);
+          plainError.status = status;
+          plainError.statusText = statusText;
+          plainError.responseText = text;
+          throw plainError;
+        }
       } catch (textError) {
-        // 如果獲取文本也失敗，則使用基本錯誤信息
-        const fallbackError: any = new Error(`${status}: ${statusText}`);
-        fallbackError.status = status;
-        fallbackError.statusText = statusText;
-        throw fallbackError;
+        console.error('無法獲取響應文本:', textError);
       }
+      
+      // 如果都失敗了，拋出帶有基本狀態信息的錯誤
+      const fallbackError: any = new Error(`${status}: ${statusText}`);
+      fallbackError.status = status;
+      fallbackError.statusText = statusText;
+      throw fallbackError;
     }
   }
 }
 
-export async function apiRequest<T = any>(
+// 通用 API 請求函數，支持兩種調用模式
+export async function apiRequest(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   url: string,
-  options?: {
-    method?: string;
-    data?: any;
+  body?: any
+): Promise<Response> {
+  // 構建完整 URL
+  const apiUrl = url.startsWith('http') ? url : 
+                url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+                
+  console.log(`Making ${method} request to: ${apiUrl}`);
+                
+  // 設置請求選項
+  const options: RequestInit = {
+    method,
+    headers: body ? {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    } : {
+      'Accept': 'application/json'
+    },
+    credentials: 'include',
+  };
+  
+  // 如果有請求體，將其添加到選項中
+  if (body) {
+    options.body = JSON.stringify(body);
   }
-): Promise<T> {
-  // Make sure we have a properly formed URL (especially in Replit environment)
+  
+  // 執行請求並返回 Response 對象
+  return fetch(apiUrl, options);
+}
+
+// 原始的數據查詢函數
+export async function fetchData<T = any>(url: string): Promise<T> {
+  // 構建完整 URL
   const apiUrl = url.startsWith('http') ? url : 
                 url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
   
-  const method = options?.method || 'GET';
-  const data = options?.data;
-  
-  console.log(`Making ${method} request to: ${apiUrl}`);
+  console.log(`Fetching data from: ${apiUrl}`);
   
   try {
     const res = await fetch(apiUrl, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
 
@@ -142,6 +155,7 @@ export async function apiRequest<T = any>(
   }
 }
 
+// TanStack Query 的查詢函數工廠
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
@@ -210,6 +224,7 @@ export const getQueryFn: <T>(options: {
     }
   };
 
+// 設置 QueryClient 實例
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

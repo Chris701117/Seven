@@ -7,6 +7,7 @@ import { CheckCircle, AlertCircle, Facebook, RefreshCcw, Info, Database, PlusCir
 import { useToast } from "@/hooks/use-toast";
 import { facebookApi } from "../lib/facebookApi";
 import { queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 
 interface FacebookConnectProps {
   onConnect?: () => void;
@@ -464,17 +465,12 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
                           description: "正在創建測試粉絲專頁..."
                         });
                         
-                        const response = await fetch('/api/facebook/create-test-page', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            pageName: '測試粉絲專頁',
-                            pageDescription: '這是一個由系統自動生成的測試用粉絲專頁'
-                          }),
-                          credentials: 'include'
-                        });
+                        // 使用前端apiRequest工具以提高一致性
+                        const body = {
+                          pageName: '測試粉絲專頁',
+                          pageDescription: '這是一個由系統自動生成的測試用粉絲專頁'
+                        };
+                        const response = await apiRequest('POST', '/api/facebook/create-test-page', body);
                         
                         if (!response.ok) {
                           throw new Error(`伺服器錯誤: ${response.status}`);
