@@ -33,13 +33,7 @@ const FormSchema = z.object({
   priority: z.string(),
   startTime: z.date(),
   endTime: z.date(),
-}).refine(
-  (data) => data.endTime >= data.startTime,
-  {
-    message: "結束時間必須晚於或等於開始時間",
-    path: ["endTime"],
-  }
-);
+});
 
 export type MarketingTaskFormValues = z.infer<typeof FormSchema>;
 
@@ -183,68 +177,92 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               )}
             />
 
-            {/* 任務類別 */}
+            {/* 任務內容 */}
             <FormField
               control={form.control}
-              name="category"
+              name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>任務類別</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="選擇任務類別" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="一般">一般</SelectItem>
-                      <SelectItem value="廣告投放">廣告投放</SelectItem>
-                      <SelectItem value="地面推廣">地面推廣</SelectItem>
-                      <SelectItem value="會議">會議</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>任務內容</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="描述行銷任務的具體內容和要求"
+                      className="min-h-[120px]"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormDescription>
-                    選擇最適合的行銷任務類別
+                    詳細描述行銷任務的內容、目標和具體要求
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* 任務類別 */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>任務類別</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="選擇任務類別" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="一般">一般</SelectItem>
+                        <SelectItem value="廣告投放">廣告投放</SelectItem>
+                        <SelectItem value="地面推廣">地面推廣</SelectItem>
+                        <SelectItem value="會議">會議</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      選擇最適合的行銷任務類別
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             
-            {/* 任務狀態 */}
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>任務狀態</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="選擇任務狀態" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="待處理">待處理</SelectItem>
-                      <SelectItem value="進行中">進行中</SelectItem>
-                      <SelectItem value="已完成">已完成</SelectItem>
-                      <SelectItem value="已延遲">已延遲</SelectItem>
-                      <SelectItem value="已取消">已取消</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    指定行銷任務的當前狀態
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* 任務狀態 */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>任務狀態</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="選擇任務狀態" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="待處理">待處理</SelectItem>
+                        <SelectItem value="進行中">進行中</SelectItem>
+                        <SelectItem value="已完成">已完成</SelectItem>
+                        <SelectItem value="已延遲">已延遲</SelectItem>
+                        <SelectItem value="已取消">已取消</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      指定行銷任務的當前狀態
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             {/* 優先級 */}
             <div className="flex flex-col md:flex-row gap-4">
@@ -371,27 +389,6 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>任務內容</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="描述行銷任務的具體內容和要求"
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    詳細描述行銷任務的內容、目標和具體要求
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
