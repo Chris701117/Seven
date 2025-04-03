@@ -171,19 +171,23 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     // 排序 - 確保草稿也能正確排序
     const sorted = [...filtered].sort((a, b) => {
       // 針對不同狀態的貼文使用適當的日期字段
-      const getDateForSort = (post: Post) => {
-        if (post.status === 'published') return post.publishedTime || post.createdAt;
-        if (post.status === 'scheduled') return post.scheduledTime || post.createdAt;
-        return post.createdAt; // 草稿和其他狀態
+      const getDateForSort = (post: Post): string => {
+        if (post.status === 'published') return post.publishedTime || post.createdAt || '';
+        if (post.status === 'scheduled') return post.scheduledTime || post.createdAt || '';
+        return post.createdAt || ''; // 草稿和其他狀態
       };
       
       const dateA = getDateForSort(a);
       const dateB = getDateForSort(b);
       
+      // 確保日期值有效
+      const timeA = dateA ? new Date(dateA).getTime() : 0;
+      const timeB = dateB ? new Date(dateB).getTime() : 0;
+      
       if (sortOrder === 'newest') {
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
+        return timeB - timeA; // 最新排序 (降序)
       } else {
-        return new Date(dateA).getTime() - new Date(dateB).getTime();
+        return timeA - timeB; // 最舊排序 (升序)
       }
     });
     
