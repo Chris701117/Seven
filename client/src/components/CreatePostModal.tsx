@@ -590,7 +590,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder={`${activePageData?.pageName || "你"}在想什麼？`}
-                          className="resize-vertical min-h-[240px] text-lg border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 w-full"
+                          className="resize-vertical min-h-[300px] text-lg border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-2 w-full bg-white rounded-md shadow-sm"
                           {...field}
                           onChange={(e) => {
                             field.onChange(e);
@@ -909,7 +909,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Facebook 專用內容..."
-                                  className="min-h-[170px] resize-vertical w-full"
+                                  className="min-h-[220px] resize-vertical w-full bg-white border-0 rounded-md shadow-sm p-3"
                                   {...field}
                                 />
                               </FormControl>
@@ -932,7 +932,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Instagram 專用內容..."
-                                  className="min-h-[170px] resize-vertical w-full"
+                                  className="min-h-[220px] resize-vertical w-full bg-white border-0 rounded-md shadow-sm p-3"
                                   {...field}
                                 />
                               </FormControl>
@@ -955,7 +955,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 TikTok 專用內容..."
-                                  className="min-h-[170px] resize-vertical w-full"
+                                  className="min-h-[220px] resize-vertical w-full bg-white border-0 rounded-md shadow-sm p-3"
                                   {...field}
                                 />
                               </FormControl>
@@ -978,7 +978,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 Threads 專用內容..."
-                                  className="min-h-[170px] resize-vertical w-full"
+                                  className="min-h-[220px] resize-vertical w-full bg-white border-0 rounded-md shadow-sm p-3"
                                   {...field}
                                 />
                               </FormControl>
@@ -1001,7 +1001,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                               <FormControl>
                                 <Textarea
                                   placeholder="請輸入 X (Twitter) 專用內容..."
-                                  className="min-h-[170px] resize-vertical w-full"
+                                  className="min-h-[220px] resize-vertical w-full bg-white border-0 rounded-md shadow-sm p-3"
                                   {...field}
                                 />
                               </FormControl>
