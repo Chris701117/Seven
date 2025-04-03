@@ -326,13 +326,25 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         throw new Error("請選擇一個頁面來發布貼文");
       }
       
+      // 把日期時間處理成ISO字符串以便在API請求中正確序列化
+      let scheduledTimeValue = null;
+      if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
+        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        scheduledTimeValue = scheduledDate.toISOString();
+      }
+      
+      let endTimeValue = null;
+      if (endTime) {
+        endTimeValue = endTime.toISOString();
+      }
+      
       const postData = {
         pageId: values.pageId,
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
-        endTime,
+        scheduledTime: scheduledTimeValue,
+        endTime: endTimeValue,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,
@@ -423,17 +435,25 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       if (!post) return;
       
       // 計算結束時間
-      let endTime = null;
+      let endTimeValue = null;
       if (values.schedulePost && values.endDate && values.endTime) {
-        endTime = new Date(`${values.endDate}T${values.endTime}`);
+        const endTime = new Date(`${values.endDate}T${values.endTime}`);
+        endTimeValue = endTime.toISOString();
+      }
+      
+      // 準備排程時間（如果需要）
+      let scheduledTimeValue = null;
+      if (values.schedulePost && values.scheduleDate && values.scheduleTime) {
+        const scheduledDate = new Date(`${values.scheduleDate}T${values.scheduleTime}`);
+        scheduledTimeValue = scheduledDate.toISOString();
       }
       
       const postData = {
         content: values.content,
         status: values.schedulePost ? "scheduled" : values.status,
         category: values.category || null,
-        scheduledTime: values.schedulePost ? new Date(`${values.scheduleDate}T${values.scheduleTime}`) : null,
-        endTime,
+        scheduledTime: scheduledTimeValue,
+        endTime: endTimeValue,
         imageUrl: values.hasImage ? values.imageUrl : null,
         linkUrl: values.hasLink ? values.linkUrl : null,
         linkTitle: values.hasLink ? values.linkTitle : null,

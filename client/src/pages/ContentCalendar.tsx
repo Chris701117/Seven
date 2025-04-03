@@ -131,8 +131,31 @@ const ContentCalendar = () => {
   
   // Handle event selection
   const handleSelectEvent = (event: any) => {
-    setSelectedEvent(event.resource);
-    setIsCreateModalOpen(true);
+    // 在設置選擇的事件之前，從API獲取最新的貼文數據
+    if (event.resource && event.resource.id) {
+      fetch(`/api/posts/${event.resource.id}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('無法獲取貼文數據');
+          }
+          return response.json();
+        })
+        .then(post => {
+          // 設置獲取到的完整貼文數據
+          setSelectedEvent(post);
+          setIsCreateModalOpen(true);
+        })
+        .catch(error => {
+          console.error('獲取貼文失敗:', error);
+          // 如果獲取失敗，則使用事件中的基本信息
+          setSelectedEvent(event.resource);
+          setIsCreateModalOpen(true);
+        });
+    } else {
+      // 如果没有id，直接使用事件資源
+      setSelectedEvent(event.resource);
+      setIsCreateModalOpen(true);
+    }
   };
   
   // Handle slot selection (empty time slot)
@@ -295,8 +318,23 @@ const ContentCalendar = () => {
                       key={post.id} 
                       className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                       onClick={() => {
-                        setSelectedEvent(post);
-                        setIsCreateModalOpen(true);
+                        // 在設置選擇的事件之前，從API獲取最新的貼文數據
+                        fetch(`/api/posts/${post.id}`)
+                          .then(response => {
+                            if (!response.ok) {
+                              throw new Error('無法獲取貼文數據');
+                            }
+                            return response.json();
+                          })
+                          .then(updatedPost => {
+                            setSelectedEvent(updatedPost);
+                            setIsCreateModalOpen(true);
+                          })
+                          .catch(error => {
+                            console.error('獲取貼文失敗:', error);
+                            setSelectedEvent(post);
+                            setIsCreateModalOpen(true);
+                          });
                       }}
                     >
                       <div className="flex justify-between items-start">
@@ -319,8 +357,23 @@ const ContentCalendar = () => {
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm" onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedEvent(post);
-                            setIsCreateModalOpen(true);
+                            // 在設置選擇的事件之前，從API獲取最新的貼文數據
+                            fetch(`/api/posts/${post.id}`)
+                              .then(response => {
+                                if (!response.ok) {
+                                  throw new Error('無法獲取貼文數據');
+                                }
+                                return response.json();
+                              })
+                              .then(updatedPost => {
+                                setSelectedEvent(updatedPost);
+                                setIsCreateModalOpen(true);
+                              })
+                              .catch(error => {
+                                console.error('獲取貼文失敗:', error);
+                                setSelectedEvent(post);
+                                setIsCreateModalOpen(true);
+                              });
                           }}>編輯</Button>
                           <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
                             刪除
