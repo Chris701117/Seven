@@ -354,6 +354,62 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
       setUploadedMediaType(videoExtensions.includes(fileExtension || '') ? 'video' : 'image');
     }
   }, [post, activePageData, form]);
+  
+  // 監聽模態框的開關狀態，當打開時檢查是否需要重置表單
+  const [previousIsOpen, setPreviousIsOpen] = useState(false);
+  
+  useEffect(() => {
+    // 如果從關閉狀態變為打開狀態
+    if (isOpen && !previousIsOpen) {
+      // 如果是新建貼文（沒有選定的post）
+      if (!post) {
+        console.log("打開新建貼文模態框，重置表單");
+        
+        // 清空媒體預覽
+        setMediaPreview(null);
+        setUploadedMediaType(null);
+        
+        // 重置表單所有字段為默認值
+        form.reset({
+          pageId: activePageData?.pageId || "page_123456",
+          content: "",
+          status: "draft",
+          scheduledTime: undefined,
+          imageUrl: "",
+          linkUrl: "",
+          linkTitle: "",
+          linkDescription: "",
+          linkImageUrl: "",
+          schedulePost: false,
+          scheduleDate: "",
+          scheduleTime: "",
+          endDate: "",
+          endTime: "",
+          hasImage: false,
+          hasLink: false,
+          multiPlatform: true,
+          category: undefined,
+          platformContent: {
+            fb: '',
+            ig: '',
+            tiktok: '',
+            threads: '',
+            x: ''
+          },
+          platformStatus: {
+            fb: true,
+            ig: false,
+            tiktok: false,
+            threads: false,
+            x: false
+          },
+        });
+      }
+    }
+    
+    // 更新先前的開啟狀態
+    setPreviousIsOpen(isOpen);
+  }, [isOpen, post, form, activePageData]);
 
   // Create post mutation
   const createPostMutation = useMutation({
