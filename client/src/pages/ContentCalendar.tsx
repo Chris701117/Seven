@@ -174,22 +174,39 @@ const ContentCalendar = () => {
     const category = event.resource?.category || "default";
     const bgColor = getPostColor(category);
     
-    // 判斷事件是否被縮短了
+    // 判斷事件是否被縮短了或是否在"更多事件"彈出窗口中
     const isCompact = event._isCompacted;
+    const isInPopup = !!(event._orig && event._orig._isInPopup);
     
+    // 如果是在彈出窗口中，使用更完整的顯示
+    // 如果是在日曆格中，根據是否壓縮來顯示
     return (
       <div
         className={`rounded px-2 ${isCompact ? 'py-0' : 'py-1'} truncate text-white ${isCompact ? 'text-xs' : 'text-sm'}`}
         style={{ 
           backgroundColor: bgColor,
-          maxHeight: isCompact ? '1.5rem' : 'none',
-          overflow: 'hidden'
+          // 確保高度始終足夠顯示內容
+          minHeight: isCompact ? '1.5rem' : '2.5rem',
+          height: 'auto',
+          // 非壓縮狀態顯示更多內容
+          maxHeight: isCompact ? '1.5rem' : (isInPopup ? '8rem' : '4rem'),
+          overflow: 'hidden',
+          border: '1px solid rgba(255,255,255,0.3)',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
         }}
       >
-        <div className={`${isCompact ? '' : 'font-semibold'} truncate`}>{event.title}</div>
+        <div className={`${isCompact ? '' : 'font-semibold'} truncate`}>
+          {isCompact ? event.title.substring(0, 20) + (event.title.length > 20 ? '...' : '') : event.title}
+        </div>
         {!isCompact && (
           <div className="text-xs opacity-90 truncate">
             {format(event.start, 'HH:mm')} - {format(event.end, 'HH:mm')}
+          </div>
+        )}
+        {/* 在彈出窗口中顯示更多詳情 */}
+        {isInPopup && (
+          <div className="text-xs mt-1 opacity-80">
+            類別: {category}
           </div>
         )}
       </div>
@@ -290,8 +307,22 @@ const ContentCalendar = () => {
                     event: '事件',
                     showMore: total => `+${total} 更多`
                   }}
+                  // 日曆格子的樣式設置
+                  dayPropGetter={(date) => {
+                    return {
+                      style: {
+                        backgroundColor: '#f9fafb',
+                        borderColor: '#e5e7eb'
+                      }
+                    };
+                  }}
+                  // 設置每個事件之間的間距
+                  dayLayoutAlgorithm="no-overlap"
                   // 開啟彈出顯示更多事件的功能
                   popup
+                  // 顯示多少天事件觸發"更多"按鈕，設置較大的值如6可以顯示更多事件
+                  popupOffset={20}
+                  // 區域設置為中文
                   culture="zh-TW"
                 />
               </div>
