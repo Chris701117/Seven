@@ -47,6 +47,9 @@ const ContentCalendar = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("scheduled");
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   
   // Get all pages for the user
   const { data: pages, isLoading: isLoadingPages } = useQuery<Page[]>({
@@ -65,6 +68,25 @@ const ContentCalendar = () => {
     queryKey: [`/api/pages/${activePageId}/posts`],
     enabled: !!activePageId,
   });
+  
+  // 更新篩選貼文列表
+  useEffect(() => {
+    if (posts) {
+      let filtered = [...posts];
+      
+      // 應用類別篩選
+      if (categoryFilter !== "all") {
+        filtered = filtered.filter(post => post.category === categoryFilter);
+      }
+      
+      // 應用狀態篩選
+      if (statusFilter !== "all") {
+        filtered = filtered.filter(post => post.status === statusFilter);
+      }
+      
+      setFilteredPosts(filtered);
+    }
+  }, [posts, categoryFilter, statusFilter]);
   
   // Filter scheduled posts
   const scheduledPosts = posts?.filter(post => 
@@ -381,12 +403,8 @@ const ContentCalendar = () => {
             </CardDescription>
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Select 
-                defaultValue="all" 
-                onValueChange={(value) => {
-                  const filteredPosts = value === "all" 
-                    ? posts || [] 
-                    : (posts || []).filter(post => post.category === value);
-                }}
+                defaultValue={categoryFilter}
+                onValueChange={(value) => setCategoryFilter(value)}
               >
                 <SelectTrigger className="h-9 w-[150px]">
                   <SelectValue placeholder="貼文類別" />
@@ -400,12 +418,8 @@ const ContentCalendar = () => {
               </Select>
               
               <Select 
-                defaultValue="scheduled" 
-                onValueChange={(value) => {
-                  const filteredPosts = value === "all" 
-                    ? posts || [] 
-                    : (posts || []).filter(post => post.status === value);
-                }}
+                defaultValue={statusFilter}
+                onValueChange={(value) => setStatusFilter(value)}
               >
                 <SelectTrigger className="h-9 w-[150px]">
                   <SelectValue placeholder="貼文狀態" />
@@ -426,9 +440,9 @@ const ContentCalendar = () => {
                   <Skeleton key={index} className="h-20 w-full" />
                 ))}
               </div>
-            ) : posts && posts.length > 0 ? (
+            ) : filteredPosts && filteredPosts.length > 0 ? (
               <div className="space-y-4">
-                {posts
+                {filteredPosts
                   .sort((a, b) => {
                     // 針對不同狀態的貼文使用適當的日期字段
                     const getDateForSort = (post: Post): string => {
