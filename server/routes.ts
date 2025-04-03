@@ -154,6 +154,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString() 
     });
   });
+  
+  // 創建測試頁面API
+  app.post("/api/facebook/create-test-page", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      // 檢查用戶是否已連接Facebook（或處於開發模式）
+      const user = await storage.getUser(req.session.userId);
+      const fbConnected = !!user.accessToken || req.session.fbDevMode === true;
+      
+      if (!fbConnected) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "您需要先連接Facebook帳戶才能創建測試頁面" 
+        });
+      }
+      
+      // 創建測試頁面 (使用預設名稱或用戶提供的名稱)
+      const pageName = req.body.pageName || "測試粉絲專頁";
+      const pageDescription = req.body.pageDescription || "這是一個測試用粉絲專頁。";
+      
+      // 生成一個唯一的pageId
+      const pageId = `page_test_${Date.now()}`;
+      
+      // 創建頁面
+      const newPage = await storage.createPage({
+        pageId,
+        userId: req.session.userId,
+        name: pageName,
+        description: pageDescription,
+        imageUrl: "https://via.placeholder.com/150",
+        followerCount: Math.floor(Math.random() * 1000) + 100, // 隨機設置粉絲數
+        accessToken: `TEST_PAGE_TOKEN_${Date.now()}`,
+        category: "測試頁面",
+        isVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      // 返回成功訊息與新頁面資訊
+      res.json({ 
+        success: true, 
+        message: `測試頁面 "${pageName}" 創建成功！`,
+        page: newPage
+      });
+    } catch (error) {
+      console.error("創建測試頁面錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "創建測試頁面時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
 
   // Facebook auth routes
   app.post("/api/auth/facebook", async (req, res) => {

@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, AlertCircle, Facebook, RefreshCcw, Info, Database } from "lucide-react";
+import { CheckCircle, AlertCircle, Facebook, RefreshCcw, Info, Database, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { facebookApi } from "../lib/facebookApi";
+import { queryClient } from "@/lib/queryClient";
 
 interface FacebookConnectProps {
   onConnect?: () => void;
@@ -443,14 +444,70 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
                 </ul>
               </div>
               
-              <Button 
-                onClick={handleDevModeConnect} 
-                disabled={isLoading || isConnected}
-                className="w-full bg-green-600 hover:bg-green-700 mt-4 font-bold"
-              >
-                <Database className="mr-2 h-4 w-4" />
-                {isLoading ? "連接中..." : isConnected ? "已連接" : "直接啟用開發模式 (無需後端)"}
-              </Button>
+              <div className="flex flex-col space-y-2 mt-4">
+                <Button 
+                  onClick={handleDevModeConnect} 
+                  disabled={isLoading || isConnected}
+                  className="w-full bg-green-600 hover:bg-green-700 font-bold"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  {isLoading ? "連接中..." : isConnected ? "已連接" : "直接啟用開發模式"}
+                </Button>
+                
+                {isConnected && (
+                  <Button 
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        toast({
+                          title: "創建測試頁面",
+                          description: "正在創建測試粉絲專頁..."
+                        });
+                        
+                        const response = await fetch('/api/facebook/create-test-page', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            pageName: '測試粉絲專頁',
+                            pageDescription: '這是一個由系統自動生成的測試用粉絲專頁'
+                          }),
+                          credentials: 'include'
+                        });
+                        
+                        if (!response.ok) {
+                          throw new Error(`伺服器錯誤: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        toast({
+                          title: "測試頁面已創建",
+                          description: data.message || "測試頁面創建成功！",
+                          variant: "default",
+                        });
+                        
+                        // 刷新頁面列表
+                        queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+                      } catch (error) {
+                        console.error("創建測試頁面失敗:", error);
+                        toast({
+                          title: "創建失敗",
+                          description: error instanceof Error 
+                            ? error.message
+                            : "創建測試頁面時發生錯誤",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="w-full"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    創建測試粉絲專頁
+                  </Button>
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
