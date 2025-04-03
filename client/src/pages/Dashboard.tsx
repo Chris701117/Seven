@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AnalyticsOverview from "@/components/AnalyticsOverview";
 import PostList from "@/components/PostList";
 import CalendarPreview from "@/components/CalendarPreview";
@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { activePageData } = usePageContext();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   
   // 查詢最近發布的貼文
@@ -275,10 +276,12 @@ const Dashboard = () => {
                   {draftPosts.map((post) => (
                     <div 
                       key={post.id} 
-                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => handleEditPost(post)}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <div className="flex-1 min-w-0">
+                      <div 
+                        className="flex-1 min-w-0 pr-4"
+                        onClick={() => handleEditPost(post)}
+                      >
                         <p className="text-sm font-medium truncate">{post.content.substring(0, 60)}{post.content.length > 60 ? '...' : ''}</p>
                         <div className="flex items-center mt-1">
                           <Badge className="mr-2" variant="secondary">草稿</Badge>
@@ -286,6 +289,38 @@ const Dashboard = () => {
                             {formatPostDate(post.createdAt)}
                           </span>
                         </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("確定要刪除此草稿貼文嗎？")) {
+                              apiRequest(`/api/posts/${post.id}`, {
+                                method: 'DELETE'
+                              })
+                              .then(() => {
+                                toast({
+                                  title: "成功",
+                                  description: "草稿貼文已成功刪除",
+                                });
+                                // 重新載入貼文列表
+                                queryClient.invalidateQueries({ queryKey: [`/api/pages/${activePageData.pageId}/posts`] });
+                              })
+                              .catch((error) => {
+                                toast({
+                                  title: "錯誤",
+                                  description: "刪除草稿貼文失敗，請稍後再試",
+                                  variant: "destructive",
+                                });
+                              });
+                            }
+                          }}
+                        >
+                          刪除
+                        </Button>
                       </div>
                     </div>
                   ))}
