@@ -290,6 +290,9 @@ const ContentCalendar = () => {
                     event: '事件',
                     showMore: total => `+${total} 更多`
                   }}
+                  // 設置每個日期格最多顯示的事件數量
+                  eventLimit={3}
+                  popup
                   culture="zh-TW"
                 />
               </div>
