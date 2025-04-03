@@ -186,9 +186,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPage = await storage.createPage({
         pageId,
         userId: req.session.userId,
-        pageName: pageName, // 修正: 使用正確的字段名pageName而不是name
+        pageName: pageName,
         accessToken: `TEST_PAGE_TOKEN_${Date.now()}`,
-        pageImage: "https://via.placeholder.com/150"  // 使用正確的字段名
+        picture: "https://via.placeholder.com/150"  // 使用正確的字段名 picture 而不是 pageImage
       });
       
       // 返回成功訊息與新頁面資訊
@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               pageId: `dev_page_${req.session.userId}_1`,
               pageName: '測試粉絲專頁 1',
               accessToken: devAccessToken,
-              pageImage: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg'
+              picture: 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg'
             });
             
             // 再創建一個測試頁面
@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               pageId: `dev_page_${req.session.userId}_2`,
               pageName: '測試粉絲專頁 2',
               accessToken: devAccessToken,
-              pageImage: 'https://res.cloudinary.com/demo/image/upload/w_150,h_150,c_fill/sample.jpg'
+              picture: 'https://res.cloudinary.com/demo/image/upload/w_150,h_150,c_fill/sample.jpg'
             });
             
             console.log('開發模式: 已創建測試頁面');
