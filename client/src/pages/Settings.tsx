@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Instagram, Bell, User, LogOut, Trash2, ListFilter } from "lucide-react";
+import { Facebook, Instagram, Bell, User, LogOut, ListFilter } from "lucide-react";
 import { SiTiktok, SiX } from "react-icons/si";
 import FacebookConnect from "../components/FacebookConnect";
 import InstagramConnect from "../components/InstagramConnect";
@@ -105,14 +105,7 @@ const Settings = () => {
     }
   };
   
-  // 處理賬戶刪除
-  const handleDeleteAccount = () => {
-    toast({
-      title: "賬戶已刪除",
-      description: "您的賬戶已成功刪除。",
-      variant: "destructive",
-    });
-  };
+
   
   return (
     <div className="space-y-6">
@@ -201,46 +194,7 @@ const Settings = () => {
             </CardFooter>
           </Card>
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-red-600">危險區域</CardTitle>
-              <CardDescription>
-                不可逆的帳戶操作
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 mb-4">
-                一旦您刪除帳戶，您的所有資料將被永久移除。
-                此操作無法撤銷。
-              </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    刪除帳戶
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>您確定要刪除帳戶嗎？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      此操作無法撤銷。這將永久刪除您的
-                      帳戶並從我們的伺服器中移除所有資料。
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={handleDeleteAccount}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      刪除帳戶
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardContent>
-          </Card>
+
         </TabsContent>
         
         <TabsContent value="connections" className="space-y-4">

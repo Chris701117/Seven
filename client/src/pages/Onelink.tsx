@@ -51,8 +51,6 @@ export default function OnelinkPage() {
   // 批量生成相關
   const [batchCount, setBatchCount] = useState(5);
   const [batchStartNumber, setBatchStartNumber] = useState(1);
-  const [batchPrefix, setBatchPrefix] = useState('');
-  const [batchParamName, setBatchParamName] = useState('af_sub4');
   
   // 篩選相關
   const [searchTerm, setSearchTerm] = useState('');
@@ -333,12 +331,11 @@ export default function OnelinkPage() {
     try {
       for (let i = 0; i < batchCount; i++) {
         const currentNumber = batchStartNumber + i;
-        const batchParamValue = batchPrefix ? `${batchPrefix}${currentNumber}` : `${currentNumber}`;
         
-        // 添加序號參數
+        // 直接將序號添加到 af_sub4 參數中
         allCustomParams = {
           ...customParams,
-          [batchParamName]: batchParamValue
+          af_sub4: currentNumber.toString()
         };
         
         // 呼叫 API 生成 URL
@@ -798,7 +795,7 @@ export default function OnelinkPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="platform">平台 (pid) *</Label>
+                  <Label htmlFor="platform">Media Source *</Label>
                   <Select 
                     value={formData.platform} 
                     onValueChange={(value) => handleSelectChange('platform', value)}
@@ -827,7 +824,7 @@ export default function OnelinkPage() {
                   )}
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="campaignCode">活動代碼 (c) *</Label>
+                  <Label htmlFor="campaignCode">Campaign *</Label>
                   <Input
                     id="campaignCode"
                     name="campaignCode"
@@ -838,7 +835,7 @@ export default function OnelinkPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="materialId">素材 ID (af_sub1) *</Label>
+                  <Label htmlFor="materialId">af_sub1 *</Label>
                   <Input
                     id="materialId"
                     name="materialId"
@@ -854,7 +851,7 @@ export default function OnelinkPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="groupId">廣告群組 (af_sub4)</Label>
+                  <Label htmlFor="groupId">af_adset</Label>
                   <Input
                     id="groupId"
                     name="groupId"
@@ -864,7 +861,7 @@ export default function OnelinkPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="customName">自定義名稱</Label>
+                  <Label htmlFor="customName">af_ad</Label>
                   <Input
                     id="customName"
                     name="customName"
@@ -919,31 +916,6 @@ export default function OnelinkPage() {
                     value={batchStartNumber}
                     onChange={(e) => setBatchStartNumber(parseInt(e.target.value) || 1)}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="batch-prefix">序號前綴</Label>
-                  <Input
-                    id="batch-prefix"
-                    placeholder="例如：ID_"
-                    value={batchPrefix}
-                    onChange={(e) => setBatchPrefix(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="batch-param-name">序號參數名稱</Label>
-                  <Select 
-                    value={batchParamName} 
-                    onValueChange={setBatchParamName}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="選擇參數名稱" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="af_sub4">序號 (af_sub4)</SelectItem>
-                      <SelectItem value="af_sub5">自定義 (af_sub5)</SelectItem>
-                      <SelectItem value="serial">自定義 (serial)</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
               
