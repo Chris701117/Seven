@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PostCard from "./PostCard";
 import { Post } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar, ChevronDown, Filter, ArrowUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format, subDays, isAfter, isBefore, parseISO } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PostListProps {
   pageId: string;
@@ -34,9 +35,11 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     start: null,
     end: null
   });
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 
-  const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: [`/api/pages/${pageId}/posts${currentFilter !== "all" ? `?status=${currentFilter}` : ''}`],
+  // 獲取貼文數據
+  const { data: posts, isLoading, refetch } = useQuery<Post[]>({
+    queryKey: [`/api/pages/${pageId}/posts`],
     enabled: !!pageId,
   });
   
@@ -72,6 +75,76 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     }
   }, [dateFilter]);
 
+  // 篩選和排序邏輯
+  const filterAndSortPosts = useCallback(() => {
+    if (!posts) return [];
+    
+    console.log("篩選條件：", { 
+      狀態: currentFilter, 
+      類別: categoryFilter, 
+      日期: dateFilter, 
+      排序: sortOrder 
+    });
+    
+    const filtered = posts.filter(post => {
+      // 狀態篩選
+      if (currentFilter !== 'all' && post.status !== currentFilter) {
+        return false;
+      }
+      
+      // 類別篩選
+      if (categoryFilter !== 'all' && post.category !== categoryFilter) {
+        return false;
+      }
+      
+      // 日期篩選
+      if (dateRange.start && dateRange.end) {
+        const postDate = post.publishedTime || post.scheduledTime || post.createdAt;
+        if (postDate) {
+          const postDateObj = new Date(postDate);
+          // 設置日期的時間為 0:0:0 以便只比較日期部分
+          const startDate = new Date(dateRange.start);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(dateRange.end);
+          endDate.setHours(23, 59, 59, 999);
+          
+          if (!(isAfter(postDateObj, startDate) && isBefore(postDateObj, endDate))) {
+            return false;
+          }
+        }
+      }
+      
+      // 搜尋詞篩選
+      if (searchTerm && !post.content.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // 排序
+    const sorted = [...filtered].sort((a, b) => {
+      const dateA = a.publishedTime || a.scheduledTime || a.createdAt;
+      const dateB = b.publishedTime || b.scheduledTime || b.createdAt;
+      
+      if (sortOrder === 'newest') {
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      } else {
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      }
+    });
+    
+    return sorted;
+  }, [posts, currentFilter, categoryFilter, dateRange, searchTerm, sortOrder]);
+
+  // 當篩選條件或数据變更時，重新計算过滤结果
+  useEffect(() => {
+    if (posts) {
+      const result = filterAndSortPosts();
+      setFilteredPosts(result);
+    }
+  }, [posts, filterAndSortPosts]);
+
   const handlePostDeleted = (postId: number) => {
     // Invalidate the posts query to refetch the data
     queryClient.invalidateQueries({ queryKey: [`/api/pages/${pageId}/posts`] });
@@ -87,50 +160,6 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       </div>
     );
   }
-
-  // 篩選與排序處理
-  const filteredAndSortedPosts = posts?.filter(post => {
-    // 類別篩選
-    if (categoryFilter !== 'all' && post.category !== categoryFilter) {
-      return false;
-    }
-    
-    // 狀態篩選 (currentFilter 已經在 API 查詢中處理)
-    
-    // 日期篩選
-    if (dateRange.start && dateRange.end) {
-      const postDate = post.publishedTime || post.scheduledTime || post.createdAt;
-      if (postDate) {
-        const postDateObj = new Date(postDate);
-        // 設置日期的時間為 0:0:0 以便只比較日期部分
-        const startDate = new Date(dateRange.start);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(dateRange.end);
-        endDate.setHours(23, 59, 59, 999);
-        
-        if (!(isAfter(postDateObj, startDate) && isBefore(postDateObj, endDate))) {
-          return false;
-        }
-      }
-    }
-    
-    // 搜尋詞篩選
-    if (searchTerm && !post.content.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    
-    return true;
-  })
-  .sort((a, b) => {
-    const dateA = a.publishedTime || a.scheduledTime || a.createdAt;
-    const dateB = b.publishedTime || b.scheduledTime || b.createdAt;
-    
-    if (sortOrder === 'newest') {
-      return new Date(dateB).getTime() - new Date(dateA).getTime();
-    } else {
-      return new Date(dateA).getTime() - new Date(dateB).getTime();
-    }
-  });
 
   return (
     <div className="mb-8">
@@ -319,10 +348,10 @@ const PostList = ({ pageId, filter }: PostListProps) => {
             </div>
           ))}
         </div>
-      ) : filteredAndSortedPosts && filteredAndSortedPosts.length > 0 ? (
+      ) : filteredPosts && filteredPosts.length > 0 ? (
         // Data loaded
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredAndSortedPosts.map((post) => (
+          {filteredPosts.map((post) => (
             <PostCard 
               key={post.id} 
               post={post} 
