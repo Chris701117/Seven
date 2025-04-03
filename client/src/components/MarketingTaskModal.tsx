@@ -30,9 +30,14 @@ const FormSchema = insertMarketingTaskSchema.extend({
   endTime: z.date({
     required_error: "請選擇結束日期",
   }).refine(
-    (date) => date > new Date(),
+    (date, ctx) => {
+      if (date < ctx.parent.startTime) {
+        return false;
+      }
+      return true;
+    },
     {
-      message: "結束日期必須在當前日期之後",
+      message: "結束日期必須晚於或等於開始日期",
     }
   ),
   category: z.string({

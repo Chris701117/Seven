@@ -217,8 +217,8 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                       !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
                     }`}
                   >
-                    <div className="font-medium">{format(day, 'dd')}</div>
-                    <div className="text-[10px]">{format(day, 'E', { locale: zhTW })}</div>
+                    <div className="font-medium leading-tight">{format(day, 'dd')}</div>
+                    <div className="text-[10px] leading-tight">{format(day, 'E', { locale: zhTW })}</div>
                   </div>
                 );
               })}
