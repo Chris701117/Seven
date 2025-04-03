@@ -3,7 +3,7 @@ import PostCard from "./PostCard";
 import { Post } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useCallback } from "react";
-import { Calendar, ChevronDown, Filter, ArrowUpDown, Search } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, Filter, ArrowUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format, subDays, isAfter, isBefore, parseISO } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
 import { apiRequest } from "@/lib/queryClient";
 
 interface PostListProps {
@@ -35,6 +42,12 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     start: null,
     end: null
   });
+  
+  // 日曆選擇器的日期範圍狀態
+  const [calendarDate, setCalendarDate] = useState<DateRange | undefined>(undefined);
+  
+  // 是否顯示日曆選擇器
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 
   // 獲取貼文數據
@@ -56,30 +69,48 @@ const PostList = ({ pageId, filter }: PostListProps) => {
         start: new Date(),
         end: new Date()
       });
+      setCalendarDate(undefined);
     } else if (dateFilter === 'yesterday') {
       const yesterday = subDays(new Date(), 1);
       setDateRange({
         start: yesterday,
         end: yesterday
       });
+      setCalendarDate(undefined);
     } else if (dateFilter === 'last7days') {
       setDateRange({
         start: subDays(new Date(), 7),
         end: new Date()
       });
+      setCalendarDate(undefined);
     } else if (dateFilter === 'last30days') {
       setDateRange({
         start: subDays(new Date(), 30),
         end: new Date()
       });
+      setCalendarDate(undefined);
+    } else if (dateFilter === 'custom') {
+      // 保持當前的自定義日期範圍
     } else {
       // 'all' 或其他
       setDateRange({
         start: null,
         end: null
       });
+      setCalendarDate(undefined);
     }
   }, [dateFilter]);
+  
+  // 監聽日曆選擇器日期變更
+  useEffect(() => {
+    if (calendarDate?.from) {
+      setDateFilter('custom');
+      setDateRange({
+        start: calendarDate.from,
+        end: calendarDate.to || calendarDate.from
+      });
+    }
+  }, [calendarDate]);
 
   // 篩選和排序邏輯
   const filterAndSortPosts = useCallback(() => {
@@ -189,7 +220,19 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">貼文總覽</h3>
         <div className="flex items-center space-x-1">
-          <a href="#" className="text-primary text-sm hover:underline">查看全部貼文</a>
+          <button 
+            onClick={() => {
+              setCategoryFilter('all');
+              setCurrentFilter('all');
+              setDateFilter('all');
+              setSearchTerm('');
+              setCalendarDate(undefined);
+              setDateRange({ start: null, end: null });
+            }}
+            className="text-primary text-sm hover:underline"
+          >
+            查看全部貼文
+          </button>
         </div>
       </div>
       
@@ -229,34 +272,56 @@ const PostList = ({ pageId, filter }: PostListProps) => {
           </SelectContent>
         </Select>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1">
-              <Calendar className="h-4 w-4" />
-              <span>日期</span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => setDateFilter('all')}>
-                <span className={dateFilter === 'all' ? 'font-bold' : ''}>所有時間</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDateFilter('today')}>
-                <span className={dateFilter === 'today' ? 'font-bold' : ''}>今天</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDateFilter('yesterday')}>
-                <span className={dateFilter === 'yesterday' ? 'font-bold' : ''}>昨天</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDateFilter('last7days')}>
-                <span className={dateFilter === 'last7days' ? 'font-bold' : ''}>最近 7 天</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDateFilter('last30days')}>
-                <span className={dateFilter === 'last30days' ? 'font-bold' : ''}>最近 30 天</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-1">
+                <CalendarIcon className="h-4 w-4" />
+                <span>預設日期</span>
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => setDateFilter('all')}>
+                  <span className={dateFilter === 'all' ? 'font-bold' : ''}>所有時間</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('today')}>
+                  <span className={dateFilter === 'today' ? 'font-bold' : ''}>今天</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('yesterday')}>
+                  <span className={dateFilter === 'yesterday' ? 'font-bold' : ''}>昨天</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('last7days')}>
+                  <span className={dateFilter === 'last7days' ? 'font-bold' : ''}>最近 7 天</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('last30days')}>
+                  <span className={dateFilter === 'last30days' ? 'font-bold' : ''}>最近 30 天</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Popover open={showCalendarPicker} onOpenChange={setShowCalendarPicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-1">
+                <CalendarIcon className="h-4 w-4" />
+                <span>日曆選擇</span>
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="range"
+                selected={calendarDate}
+                onSelect={setCalendarDate}
+                initialFocus
+                className="bg-white"
+                locale={zhTW}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
         
         <Button
           variant="ghost"
