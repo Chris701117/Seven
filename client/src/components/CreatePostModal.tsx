@@ -569,7 +569,12 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         title: "成功",
         description: "成功更新貼文！",
       });
+      // 立即刷新貼文列表和日曆數據
       queryClient.invalidateQueries({ queryKey: [`/api/pages/${post?.pageId}/posts`] });
+      // 稍微延遲後再次刷新以確保獲取最新數據
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: [`/api/pages/${post?.pageId}/posts`] });
+      }, 500);
       onClose();
     },
     onError: (error) => {
