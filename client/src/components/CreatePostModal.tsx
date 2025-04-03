@@ -552,7 +552,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-auto max-h-[90vh]">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-visible max-h-none">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-xl font-bold text-center">
             {post ? "編輯貼文" : "建立新貼文"}
@@ -563,8 +563,8 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 flex flex-col max-h-[calc(90vh-4rem)]">
-              <div className="p-4 overflow-y-auto flex-1">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 flex flex-col">
+              <div className="p-4 flex-1">
                 <div className="flex items-center mb-4">
                   <img 
                     src={activePageData?.picture || "https://via.placeholder.com/40"} 
