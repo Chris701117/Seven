@@ -56,11 +56,26 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     queryKey: [`/api/pages/${pageId}/posts`],
     queryFn: async () => {
       if (!pageId) return [];
-      const response = await apiRequest(`/api/pages/${pageId}/posts?all=true`);
-      console.log("[獲取到的貼文數量]", response?.length || 0);
-      return response || [];
+      
+      console.log("獲取全部貼文:", pageId);
+      try {
+        const response = await apiRequest(`/api/pages/${pageId}/posts?all=true`);
+        console.log("[獲取到的貼文數量]", response?.length || 0);
+        
+        // 檢查是否包含草稿貼文
+        const draftCount = response?.filter(p => p.status === 'draft')?.length || 0;
+        console.log("[其中草稿貼文數量]", draftCount);
+        
+        return response || [];
+      } catch (error) {
+        console.error("獲取全部貼文錯誤:", error);
+        return [];
+      }
     },
     enabled: !!pageId,
+    // 更改重試和刷新策略，確保我們能獲取最新資料
+    refetchOnWindowFocus: true,
+    retry: 2,
   });
   
   // 處理日期篩選
