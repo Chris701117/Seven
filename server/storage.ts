@@ -32,7 +32,10 @@ export interface IStorage {
   getPostByPostId(postId: string): Promise<Post | undefined>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, post: Partial<Post>): Promise<Post>;
-  deletePost(id: number): Promise<boolean>;
+  deletePost(id: number): Promise<boolean>; // 軟刪除，標記為已刪除
+  restorePost(id: number): Promise<Post>; // 還原已刪除的貼文
+  getDeletedPosts(pageId: string): Promise<Post[]>; // 獲取已刪除的貼文
+  permanentlyDeletePost(id: number): Promise<boolean>; // 永久刪除貼文
   getPostsByStatus(pageId: string, status: string): Promise<Post[]>;
   getScheduledPosts(pageId: string): Promise<Post[]>;
   
@@ -233,6 +236,8 @@ export class MemStorage implements IStorage {
       reminderTime: null,
       isCompleted: true,
       completedTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      isDeleted: false, // 新增欄位
+      deletedAt: null, // 新增欄位
       createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
       publishedTime: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
@@ -293,6 +298,8 @@ export class MemStorage implements IStorage {
       reminderTime: null,
       isCompleted: true,
       completedTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      isDeleted: false, // 新增欄位
+      deletedAt: null, // 新增欄位
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       publishedTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
       updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
@@ -353,6 +360,8 @@ export class MemStorage implements IStorage {
       reminderTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // One day before scheduled time
       isCompleted: false,
       completedTime: null,
+      isDeleted: false, // 新增欄位
+      deletedAt: null, // 新增欄位
       createdAt: new Date(),
       publishedTime: null,
       updatedAt: new Date(),
@@ -395,6 +404,8 @@ export class MemStorage implements IStorage {
       reminderTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago (to trigger immediate reminder)
       isCompleted: false,
       completedTime: null,
+      isDeleted: false, // 新增欄位
+      deletedAt: null, // 新增欄位
       createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // Created 2 days ago
       publishedTime: null,
       updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
@@ -437,6 +448,8 @@ export class MemStorage implements IStorage {
       reminderTime: null,
       isCompleted: false,
       completedTime: null,
+      isDeleted: false, // 新增欄位
+      deletedAt: null, // 新增欄位
       createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
       publishedTime: null,
       updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
@@ -529,7 +542,7 @@ export class MemStorage implements IStorage {
   // Post operations
   async getPosts(pageId: string): Promise<Post[]> {
     return Array.from(this.posts.values())
-      .filter((post) => post.pageId === pageId)
+      .filter((post) => post.pageId === pageId && !post.isDeleted) // 排除已刪除的貼文
       .sort((a, b) => {
         if (a.scheduledTime && b.scheduledTime) {
           return a.scheduledTime.getTime() - b.scheduledTime.getTime();
@@ -578,6 +591,8 @@ export class MemStorage implements IStorage {
       reminderTime: insertPost.scheduledTime ? new Date(insertPost.scheduledTime.getTime() - 24 * 60 * 60 * 1000) : null, // Set reminder 1 day before
       isCompleted: false,
       completedTime: null,
+      isDeleted: false, // 默認未刪除
+      deletedAt: null, // 默認刪除時間為 null
       createdAt: new Date(),
       publishedTime: null,
       updatedAt: new Date(),
@@ -600,6 +615,54 @@ export class MemStorage implements IStorage {
   }
 
   async deletePost(id: number): Promise<boolean> {
+    const post = await this.getPostById(id);
+    if (!post) {
+      return false;
+    }
+    // 軟刪除 - 標記為已刪除而不是實際刪除
+    const updatedPost = { 
+      ...post, 
+      status: "deleted", 
+      isDeleted: true, 
+      deletedAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.posts.set(id, updatedPost);
+    return true;
+  }
+  
+  async restorePost(id: number): Promise<Post> {
+    const post = await this.getPostById(id);
+    if (!post) {
+      throw new Error("Post not found");
+    }
+    // 如果貼文被標記為已刪除，還原為之前的狀態
+    if (post.isDeleted) {
+      const restoredStatus = post.scheduledTime && new Date(post.scheduledTime) > new Date() 
+        ? "scheduled" 
+        : (post.content ? "draft" : "draft");
+      
+      const updatedPost = { 
+        ...post, 
+        status: restoredStatus, 
+        isDeleted: false, 
+        deletedAt: null,
+        updatedAt: new Date()
+      };
+      this.posts.set(id, updatedPost);
+      return updatedPost;
+    }
+    return post;
+  }
+  
+  async getDeletedPosts(pageId: string): Promise<Post[]> {
+    return Array.from(this.posts.values()).filter(
+      post => post.pageId === pageId && post.isDeleted === true
+    );
+  }
+  
+  async permanentlyDeletePost(id: number): Promise<boolean> {
+    // 永久刪除貼文
     return this.posts.delete(id);
   }
 
