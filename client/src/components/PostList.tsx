@@ -59,7 +59,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       
       console.log("獲取全部貼文:", pageId);
       try {
-        const response = await apiRequest(`/api/pages/${pageId}/posts?all=true`);
+        const response = await apiRequest("GET", `/api/pages/${pageId}/posts?all=true`);
         console.log("[獲取到的貼文數量]", response?.length || 0);
         
         // 檢查是否包含草稿貼文

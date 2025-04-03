@@ -65,8 +65,9 @@ const getQueryFn = <T>({ on401: unauthorizedBehavior }: {
   return async ({ queryKey }): Promise<T> => {
     // Make sure we have a properly formed URL (especially in Replit environment)
     const url = queryKey[0] as string;
+    const baseUrl = getBaseUrl();
     const apiUrl = url.startsWith('http') ? url : 
-                  url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
+                   url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
     
     console.log(`Fetching data from: ${apiUrl}`);
     
@@ -142,74 +143,91 @@ const queryClient = new QueryClient({
   },
 });
 
-// 通用 API 請求函數，支持兩種調用模式
-// 舊式調用: apiRequest(method, url, body)
-// 新式調用: apiRequest(url, { method, data })
-async function apiRequest(
-  urlOrMethod: string | 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-  bodyOrOptions?: any | { method: string; data?: any },
-  maybeBody?: any
-) {
+/**
+ * 通用 API 請求函數 - 支持多種調用方式
+ * 
+ * @param methodOrUrl - HTTP 方法 ("GET", "POST" 等) 或 URL (如果第一個參數是 URL)
+ * @param urlOrOptions - URL (如果第一個參數是 HTTP 方法) 或選項對象/請求體
+ * @param body - 可選的請求體
+ * @returns Promise<T> API 響應
+ * 
+ * 調用方式:
+ * 1. apiRequest("GET", "/api/users")         - 標準 HTTP 方法 + URL
+ * 2. apiRequest("POST", "/api/users", data)  - 標準 HTTP 方法 + URL + 請求體
+ */
+async function apiRequest<T = any>(
+  methodOrUrl: string,
+  urlOrOptions?: string | any,
+  body?: any
+): Promise<T> {
   let method: string;
   let url: string;
-  let body: any;
+  let requestBody: any;
 
-  // 檢測調用方式並標準化參數
-  if (typeof bodyOrOptions === 'object' && bodyOrOptions !== null && 'method' in bodyOrOptions) {
-    // 新式調用: apiRequest(url, { method, data })
-    url = urlOrMethod as string;
-    method = bodyOrOptions.method;
-    body = bodyOrOptions.data;
+  // 解析參數
+  if (["GET", "POST", "PUT", "PATCH", "DELETE"].includes(methodOrUrl)) {
+    // 形式 1 & 2: HTTP方法 + URL + 可選請求體
+    method = methodOrUrl;
+    url = urlOrOptions as string;
+    requestBody = body;
   } else {
-    // 舊式調用: apiRequest(method, url, body)
-    method = urlOrMethod as string;
-    url = bodyOrOptions as string;
-    body = maybeBody;
+    // 兼容舊版調用方式: URL + 可選選項對象
+    url = methodOrUrl;
+    
+    if (typeof urlOrOptions === 'object' && urlOrOptions !== null && 'method' in urlOrOptions) {
+      method = urlOrOptions.method || 'GET';
+      requestBody = urlOrOptions.data;
+    } else {
+      method = 'GET';
+      requestBody = urlOrOptions;
+    }
   }
 
   // 構建完整 URL
-  const apiUrl = typeof url === 'string' && url.startsWith('http') ? url : 
-                typeof url === 'string' && url.startsWith('/') ? `${getBaseUrl()}${url}` : `${getBaseUrl()}/${url}`;
-                
+  const baseUrl = getBaseUrl();
+  const apiUrl = url.startsWith('http') 
+    ? url 
+    : url.startsWith('/') 
+      ? `${baseUrl}${url}` 
+      : `${baseUrl}/${url}`;
+  
   console.log(`Making ${method} request to: ${apiUrl}`);
-                
-  // 設置請求選項
+  
+  // 構建請求選項
   const options: RequestInit = {
     method,
-    headers: body ? {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    } : {
+    headers: {
       'Accept': 'application/json'
     },
     credentials: 'include',
   };
-  
-  // 如果有請求體，將其添加到選項中
-  if (body) {
-    options.body = JSON.stringify(body);
+
+  // 如果有請求體，添加 Content-Type 並序列化
+  if (requestBody !== undefined && requestBody !== null) {
+    (options.headers as Record<string, string>)['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(requestBody);
   }
-  
+
   try {
-    // 執行請求
     const response = await fetch(apiUrl, options);
     
-    // 非2xx響應處理
+    // 處理錯誤響應
     if (!response.ok) {
       await throwIfResNotOk(response);
     }
     
-    // 空響應處理
+    // 處理空響應
     if (response.status === 204) {
-      return {};
+      return {} as T;
     }
     
-    // 嘗試解析JSON
+    // 嘗試解析 JSON
     try {
-      return await response.json();
+      const data = await response.json();
+      return data as T;
     } catch (e) {
       console.warn('返回非JSON格式響應:', e);
-      return {};
+      return {} as T;
     }
   } catch (error) {
     console.error('API請求失敗:', error);

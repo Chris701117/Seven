@@ -28,7 +28,8 @@ const Dashboard = () => {
     queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'published'],
     queryFn: async () => {
       if (!activePageData) return [];
-      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=published&limit=5`);
+      const response = await apiRequest("GET", `/api/pages/${activePageData.pageId}/posts?status=published&limit=5`);
+      console.log("已發佈貼文響應:", response);
       return response || [];
     },
     enabled: !!activePageData,
@@ -39,7 +40,8 @@ const Dashboard = () => {
     queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'scheduled'],
     queryFn: async () => {
       if (!activePageData) return [];
-      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=scheduled&limit=5`);
+      const response = await apiRequest("GET", `/api/pages/${activePageData.pageId}/posts?status=scheduled&limit=5`);
+      console.log("排程貼文響應:", response);
       return response || [];
     },
     enabled: !!activePageData,
@@ -52,7 +54,7 @@ const Dashboard = () => {
       if (!activePageData) return [];
       console.log("獲取草稿貼文:", activePageData.pageId);
       try {
-        const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=draft&limit=5`);
+        const response = await apiRequest("GET", `/api/pages/${activePageData.pageId}/posts?status=draft&limit=5`);
         console.log("草稿貼文響應:", response);
         return response || [];
       } catch (error) {
@@ -76,7 +78,7 @@ const Dashboard = () => {
   const handleEditPost = async (post: Post) => {
     try {
       // 從API獲取最新的貼文詳情
-      const updatedPost = await apiRequest(`/api/posts/${post.id}`);
+      const updatedPost = await apiRequest("GET", `/api/posts/${post.id}`);
       console.log("獲取貼文詳情:", updatedPost);
       setSelectedPost(updatedPost);
       setIsCreateModalOpen(true);
@@ -308,9 +310,7 @@ const Dashboard = () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (confirm("確定要刪除此草稿貼文嗎？")) {
-                              apiRequest(`/api/posts/${post.id}`, {
-                                method: 'DELETE'
-                              })
+                              apiRequest("DELETE", `/api/posts/${post.id}`)
                               .then(() => {
                                 toast({
                                   title: "成功",
