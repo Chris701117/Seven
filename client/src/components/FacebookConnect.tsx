@@ -154,7 +154,29 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       // 嘗試向 Facebook 授權端點發送請求前的測試
       try {
         // 測試服務器端點是否可達
-        const testResponse = await fetch('/api/test');
+        const testUrl = `${window.location.origin}/api/test`;
+        console.log('測試API連接:', testUrl);
+        
+        const testResponse = await fetch(testUrl, {
+          headers: {
+            'Accept': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        if (!testResponse.ok) {
+          console.error('API測試請求失敗:', testResponse.status, testResponse.statusText);
+          throw new Error(`API測試請求失敗: ${testResponse.status}`);
+        }
+        
+        const contentType = testResponse.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('API測試響應不是JSON:', contentType);
+          const textContent = await testResponse.text();
+          console.error('API測試響應內容:', textContent.substring(0, 200));
+          throw new Error('API測試響應不是JSON格式');
+        }
+        
         const testData = await testResponse.json();
         console.log('API 測試響應:', testData);
       } catch (testError) {
@@ -168,10 +190,12 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       const requestData = {
         accessToken,
         fbUserId,
+        devMode: true  // 明確指示這是開發模式
       };
       
-      console.log('請求數據:', requestData);
+      console.log('請求數據:', JSON.stringify(requestData).substring(0, 50));
       
+      // 使用API幫助函數來處理請求
       // 使用完整的 URL 路徑，防止路徑解析問題
       const currentUrl = window.location.origin;
       console.log('當前URL基礎路徑:', currentUrl);
