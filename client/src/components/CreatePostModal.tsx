@@ -635,6 +635,16 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         });
         return;
       }
+      
+      // 檢查是否已選擇貼文類別 - 針對排程貼文必須選擇類別
+      if ((values.schedulePost || values.status === 'published') && !values.category) {
+        toast({
+          title: "錯誤",
+          description: "請選擇貼文類別（宣傳、活動或公告）",
+          variant: "destructive",
+        });
+        return;
+      }
 
       // 確保多平台設置的數據格式正確
       if (values.multiPlatform) {
