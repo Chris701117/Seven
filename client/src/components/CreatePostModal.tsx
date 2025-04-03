@@ -398,10 +398,10 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
           },
           platformStatus: {
             fb: true,
-            ig: false,
-            tiktok: false,
-            threads: false,
-            x: false
+            ig: true,
+            tiktok: true,
+            threads: true,
+            x: true
           },
         });
       }
@@ -650,10 +650,10 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
           
           values.platformStatus = values.platformStatus || {
             fb: true,
-            ig: false,
-            tiktok: false,
-            threads: false,
-            x: false
+            ig: true,
+            tiktok: true,
+            threads: true,
+            x: true
           };
         }
       }
