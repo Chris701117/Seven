@@ -34,6 +34,7 @@ declare module "express-session" {
     threadsConnected?: boolean;
     tiktokConnected?: boolean;
     xConnected?: boolean;
+    fbDevMode?: boolean;
   }
 }
 
@@ -164,7 +165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // 檢查用戶是否已連接Facebook（或處於開發模式）
       const user = await storage.getUser(req.session.userId);
-      const fbConnected = !!user.accessToken || req.session.fbDevMode === true;
+      // 使用默認值false，防止潛在的undefined錯誤
+      const fbConnected = !!user?.accessToken || req.session.fbDevMode === true;
       
       if (!fbConnected) {
         return res.status(400).json({ 
@@ -184,15 +186,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPage = await storage.createPage({
         pageId,
         userId: req.session.userId,
-        name: pageName,
-        description: pageDescription,
-        imageUrl: "https://via.placeholder.com/150",
-        followerCount: Math.floor(Math.random() * 1000) + 100, // 隨機設置粉絲數
+        pageName: pageName, // 修正: 使用正確的字段名pageName而不是name
         accessToken: `TEST_PAGE_TOKEN_${Date.now()}`,
-        category: "測試頁面",
-        isVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        pageImage: "https://via.placeholder.com/150"  // 使用正確的字段名
       });
       
       // 返回成功訊息與新頁面資訊
@@ -231,6 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 檢查是否為開發模式 - 優先檢查明確的devMode標誌
       const isDevelopmentMode = devMode === true || accessToken.startsWith('DEV_MODE_TOKEN_');
+      
+      // 設置開發模式標記到session
+      if (isDevelopmentMode) {
+        req.session.fbDevMode = true;
+      }
       
       // 處理開發模式連接
       if (isDevelopmentMode) {
