@@ -145,6 +145,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // 測試API端點 - 沒有任何敏感操作，純粹用於檢查API可達性
+  app.get("/api/test", (req, res) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.json({ 
+      status: 'success', 
+      message: 'API 伺服器運行正常', 
+      timestamp: new Date().toISOString() 
+    });
+  });
+
   // Facebook auth routes
   app.post("/api/auth/facebook", async (req, res) => {
     if (!req.session.userId) {
@@ -152,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { accessToken, fbUserId } = req.body;
+      const { accessToken, fbUserId, devMode } = req.body;
       
       if (!accessToken || !fbUserId) {
         return res.status(400).json({ message: "需要 Access Token 和 User ID" });
@@ -161,9 +171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Facebook 連接嘗試 - 用戶:', req.session.userId);
       console.log('Facebook 連接嘗試 - FB 用戶ID:', fbUserId);
       console.log('Facebook 連接嘗試 - 令牌長度:', accessToken.length);
+      console.log('Facebook 連接嘗試 - 開發模式標誌:', devMode ? 'true' : 'false');
       
-      // 檢查是否為開發模式
-      const isDevelopmentMode = accessToken.startsWith('DEV_MODE_TOKEN_');
+      // 檢查是否為開發模式 - 優先檢查明確的devMode標誌
+      const isDevelopmentMode = devMode === true || accessToken.startsWith('DEV_MODE_TOKEN_');
       
       // 處理開發模式連接
       if (isDevelopmentMode) {
