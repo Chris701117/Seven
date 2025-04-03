@@ -34,6 +34,23 @@ export function formatDateDisplay(date: Date | string | null): string {
   }).format(dateObj);
 }
 
+// 貼文類別的中英文對照表
+export const categoryTranslations: Record<string, string> = {
+  'promotion': '宣傳',
+  'event': '活動',
+  'announcement': '公告',
+  // 反向對照表
+  '宣傳': 'promotion',
+  '活動': 'event',
+  '公告': 'announcement',
+};
+
+// 獲取類別的中文名稱
+export function getCategoryDisplayName(category: string | null | undefined): string {
+  if (!category) return '未分類';
+  return categoryTranslations[category] || category;
+}
+
 export function getPostStatusColor(status: string): {
   bg: string;
   text: string;

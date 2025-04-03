@@ -25,6 +25,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
 import { apiRequest } from "@/lib/queryClient";
+import { getCategoryDisplayName } from "@/lib/utils";
 
 interface PostListProps {
   pageId: string;
@@ -347,10 +348,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
           <div className="flex flex-wrap gap-2 mt-2 w-full">
             {categoryFilter !== 'all' && (
               <Badge variant="secondary" className="px-2 py-1">
-                類別: {categoryFilter === 'promotion' ? '宣傳' : 
-                      categoryFilter === 'event' ? '活動' : 
-                      categoryFilter === 'announcement' ? '公告' : 
-                      categoryFilter}
+                類別: {getCategoryDisplayName(categoryFilter)}
                 <button 
                   className="ml-1 text-xs hover:text-red-500" 
                   onClick={() => setCategoryFilter('all')}
