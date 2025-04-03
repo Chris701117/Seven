@@ -837,21 +837,7 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                       <span>照片/影片</span>
                     </Button>
                     
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center justify-start rounded-md h-10 px-3 text-purple-600"
-                      onClick={() => {
-                        const dialog = document.getElementById('post-category-dialog');
-                        if (dialog) {
-                          dialog.classList.toggle('hidden');
-                        }
-                      }}
-                    >
-                      <FileBadge className="h-5 w-5 mr-2" />
-                      <span>貼文類別</span>
-                    </Button>
+
                     
                     <Button
                       type="button"

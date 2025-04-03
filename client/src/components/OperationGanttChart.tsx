@@ -217,8 +217,11 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                 <div key={category}>
                   {/* 類別標題行 */}
                   <div className="flex border-t border-b bg-gray-50">
-                    <div className="w-48 flex-shrink-0 border-r p-2 font-medium truncate">
+                    <div className="w-24 flex-shrink-0 border-r p-2 font-medium truncate">
                       {category}
+                    </div>
+                    <div className="w-48 flex-shrink-0 border-r p-2 font-medium truncate">
+                      任務項目
                     </div>
                     <div className="flex flex-grow">
                       {daysInMonth.map((_, idx) => (
@@ -248,6 +251,9 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                     
                     return (
                       <div key={task.id} className="flex border-b hover:bg-gray-50">
+                        <div className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer">
+                          {category}
+                        </div>
                         <div 
                           className="w-48 flex-shrink-0 border-r p-2 truncate cursor-pointer"
                           onClick={() => handleTaskClick(task)}
