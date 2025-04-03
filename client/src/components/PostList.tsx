@@ -86,46 +86,62 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       排序: sortOrder 
     });
     
-    const filtered = posts.filter(post => {
-      // 狀態篩選
-      if (currentFilter !== 'all' && post.status !== currentFilter) {
-        return false;
-      }
-      
-      // 類別篩選
-      if (categoryFilter !== 'all' && post.category !== categoryFilter) {
-        return false;
-      }
-      
-      // 日期篩選
-      if (dateRange.start && dateRange.end) {
-        const postDate = post.publishedTime || post.scheduledTime || post.createdAt;
+    // 確保所有貼文都被包含在初始篩選中，包括草稿
+    let filtered = [...posts];
+    
+    // 狀態篩選
+    if (currentFilter !== 'all') {
+      filtered = filtered.filter(post => post.status === currentFilter);
+    }
+    
+    // 類別篩選 - 不要排除沒有類別的草稿
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(post => {
+        // 如果是草稿且未設置類別，仍然顯示
+        if (post.status === 'draft' && !post.category) return true;
+        return post.category === categoryFilter;
+      });
+    }
+    
+    // 日期篩選
+    if (dateRange.start && dateRange.end) {
+      filtered = filtered.filter(post => {
+        // 對於草稿，始終使用創建日期
+        const postDate = post.status === 'draft' ? post.createdAt : 
+                         (post.publishedTime || post.scheduledTime || post.createdAt);
+        
         if (postDate) {
           const postDateObj = new Date(postDate);
           // 設置日期的時間為 0:0:0 以便只比較日期部分
-          const startDate = new Date(dateRange.start);
+          const startDate = new Date(dateRange.start as Date);
           startDate.setHours(0, 0, 0, 0);
-          const endDate = new Date(dateRange.end);
+          const endDate = new Date(dateRange.end as Date);
           endDate.setHours(23, 59, 59, 999);
           
-          if (!(isAfter(postDateObj, startDate) && isBefore(postDateObj, endDate))) {
-            return false;
-          }
+          return isAfter(postDateObj, startDate) && isBefore(postDateObj, endDate);
         }
-      }
-      
-      // 搜尋詞篩選
-      if (searchTerm && !post.content.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
-      }
-      
-      return true;
-    });
+      });
+    }
     
-    // 排序
+    // 搜尋詞篩選
+    if (searchTerm) {
+      filtered = filtered.filter(post => 
+        post.content.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // 排序 - 確保草稿也能正確排序
     const sorted = [...filtered].sort((a, b) => {
-      const dateA = a.publishedTime || a.scheduledTime || a.createdAt;
-      const dateB = b.publishedTime || b.scheduledTime || b.createdAt;
+      // 針對不同狀態的貼文使用適當的日期字段
+      const getDateForSort = (post: Post) => {
+        if (post.status === 'published') return post.publishedTime || post.createdAt;
+        if (post.status === 'scheduled') return post.scheduledTime || post.createdAt;
+        return post.createdAt; // 草稿和其他狀態
+      };
+      
+      const dateA = getDateForSort(a);
+      const dateB = getDateForSort(b);
       
       if (sortOrder === 'newest') {
         return new Date(dateB).getTime() - new Date(dateA).getTime();
@@ -134,6 +150,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       }
     });
     
+    console.log("篩選後貼文數量:", sorted.length, "包含草稿:", sorted.filter(p => p.status === 'draft').length);
     return sorted;
   }, [posts, currentFilter, categoryFilter, dateRange, searchTerm, sortOrder]);
 
