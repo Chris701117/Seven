@@ -24,9 +24,10 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
   const [isAddPageOpen, setIsAddPageOpen] = useState(false);
   const [newPageData, setNewPageData] = useState({
     pageId: "",
-    name: "",
+    pageName: "",
     accessToken: "",
-    picture: ""
+    picture: "",
+    pageImage: ""
   });
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
@@ -48,9 +49,10 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
       setIsAddPageOpen(false);
       setNewPageData({
         pageId: "",
-        name: "",
+        pageName: "",
         accessToken: "",
-        picture: ""
+        picture: "",
+        pageImage: ""
       });
       toast({
         title: "粉絲頁添加成功",
@@ -92,11 +94,13 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
   // 為開發模式創建模擬粉絲頁
   const createDemoPageMutation = useMutation({
     mutationFn: () => {
+      const demoImage = "https://via.placeholder.com/60x60.png?text=FB";
       const demoPageData = {
         pageId: `demo_page_${Date.now()}`,
-        name: `測試粉絲專頁 ${new Date().toLocaleDateString()}`,
+        pageName: `測試粉絲專頁 ${new Date().toLocaleDateString()}`,
         accessToken: "DEMO_MODE_ACCESS_TOKEN",
-        picture: "https://via.placeholder.com/60x60.png?text=FB"
+        picture: demoImage,
+        pageImage: demoImage
       };
       return apiRequest("POST", "/api/pages", demoPageData);
     },
@@ -121,7 +125,7 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
     onPageSelected(pageId);
     toast({
       title: "已切換當前粉絲頁",
-      description: `現在管理: ${pages.find(p => p.pageId === pageId)?.name || '未知頁面'}`,
+      description: `現在管理: ${pages.find(p => p.pageId === pageId)?.pageName || '未知頁面'}`,
     });
   };
 
@@ -215,11 +219,11 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
                 <div className="flex items-center space-x-3">
                   <img 
                     src={page.picture || "https://via.placeholder.com/48"} 
-                    alt={page.name} 
+                    alt={page.pageName} 
                     className="w-12 h-12 rounded-full" 
                   />
                   <div>
-                    <CardTitle className="text-lg">{page.name}</CardTitle>
+                    <CardTitle className="text-lg">{page.pageName}</CardTitle>
                     {activePage === page.pageId && (
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         <CheckCircle className="w-3 h-3 mr-1" /> 當前選擇
@@ -285,13 +289,13 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
               </div>
               
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
+                <Label htmlFor="pageName" className="text-right">
                   頁面名稱
                 </Label>
                 <Input 
-                  id="name" 
-                  value={newPageData.name} 
-                  onChange={e => setNewPageData({...newPageData, name: e.target.value})}
+                  id="pageName" 
+                  value={newPageData.pageName} 
+                  onChange={e => setNewPageData({...newPageData, pageName: e.target.value})}
                   placeholder="您的粉絲專頁名稱"
                   className="col-span-3"
                   required
@@ -319,7 +323,7 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
                 <Input 
                   id="picture" 
                   value={newPageData.picture} 
-                  onChange={e => setNewPageData({...newPageData, picture: e.target.value})}
+                  onChange={e => setNewPageData({...newPageData, picture: e.target.value, pageImage: e.target.value})}
                   placeholder="https://example.com/image.jpg"
                   className="col-span-3"
                 />
@@ -357,7 +361,7 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
           <DialogHeader>
             <DialogTitle>確認刪除粉絲專頁</DialogTitle>
             <DialogDescription>
-              您確定要移除 "{pageToDelete?.name}" 粉絲專頁嗎？此操作無法撤銷。
+              您確定要移除 "{pageToDelete?.pageName}" 粉絲專頁嗎？此操作無法撤銷。
             </DialogDescription>
           </DialogHeader>
           
