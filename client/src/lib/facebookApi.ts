@@ -74,11 +74,39 @@ export const facebookApi = {
     if (!FACEBOOK_APP_ID) {
       try {
         const response = await fetch('/api/config/facebook');
-        const data = await response.json();
-        FACEBOOK_APP_ID = data.appId;
+        
+        // 檢查響應狀態
+        if (!response.ok) {
+          throw new Error(`Facebook App ID 獲取失敗: ${response.status} ${response.statusText}`);
+        }
+        
+        // 檢查響應格式和內容
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('伺服器回應不是JSON格式:', contentType);
+          throw new Error('伺服器回應格式錯誤');
+        }
+        
+        // 嘗試解析JSON
+        const text = await response.text();
+        console.log('原始回應:', text);
+        
+        try {
+          const data = JSON.parse(text);
+          if (data && data.appId) {
+            FACEBOOK_APP_ID = data.appId;
+            console.log('成功獲取 App ID:', FACEBOOK_APP_ID);
+          } else {
+            console.error('回應缺少appId屬性:', data);
+            throw new Error('回應缺少appId屬性');
+          }
+        } catch (parseError) {
+          console.error('JSON解析錯誤:', parseError);
+          throw new Error('JSON解析錯誤');
+        }
       } catch (error) {
         console.error('無法獲取 Facebook App ID:', error);
-        throw new Error('無法獲取 Facebook App ID');
+        throw new Error(`無法獲取 Facebook App ID: ${error instanceof Error ? error.message : '未知錯誤'}`);
       }
     }
     return FACEBOOK_APP_ID;
