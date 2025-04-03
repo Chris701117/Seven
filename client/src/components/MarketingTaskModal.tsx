@@ -23,33 +23,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
-const FormSchema = insertMarketingTaskSchema.extend({
-  startTime: z.date({
-    required_error: "請選擇開始日期",
-  }),
-  endTime: z.date({
-    required_error: "請選擇結束日期",
-  }).refine(
-    (date, ctx) => {
-      if (date < ctx.parent.startTime) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "結束日期必須晚於或等於開始日期",
-    }
-  ),
-  category: z.string({
-    required_error: "請選擇類別",
-  }),
-  status: z.string({
-    required_error: "請選擇狀態",
-  }),
-  priority: z.string({
-    required_error: "請選擇優先級",
-  }),
-});
+const FormSchema = z.object({
+  title: z.string().min(2, '標題至少需要2個字符').max(100, '標題不能超過100個字符'),
+  content: z.string().optional(),
+  description: z.string().optional(),
+  status: z.string(),
+  category: z.string(),
+  priority: z.string(),
+  startTime: z.date(),
+  endTime: z.date(),
+}).refine(
+  (data) => data.endTime >= data.startTime,
+  {
+    message: "結束時間必須晚於或等於開始時間",
+    path: ["endTime"],
+  }
+);
 
 export type MarketingTaskFormValues = z.infer<typeof FormSchema>;
 
