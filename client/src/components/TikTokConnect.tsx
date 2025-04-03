@@ -17,7 +17,10 @@ const tiktokApi = {
   // 使用OAuth連接TikTok
   connect: async (code: string) => {
     try {
-      const response = await apiRequest("POST", "/api/auth/tiktok", { code });
+      const response = await apiRequest("/api/auth/tiktok", { 
+        method: "POST", 
+        data: { code }
+      });
       return response;
     } catch (error) {
       console.error('TikTok API連接失敗:', error);
@@ -29,9 +32,12 @@ const tiktokApi = {
   connectDevMode: async () => {
     try {
       const accessToken = "DEV_MODE_TIKTOK_TOKEN_" + Date.now();
-      const response = await apiRequest("POST", "/api/auth/tiktok", { 
-        accessToken, 
-        devMode: true 
+      const response = await apiRequest("/api/auth/tiktok", { 
+        method: "POST",
+        data: { 
+          accessToken, 
+          devMode: true 
+        }
       });
       return response;
     } catch (error) {
@@ -43,7 +49,7 @@ const tiktokApi = {
   // 從伺服器獲取TikTok登入URL
   getLoginUrl: async () => {
     try {
-      const response = await apiRequest("GET", "/api/auth/tiktok/login-url");
+      const response = await apiRequest("/api/auth/tiktok/login-url", { method: "GET" });
       return response.url;
     } catch (error) {
       console.error('無法獲取TikTok登入URL:', error);
@@ -64,7 +70,7 @@ const TikTokConnect = ({ onConnect }: TikTokConnectProps) => {
     const initialize = async () => {
       try {
         // 檢查連接狀態
-        const statusResponse = await apiRequest("GET", "/api/auth/tiktok/status");
+        const statusResponse = await apiRequest("/api/auth/tiktok/status", { method: "GET" });
         setIsConnected(statusResponse.connected || false);
         
         // 獲取登入URL (如果需要)
@@ -204,7 +210,7 @@ const TikTokConnect = ({ onConnect }: TikTokConnectProps) => {
   // 處理斷開連接
   const handleDisconnect = async () => {
     try {
-      await apiRequest("POST", "/api/auth/tiktok/disconnect");
+      await apiRequest("/api/auth/tiktok/disconnect", { method: "POST" });
       setIsConnected(false);
       toast({
         title: "已斷開連接",
