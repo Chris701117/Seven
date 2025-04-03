@@ -22,6 +22,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const FormSchema = z.object({
   title: z.string().min(2, '標題至少需要2個字符').max(100, '標題不能超過100個字符'),
@@ -182,93 +183,126 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* 任務類別 */}
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>任務類別</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="選擇任務類別" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="一般">一般</SelectItem>
+                      <SelectItem value="廣告投放">廣告投放</SelectItem>
+                      <SelectItem value="地面推廣">地面推廣</SelectItem>
+                      <SelectItem value="會議">會議</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    選擇最適合的行銷任務類別
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* 任務狀態 */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>任務狀態</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="選擇任務狀態" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="待處理">待處理</SelectItem>
+                      <SelectItem value="進行中">進行中</SelectItem>
+                      <SelectItem value="已完成">已完成</SelectItem>
+                      <SelectItem value="已延遲">已延遲</SelectItem>
+                      <SelectItem value="已取消">已取消</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    指定行銷任務的當前狀態
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* 優先級 */}
+            <div className="flex flex-col md:flex-row gap-4">
               <FormField
                 control={form.control}
-                name="category"
+                name="priority"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>類別</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="選擇類別" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="一般">一般</SelectItem>
-                        <SelectItem value="廣告投放">廣告投放</SelectItem>
-                        <SelectItem value="地面推廣">地面推廣</SelectItem>
-                        <SelectItem value="會議">會議</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>狀態</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="選擇狀態" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="待處理">待處理</SelectItem>
-                        <SelectItem value="進行中">進行中</SelectItem>
-                        <SelectItem value="已完成">已完成</SelectItem>
-                        <SelectItem value="已延遲">已延遲</SelectItem>
-                        <SelectItem value="已取消">已取消</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="flex-1">
+                    <FormLabel>優先級</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex justify-between space-x-2"
+                      >
+                        <FormItem className="flex items-center space-x-1 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="低" />
+                          </FormControl>
+                          <FormLabel className="text-green-600 font-medium">低</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-1 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="中" />
+                          </FormControl>
+                          <FormLabel className="text-blue-600 font-medium">中</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-1 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="高" />
+                          </FormControl>
+                          <FormLabel className="text-red-600 font-medium">高</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormDescription>
+                      設置任務的優先處理程度
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>優先級</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="選擇優先級" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="高">高</SelectItem>
-                      <SelectItem value="中">中</SelectItem>
-                      <SelectItem value="低">低</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+            {/* 日期選擇 */}
+            <div className="flex flex-col md:flex-row gap-4">
               <FormField
                 control={form.control}
                 name="startTime"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="flex-1">
                     <FormLabel>開始日期</FormLabel>
                     <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
-                            className="px-3 text-left font-normal h-10"
+                            className="w-full px-3 text-left font-normal h-10"
                           >
                             <Calendar className="mr-2 h-4 w-4" />
                             {field.value ? format(field.value, "yyyy-MM-dd") : <span>選擇日期</span>}
@@ -289,6 +323,9 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormDescription>
+                      任務開始執行的日期
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -298,14 +335,14 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                 control={form.control}
                 name="endTime"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="flex-1">
                     <FormLabel>結束日期</FormLabel>
                     <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
-                            className="px-3 text-left font-normal h-10"
+                            className="w-full px-3 text-left font-normal h-10"
                           >
                             <Calendar className="mr-2 h-4 w-4" />
                             {field.value ? format(field.value, "yyyy-MM-dd") : <span>選擇日期</span>}
@@ -326,6 +363,9 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormDescription>
+                      任務預計完成的日期
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -340,16 +380,14 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                   <FormLabel>任務內容</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="請輸入任務內容"
-                      className="min-h-[100px]"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      disabled={field.disabled}
+                      placeholder="描述行銷任務的具體內容和要求"
+                      className="min-h-[120px]"
+                      {...field}
                     />
                   </FormControl>
+                  <FormDescription>
+                    詳細描述行銷任務的內容、目標和具體要求
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -363,16 +401,14 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
                   <FormLabel>任務描述</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="請輸入任務詳細描述"
+                      placeholder="補充任務的其他重要信息和備註"
                       className="min-h-[100px]"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      disabled={field.disabled}
+                      {...field}
                     />
                   </FormControl>
+                  <FormDescription>
+                    任務的其他相關說明或注意事項
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
