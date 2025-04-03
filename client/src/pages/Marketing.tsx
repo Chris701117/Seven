@@ -249,8 +249,8 @@ export default function Marketing() {
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('待處理')}>
                 <div className="flex items-center">
-                  <Badge className="bg-yellow-100 text-yellow-800">待處理</Badge>
-                  <span className="ml-2 text-sm text-gray-600">{stats.pending} 個任務</span>
+                  <Badge className="bg-yellow-100 text-yellow-800 w-16 justify-center">待處理</Badge>
+                  <span className="ml-2 text-sm text-gray-600 w-16">{stats.pending} 個任務</span>
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div 
@@ -261,8 +261,8 @@ export default function Marketing() {
               </div>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('進行中')}>
                 <div className="flex items-center">
-                  <Badge className="bg-blue-100 text-blue-800">進行中</Badge>
-                  <span className="ml-2 text-sm text-gray-600">{stats.inProgress} 個任務</span>
+                  <Badge className="bg-blue-100 text-blue-800 w-16 justify-center">進行中</Badge>
+                  <span className="ml-2 text-sm text-gray-600 w-16">{stats.inProgress} 個任務</span>
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div 
@@ -271,10 +271,10 @@ export default function Marketing() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-between cursor-pointer hover:bg-green-50 p-1 rounded-md" onClick={() => setSelectedStatus('已完成')}>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('已完成')}>
                 <div className="flex items-center">
-                  <Badge className="bg-green-100 text-green-800">已完成</Badge>
-                  <span className="ml-2 text-sm text-gray-600">{stats.completed} 個任務</span>
+                  <Badge className="bg-green-100 text-green-800 w-16 justify-center">已完成</Badge>
+                  <span className="ml-2 text-sm text-gray-600 w-16">{stats.completed} 個任務</span>
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div 
@@ -285,8 +285,8 @@ export default function Marketing() {
               </div>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('已延遲')}>
                 <div className="flex items-center">
-                  <Badge className="bg-red-100 text-red-800">已延遲</Badge>
-                  <span className="ml-2 text-sm text-gray-600">{stats.delayed} 個任務</span>
+                  <Badge className="bg-red-100 text-red-800 w-16 justify-center">已延遲</Badge>
+                  <span className="ml-2 text-sm text-gray-600 w-16">{stats.delayed} 個任務</span>
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div 
@@ -297,8 +297,8 @@ export default function Marketing() {
               </div>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => setSelectedStatus('已取消')}>
                 <div className="flex items-center">
-                  <Badge variant="outline">已取消</Badge>
-                  <span className="ml-2 text-sm text-gray-600">{stats.cancelled} 個任務</span>
+                  <Badge variant="outline" className="w-16 justify-center">已取消</Badge>
+                  <span className="ml-2 text-sm text-gray-600 w-16">{stats.cancelled} 個任務</span>
                 </div>
                 <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div 

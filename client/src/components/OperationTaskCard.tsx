@@ -114,7 +114,9 @@ export default function OperationTaskCard({ task, onDelete, layout }: OperationT
         <Card className={`w-full h-full flex flex-col ${isOverdue() ? 'border-red-300' : ''}`}>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
-              <CardTitle className="text-lg font-bold truncate">{task.title}</CardTitle>
+              <CardTitle className="text-lg font-bold whitespace-nowrap overflow-hidden text-ellipsis" title={task.title}>
+                {task.title.length > 7 ? `${task.title.slice(0, 7)}...` : task.title}
+              </CardTitle>
               <div className="flex space-x-1">
                 <TooltipProvider>
                   <Tooltip>
