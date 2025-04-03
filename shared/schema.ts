@@ -249,14 +249,11 @@ export const insertOperationTaskSchema = createInsertSchema(operationTasks).omit
 // Onelink AppsFlyer 表
 export const onelinkFields = pgTable("onelink_fields", {
   id: serial("id").primaryKey(),
-  platform: text("platform").notNull(), // Media Source (pid)
-  campaignCode: text("campaign_code").notNull(), // Campaign (c)
-  materialId: text("material_id").notNull(), // af_sub1
-  adSet: text("ad_set"), // af_adset
-  adName: text("ad_name"), // af_ad
-  audienceTag: text("audience_tag"), // af_sub2
-  creativeSize: text("creative_size"), // af_sub3
-  adPlacement: text("ad_placement"), // af_channel
+  platform: text("platform").notNull(), // 平台名稱 (pid)
+  campaignCode: text("campaign_code").notNull(), // 活動代碼 (c)
+  materialId: text("material_id").notNull(), // 素材ID (af_sub1)
+  groupId: text("group_id"), // 廣告群組 (af_sub4)
+  customName: text("custom_name"), // 自定義名稱
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });

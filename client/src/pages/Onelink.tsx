@@ -65,12 +65,20 @@ export default function OnelinkPage() {
     platform: '',
     campaignCode: '',
     materialId: '',
-    adSet: '',
-    adName: '',
-    audienceTag: '',
-    creativeSize: '',
-    adPlacement: ''
+    groupId: '',
+    customName: ''
   });
+  
+  // 預設平台選項
+  const defaultPlatforms = [
+    'Facebook',
+    'IG',
+    'TIKTOK',
+    'X',
+    'GOOGLE',
+    'KOL',
+    'AGENT'
+  ];
 
   // 獲取所有 Onelink 字段
   const { 
@@ -227,11 +235,8 @@ export default function OnelinkPage() {
       platform: field.platform,
       campaignCode: field.campaignCode,
       materialId: field.materialId,
-      adSet: field.adSet || '',
-      adName: field.adName || '',
-      audienceTag: field.audienceTag || '',
-      creativeSize: field.creativeSize || '',
-      adPlacement: field.adPlacement || ''
+      groupId: field.groupId || '',
+      customName: field.customName || ''
     });
     setIsModalOpen(true);
   };
@@ -242,11 +247,8 @@ export default function OnelinkPage() {
       platform: '',
       campaignCode: '',
       materialId: '',
-      adSet: '',
-      adName: '',
-      audienceTag: '',
-      creativeSize: '',
-      adPlacement: ''
+      groupId: '',
+      customName: ''
     });
     setEditingField(null);
   };
@@ -424,8 +426,8 @@ export default function OnelinkPage() {
         field.platform.toLowerCase().includes(lowerSearchTerm) ||
         field.campaignCode.toLowerCase().includes(lowerSearchTerm) ||
         field.materialId.toLowerCase().includes(lowerSearchTerm) ||
-        (field.adSet && field.adSet.toLowerCase().includes(lowerSearchTerm)) ||
-        (field.adName && field.adName.toLowerCase().includes(lowerSearchTerm))
+        (field.groupId && field.groupId.toLowerCase().includes(lowerSearchTerm)) ||
+        (field.customName && field.customName.toLowerCase().includes(lowerSearchTerm))
       );
     }
     
@@ -748,8 +750,8 @@ export default function OnelinkPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead>廣告系列</TableHead>
-                      <TableHead>廣告名稱</TableHead>
+                      <TableHead>廣告群組</TableHead>
+                      <TableHead>自定義名稱</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -759,8 +761,8 @@ export default function OnelinkPage() {
                         <TableCell>{field.platform}</TableCell>
                         <TableCell>{field.campaignCode}</TableCell>
                         <TableCell>{field.materialId}</TableCell>
-                        <TableCell>{field.adSet || '-'}</TableCell>
-                        <TableCell>{field.adName || '-'}</TableCell>
+                        <TableCell>{field.groupId || '-'}</TableCell>
+                        <TableCell>{field.customName || '-'}</TableCell>
                         <TableCell className="space-x-2">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(field)}>
                             <Edit className="h-4 w-4" />
@@ -806,18 +808,23 @@ export default function OnelinkPage() {
                       <SelectValue placeholder="選擇平台" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="facebook">臉書 (Facebook)</SelectItem>
-                      <SelectItem value="instagram">Instagram</SelectItem>
-                      <SelectItem value="google">Google</SelectItem>
-                      <SelectItem value="tiktok">抖音 (TikTok)</SelectItem>
-                      <SelectItem value="linkedin">領英 (LinkedIn)</SelectItem>
-                      <SelectItem value="line">Line</SelectItem>
-                      <SelectItem value="yahoo">Yahoo奇摩</SelectItem>
-                      <SelectItem value="email">電子郵件</SelectItem>
-                      <SelectItem value="sms">簡訊</SelectItem>
-                      <SelectItem value="qrcode">QR 碼</SelectItem>
+                      {defaultPlatforms.map(platform => (
+                        <SelectItem key={platform} value={platform}>{platform}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">自定義平台</SelectItem>
                     </SelectContent>
                   </Select>
+                  {formData.platform === 'custom' && (
+                    <Input
+                      id="customPlatform"
+                      name="platform"
+                      placeholder="輸入自定義平台名稱"
+                      value={formData.platform === 'custom' ? '' : formData.platform}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                      required
+                    />
+                  )}
                 </div>
                 <div className="col-span-2">
                   <Label htmlFor="campaignCode">活動代碼 (c) *</Label>
@@ -847,52 +854,22 @@ export default function OnelinkPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="adSet">廣告系列 (af_adset)</Label>
+                  <Label htmlFor="groupId">廣告群組 (af_sub4)</Label>
                   <Input
-                    id="adSet"
-                    name="adSet"
-                    placeholder="例如：Conversion_Summer"
-                    value={formData.adSet}
+                    id="groupId"
+                    name="groupId"
+                    placeholder="例如：0415_group"
+                    value={formData.groupId}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="adName">廣告名稱 (af_ad)</Label>
+                  <Label htmlFor="customName">自定義名稱</Label>
                   <Input
-                    id="adName"
-                    name="adName"
-                    placeholder="例如：Summer_Sale_Carousel"
-                    value={formData.adName}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="audienceTag">受眾標籤 (af_sub2)</Label>
-                  <Input
-                    id="audienceTag"
-                    name="audienceTag"
-                    placeholder="例如：Interest_Garden"
-                    value={formData.audienceTag}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="creativeSize">素材尺寸 (af_sub3)</Label>
-                  <Input
-                    id="creativeSize"
-                    name="creativeSize"
-                    placeholder="例如：1200x628"
-                    value={formData.creativeSize}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="adPlacement">廣告位置 (af_channel)</Label>
-                  <Input
-                    id="adPlacement"
-                    name="adPlacement"
-                    placeholder="例如：Feed, Stories"
-                    value={formData.adPlacement}
+                    id="customName"
+                    name="customName"
+                    placeholder="例如：臉書促銷活動"
+                    value={formData.customName}
                     onChange={handleInputChange}
                   />
                 </div>
