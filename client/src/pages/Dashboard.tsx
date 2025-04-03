@@ -93,7 +93,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">{activePageData ? `${activePageData.pageName} 動態消息` : '請選擇粉絲專頁'}</h2>
+        <h2 className="text-2xl font-bold">{activePageData ? `${activePageData.pageName} 貼文管理` : '請選擇粉絲專頁'}</h2>
         <Button
           onClick={() => {
             if (!activePageData) {
