@@ -43,6 +43,11 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [colorMode, setColorMode] = useState<'category' | 'status' | 'priority'>('status');
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // 設定固定寬度常量，確保所有相關元素使用相同的寬度標準
+  const CELL_WIDTH = 40; // 每個日期格子的寬度
+  const CATEGORY_WIDTH = 100; // 類別欄的寬度
+  const TITLE_WIDTH = 180; // 任務標題欄的寬度
 
   // 計算當前月份的所有日期（包括前後月份補足整週）
   useEffect(() => {
@@ -199,8 +204,9 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
         <div className="min-w-max">
           {/* 標題列 - 日期 */}
           <div className="flex border-b">
-            <div className="w-48 flex-shrink-0 border-r bg-gray-50 p-2 font-medium">
-              類別 / 項目
+            <div style={{ width: `${CATEGORY_WIDTH + TITLE_WIDTH}px` }} className="flex-shrink-0 border-r bg-gray-50 p-2 font-medium">
+              <div style={{ width: CATEGORY_WIDTH }} className="inline-block">類別</div>
+              <div style={{ width: TITLE_WIDTH }} className="inline-block">項目</div>
             </div>
             <div className="flex flex-grow">
               {daysInMonth.map((day, idx) => {
@@ -211,7 +217,8 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                 return (
                   <div
                     key={idx}
-                    className={`w-10 h-12 flex-shrink-0 text-center p-1 border-r text-xs flex flex-col justify-center ${
+                    style={{ width: `${CELL_WIDTH}px` }}
+                    className={`h-12 flex-shrink-0 text-center p-1 border-r text-xs flex flex-col justify-center ${
                       isToday ? 'bg-blue-100 font-bold' : 
                       isWeekend ? 'bg-gray-100' : 
                       !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
@@ -236,15 +243,15 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                 <div key={category}>
                   {/* 類別標題行 */}
                   <div className="flex border-t border-b bg-gray-50">
-                    <div className="w-24 flex-shrink-0 border-r p-2 font-medium truncate">
+                    <div style={{ width: `${CATEGORY_WIDTH}px` }} className="flex-shrink-0 border-r p-2 font-medium truncate">
                       {category}
                     </div>
-                    <div className="w-48 flex-shrink-0 border-r p-2 font-medium truncate">
+                    <div style={{ width: `${TITLE_WIDTH}px` }} className="flex-shrink-0 border-r p-2 font-medium truncate">
                       任務項目
                     </div>
                     <div className="flex flex-grow">
                       {daysInMonth.map((_, idx) => (
-                        <div key={idx} className="w-10 flex-shrink-0 border-r"></div>
+                        <div key={idx} style={{ width: `${CELL_WIDTH}px` }} className="flex-shrink-0 border-r"></div>
                       ))}
                     </div>
                   </div>
@@ -271,13 +278,15 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                     return (
                       <div key={task.id} className="flex border-b hover:bg-gray-50">
                         <div 
-                          className="w-24 flex-shrink-0 border-r p-2 truncate cursor-pointer"
+                          style={{ width: `${CATEGORY_WIDTH}px` }}
+                          className="flex-shrink-0 border-r p-2 truncate cursor-pointer"
                           onClick={() => handleTaskClick(task)}
                         >
                           {category}
                         </div>
                         <div 
-                          className="w-48 flex-shrink-0 border-r p-2 cursor-pointer"
+                          style={{ width: `${TITLE_WIDTH}px` }}
+                          className="flex-shrink-0 border-r p-2 cursor-pointer"
                           onClick={() => handleTaskClick(task)}
                         >
                           <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={task.title}>
@@ -291,7 +300,8 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                           {daysInMonth.map((day, idx) => (
                             <div 
                               key={idx}
-                              className={`w-10 flex-shrink-0 border-r ${
+                              style={{ width: `${CELL_WIDTH}px` }}
+                              className={`flex-shrink-0 border-r ${
                                 day.getDay() === 0 || day.getDay() === 6 ? 'bg-gray-50' : ''
                               }`}
                             ></div>
@@ -307,8 +317,8 @@ export default function OperationGanttChart({ tasks }: OperationGanttChartProps)
                                       isCompleted ? 'opacity-70' : 'opacity-90'
                                     }`}
                                     style={{
-                                      left: `${startIdx * 40}px`,
-                                      width: `${Math.max(taskDays.length, 1) * 40}px`,
+                                      left: `${startIdx * CELL_WIDTH}px`,
+                                      width: `${Math.max(taskDays.length, 1) * CELL_WIDTH}px`,
                                     }}
                                     onClick={() => handleTaskClick(task)}
                                   >
