@@ -50,10 +50,20 @@ const Dashboard = () => {
     queryKey: [`/api/pages/${activePageData?.pageId}/posts`, 'draft'],
     queryFn: async () => {
       if (!activePageData) return [];
-      const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=draft&limit=5`);
-      return response || [];
+      console.log("獲取草稿貼文:", activePageData.pageId);
+      try {
+        const response = await apiRequest(`/api/pages/${activePageData.pageId}/posts?status=draft&limit=5`);
+        console.log("草稿貼文響應:", response);
+        return response || [];
+      } catch (error) {
+        console.error("獲取草稿貼文失敗:", error);
+        return [];
+      }
     },
     enabled: !!activePageData,
+    // 增加重試次數和刷新間隔，確保草稿能被獲取到
+    retry: 2,
+    refetchInterval: 5000, // 5秒刷新一次
   });
   
   // 格式化日期顯示

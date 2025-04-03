@@ -697,12 +697,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { pageId } = req.params;
       const { status, all } = req.query;
       
+      console.log(`獲取貼文請求: 頁面ID=${pageId}, 狀態=${status || 'all'}, 全部請求=${all || false}`);
+      
       const page = await storage.getPageByPageId(pageId);
       if (!page) {
+        console.log(`找不到頁面: ${pageId}`);
         return res.status(404).json({ message: "Page not found" });
       }
       
       if (page.userId !== req.session.userId) {
+        console.log(`頁面權限不足: 頁面用戶ID=${page.userId}, 當前用戶ID=${req.session.userId}`);
         return res.status(403).json({ message: "Unauthorized" });
       }
       
@@ -712,15 +716,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const publishedPosts = await storage.getPostsByStatus(pageId, 'published');
         const scheduledPosts = await storage.getPostsByStatus(pageId, 'scheduled');
         const draftPosts = await storage.getPostsByStatus(pageId, 'draft');
+        
+        console.log(`獲取全部貼文數量: 已發布=${publishedPosts.length}, 排程中=${scheduledPosts.length}, 草稿=${draftPosts.length}`);
+        
         posts = [...publishedPosts, ...scheduledPosts, ...draftPosts];
       } else if (status) {
         posts = await storage.getPostsByStatus(pageId, status as string);
+        console.log(`獲取指定狀態(${status})貼文數量: ${posts.length}`);
       } else {
         posts = await storage.getPosts(pageId);
+        console.log(`獲取所有未刪除貼文數量: ${posts.length}`);
       }
       
       res.json(posts);
     } catch (error) {
+      console.error('獲取貼文錯誤:', error);
       res.status(500).json({ message: "Server error" });
     }
   });
