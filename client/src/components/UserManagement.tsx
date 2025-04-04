@@ -202,13 +202,23 @@ const UserManagement = () => {
   const handleCreateUser = () => {
     if (!validateForm()) return;
     
+    console.log('新增用戶資料:', {
+      username,
+      password,
+      email,
+      displayName,
+      role,
+      groupId: selectedGroupId
+    });
+    
     createUserMutation.mutate({
       username,
       password,
       email,
       displayName: displayName || null,
       role,
-      groupId: selectedGroupId
+      groupId: selectedGroupId,
+      isActive: true
     });
   };
   

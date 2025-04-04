@@ -186,12 +186,21 @@ const UserGroupManagement = () => {
   // 創建新群組的mutation
   const createGroupMutation = useMutation({
     mutationFn: async (data: { name: string; description: string; permissions: Permission[] }) => {
+      // 將description為空字符串轉換為null
+      const processedData = {
+        name: data.name,
+        description: data.description || null,
+        permissions: data.permissions
+      };
+      
+      console.log('創建新群組處理後的數據:', processedData);
+      
       const response = await fetch('/api/user-groups', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(processedData),
         credentials: 'include'
       });
       
@@ -223,21 +232,28 @@ const UserGroupManagement = () => {
   // 更新群組的mutation
   const updateGroupMutation = useMutation({
     mutationFn: async (data: { id: number; name: string; description: string; permissions: Permission[] }) => {
+      console.log('正在更新群組:', data);
+      // 將description為空字符串轉換為null
+      const processedData = {
+        name: data.name,
+        description: data.description || null,
+        permissions: data.permissions
+      };
+      
+      console.log('處理後的數據:', processedData);
+      
       const response = await fetch(`/api/user-groups/${data.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description,
-          permissions: data.permissions
-        }),
+        body: JSON.stringify(processedData),
         credentials: 'include'
       });
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('更新群組失敗:', errorText);
         throw new Error(errorText || `伺服器錯誤: ${response.status}`);
       }
       

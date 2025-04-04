@@ -120,7 +120,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   groupId: true,
   isActive: true,
-});
+}).transform((data) => ({
+  ...data,
+  isActive: data.isActive === undefined ? true : data.isActive,
+  role: data.role || UserRole.USER, // 默認為一般用戶
+}));
 
 export const insertInvitationSchema = createInsertSchema(invitations).pick({
   email: true,
