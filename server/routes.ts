@@ -2550,9 +2550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 創建新用戶
       const newUser = await storage.createUser({
-        ...userData,
-        // 記錄創建者
-        createdBy: req.session.userId
+        ...userData
       });
 
       // 移除敏感信息

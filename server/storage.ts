@@ -607,12 +607,16 @@ export class MemStorage implements IStorage {
       emailVerificationExpires: null,
       isTwoFactorEnabled: false,
       twoFactorSecret: null,
+      twoFactorQrCode: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
       lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: null,
-      invitedBy: insertUser.invitedBy || null,
+      invitedBy: null,
       accessToken: null, 
-      fbUserId: null 
+      fbUserId: null,
+      isAdminUser: insertUser.role === 'ADMIN' ? true : false // 如果是ADMIN角色，自動設置為管理員用戶
     };
     this.users.set(id, user);
     return user;
