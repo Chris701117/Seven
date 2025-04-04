@@ -86,6 +86,8 @@ export const pages = pgTable("pages", {
   userId: integer("user_id").notNull(),
   picture: text("picture"),
   pageImage: text("page_image"),
+  name: text("name"), // 完整的頁面名稱（與pageName對應）
+  devMode: boolean("dev_mode").default(false), // 是否為開發模式
 });
 
 export const insertPageSchema = createInsertSchema(pages).omit({
@@ -111,6 +113,11 @@ export const posts = pgTable("posts", {
   // 多平台內容支援
   platformContent: jsonb("platform_content").default({}).notNull(), // {ig: "", tiktok: "", threads: "", x: ""}
   platformStatus: jsonb("platform_status").default({}).notNull(), // {fb: true, ig: false, tiktok: false, threads: false, x: false}
+  // 用於Facebook Graph API
+  fbPostId: text("fb_post_id"), // Facebook帖子ID
+  mediaUrls: jsonb("media_urls").default([]).notNull(), // 媒體文件URL數組
+  mediaType: text("media_type"), // 媒體類型：image或video
+  // 提醒和完成相關
   reminderSent: boolean("reminder_sent").default(false), // Track if reminder was sent
   reminderTime: timestamp("reminder_time"), // When reminder should be sent
   isCompleted: boolean("is_completed").default(false), // Track if post was actually published
