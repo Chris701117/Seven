@@ -2673,6 +2673,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 更新用戶信息
+  app.patch("/api/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+      
+      // 驗證當前用戶是否有權限
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+      
+      // 只有管理員可以編輯其他用戶，一般用戶只能編輯自己的信息
+      const isSelfEdit = targetUserId === req.session.userId;
+      const isAdmin = currentUser.role === "ADMIN";
+      
+      if (!isSelfEdit && !isAdmin) {
+        return res.status(403).json({ message: "沒有權限更新其他用戶" });
+      }
+      
+      // 更新用戶信息
+      const updatedUser = await storage.updateUser(targetUserId, req.body);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("更新用戶失敗:", error);
+      res.status(500).json({ 
+        message: "更新用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
   // 通過ID獲取用戶信息
   app.get("/api/users/:userId", async (req, res) => {
     if (!req.session.userId) {
