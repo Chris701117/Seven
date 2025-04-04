@@ -292,6 +292,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
           <SelectContent>
             <SelectItem value="all">所有狀態</SelectItem>
             <SelectItem value="published">已發布</SelectItem>
+            <SelectItem value="publish_failed">發布失敗</SelectItem>
             <SelectItem value="scheduled">排程中</SelectItem>
             <SelectItem value="draft">草稿</SelectItem>
           </SelectContent>
@@ -376,6 +377,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
             {currentFilter !== 'all' && (
               <Badge variant="secondary" className="px-2 py-1">
                 狀態: {currentFilter === 'published' ? '已發布' : 
+                      currentFilter === 'publish_failed' ? '發布失敗' : 
                       currentFilter === 'scheduled' ? '排程中' : 
                       currentFilter === 'draft' ? '草稿' : 
                       currentFilter}

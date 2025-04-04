@@ -155,6 +155,8 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
     switch (post.status) {
       case "published":
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">已發佈</Badge>;
+      case "publish_failed":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">發佈失敗</Badge>;
       case "scheduled":
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">已排程</Badge>;
       case "draft":
