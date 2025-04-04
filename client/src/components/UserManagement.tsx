@@ -51,6 +51,9 @@ const UserManagement = () => {
   
   // 狀態變數
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editingUsername, setEditingUsername] = useState("");
   
   // 表單狀態
   const [username, setUsername] = useState("");
@@ -58,7 +61,6 @@ const UserManagement = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<string>(UserRole.USER);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   
   // 獲取所有用戶
@@ -115,6 +117,65 @@ const UserManagement = () => {
     }
   });
   
+  // 用戶編輯的mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: {
+      userId: number;
+      groupId: number | null;
+    }) => {
+      const response = await fetch(`/api/users/${data.userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ groupId: data.groupId }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `伺服器錯誤: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "用戶已更新",
+        description: "用戶群組已成功更新",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setEditUserDialogOpen(false);
+      setEditingUserId(null);
+      setSelectedGroupId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "更新失敗",
+        description: error instanceof Error ? error.message : "更新用戶時發生錯誤",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // 打開編輯用戶對話框
+  const openEditUserDialog = (user: any) => {
+    setEditingUserId(user.id);
+    setEditingUsername(user.displayName || user.username);
+    setSelectedGroupId(user.groupId);
+    setEditUserDialogOpen(true);
+  };
+
+  // 處理用戶編輯提交
+  const handleUpdateUser = () => {
+    if (editingUserId === null) return;
+    
+    updateUserMutation.mutate({
+      userId: editingUserId,
+      groupId: selectedGroupId
+    });
+  };
+  
   // 刪除用戶的mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
@@ -153,7 +214,6 @@ const UserManagement = () => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setRole(UserRole.USER);
     setSelectedGroupId(null);
   };
   
@@ -207,7 +267,7 @@ const UserManagement = () => {
       password,
       email,
       displayName,
-      role,
+      role: UserRole.USER, // 指定為一般用戶，所有用戶權限通過群組管理
       groupId: selectedGroupId
     });
     
@@ -216,7 +276,7 @@ const UserManagement = () => {
       username,
       password,
       email,
-      role,
+      role: UserRole.USER, // 默認為一般用戶，所有用戶權限通過群組管理
       isActive: true
     };
     
@@ -332,19 +392,7 @@ const UserManagement = () => {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="role">用戶角色 *</Label>
-                <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="選擇用戶角色" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={UserRole.ADMIN}>管理員</SelectItem>
-                    <SelectItem value={UserRole.PM}>專案經理</SelectItem>
-                    <SelectItem value={UserRole.USER}>一般用戶</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
               
               <div className="space-y-2">
                 <Label htmlFor="group">用戶群組</Label>
@@ -439,7 +487,12 @@ const UserManagement = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => openEditUserDialog(user)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
@@ -477,6 +530,59 @@ const UserManagement = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* 編輯用戶對話框 */}
+      <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>編輯用戶群組</DialogTitle>
+            <DialogDescription>
+              調整「{editingUsername}」所屬的用戶群組
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editGroup">用戶群組</Label>
+              <Select 
+                value={selectedGroupId?.toString() || "none"} 
+                onValueChange={(value) => setSelectedGroupId(value === "none" ? null : parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選擇用戶群組" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">無群組</SelectItem>
+                  {groups?.map((group) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEditUserDialogOpen(false);
+                setEditingUserId(null);
+                setSelectedGroupId(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button 
+              onClick={handleUpdateUser}
+              disabled={updateUserMutation.isPending}
+            >
+              {updateUserMutation.isPending ? "更新中..." : "更新用戶"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
