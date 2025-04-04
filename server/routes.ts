@@ -47,6 +47,47 @@ let sendNotification: (userId: number, notification: Notification) => void;
 let sendReminderNotification: (post: Post) => Promise<boolean>;
 let sendCompletionNotification: (post: Post) => Promise<boolean>;
 
+// 檢查權限中間件
+const checkPermission = (requiredPermission: Permission) => {
+  return async (req: Request, res: Response, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "用戶不存在" });
+      }
+      
+      if (user.role === "ADMIN" || user.isAdminUser) {
+        // 管理員擁有所有權限
+        return next();
+      }
+      
+      if (!user.groupId) {
+        return res.status(403).json({ message: "沒有權限執行此操作" });
+      }
+      
+      const userGroup = await storage.getUserGroupById(user.groupId);
+      if (!userGroup) {
+        return res.status(403).json({ message: "沒有權限執行此操作" });
+      }
+      
+      // 檢查群組權限
+      const permissions = userGroup.permissions as Permission[];
+      if (!permissions || !permissions.includes(requiredPermission)) {
+        return res.status(403).json({ message: "沒有權限執行此操作" });
+      }
+      
+      next();
+    } catch (error) {
+      console.error("檢查權限時發生錯誤:", error);
+      return res.status(500).json({ message: "伺服器錯誤" });
+    }
+  };
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session setup
   app.use(
@@ -2490,6 +2531,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 用戶群組管理 API
+  // 創建新用戶 (僅管理員可訪問)
+  app.post("/api/users", checkPermission(Permission.CREATE_USER), async (req, res) => {
+    try {
+      // 驗證請求數據
+      const userData = await insertUserSchema.parse(req.body);
+      
+      // 檢查用戶名和電子郵件是否已存在
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(409).json({ message: "用戶名已被使用" });
+      }
+
+      const existingEmail = await storage.getUserByEmail(userData.email);
+      if (existingEmail) {
+        return res.status(409).json({ message: "電子郵件已被使用" });
+      }
+
+      // 創建新用戶
+      const newUser = await storage.createUser({
+        ...userData,
+        // 記錄創建者
+        createdBy: req.session.userId
+      });
+
+      // 移除敏感信息
+      const { password, ...userWithoutPassword } = newUser;
+      
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      console.error("創建用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "創建用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 更新用戶信息 (僅管理員或用戶本人可訪問)
+  app.patch("/api/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 檢查操作權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 普通用戶只能修改自己的信息，管理員可以修改任何用戶
+      const isSelfUpdate = user.id === targetUserId;
+      const hasPermission = user.role === "ADMIN" || user.isAdminUser;
+      
+      if (!isSelfUpdate && !hasPermission) {
+        return res.status(403).json({ message: "權限不足，您只能更新自己的信息" });
+      }
+
+      // 檢查目標用戶是否存在
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 限制可修改的字段
+      const updateData: Partial<any> = {};
+      
+      // 只允許管理員修改這些字段
+      if (hasPermission) {
+        if (req.body.role !== undefined) updateData.role = req.body.role;
+        if (req.body.groupId !== undefined) updateData.groupId = req.body.groupId;
+        if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+      }
+      
+      // 用戶可以修改自己的這些字段
+      if (req.body.displayName !== undefined) updateData.displayName = req.body.displayName;
+      if (req.body.password !== undefined) updateData.password = req.body.password;
+      
+      // 更新用戶
+      const updatedUser = await storage.updateUser(targetUserId, updateData);
+      
+      // 移除敏感信息
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("更新用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "更新用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 刪除用戶 (僅管理員可訪問)
+  app.delete("/api/users/:userId", checkPermission(Permission.DELETE_USER), async (req, res) => {
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 檢查目標用戶是否存在
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 不允許刪除自己
+      if (targetUserId === req.session.userId) {
+        return res.status(400).json({ message: "不能刪除當前登錄的用戶" });
+      }
+
+      // 不允許刪除管理員用戶（除非是管理員本人）
+      const currentUser = await storage.getUser(req.session.userId);
+      if (targetUser.role === "ADMIN" && currentUser?.role !== "ADMIN") {
+        return res.status(403).json({ message: "無法刪除管理員用戶" });
+      }
+
+      // 刪除用戶
+      const result = await storage.deleteUser(targetUserId);
+      
+      if (result) {
+        res.status(200).json({ message: "用戶已成功刪除" });
+      } else {
+        res.status(500).json({ message: "刪除用戶失敗" });
+      }
+    } catch (error) {
+      console.error("刪除用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "刪除用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 通過ID獲取用戶信息
+  app.get("/api/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 檢查操作權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 普通用戶只能查看自己的信息，管理員或有VIEW_USERS權限的用戶可以查看任何用戶
+      const isSelfQuery = user.id === targetUserId;
+      const isAdmin = user.role === "ADMIN" || user.isAdminUser;
+      
+      // 檢查用戶是否有查看用戶的權限
+      let hasViewPermission = false;
+      if (user.groupId) {
+        const userGroup = await storage.getUserGroupById(user.groupId);
+        if (userGroup) {
+          const permissions = userGroup.permissions as Permission[];
+          hasViewPermission = permissions.includes(Permission.VIEW_USERS);
+        }
+      }
+
+      if (!isSelfQuery && !isAdmin && !hasViewPermission) {
+        return res.status(403).json({ message: "權限不足，您只能查看自己的信息" });
+      }
+
+      // 獲取用戶信息
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 移除敏感信息
+      const { password, ...userWithoutPassword } = targetUser;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("獲取用戶信息錯誤:", error);
+      res.status(500).json({ 
+        message: "獲取用戶信息時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
   // 獲取所有用戶群組
   app.get("/api/user-groups", async (req, res) => {
     if (!req.session.userId) {

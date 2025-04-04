@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Instagram, Bell, User, LogOut, ListFilter, Users, Shield } from "lucide-react";
+import { Facebook, Instagram, Bell, User, LogOut, ListFilter, Users, Shield, UserPlus } from "lucide-react";
 import { SiTiktok, SiX } from "react-icons/si";
 import FacebookConnect from "../components/FacebookConnect";
 import InstagramConnect from "../components/InstagramConnect";
@@ -17,6 +17,7 @@ import ThreadsConnect from "../components/ThreadsConnect";
 import XConnect from "../components/XConnect";
 import PageManagement from "../components/PageManagement";
 import UserGroupManagement from "../components/UserGroupManagement";
+import UserManagement from "../components/UserManagement";
 import { facebookApi } from "../lib/facebookApi";
 import { usePageContext } from "../contexts/PageContext";
 import {
@@ -116,7 +117,7 @@ const Settings = () => {
       </div>
       
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-5">
+        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-6">
           <TabsTrigger value="account" className="flex items-center">
             <User className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">帳戶</span>
@@ -128,6 +129,10 @@ const Settings = () => {
           <TabsTrigger value="pages" className="flex items-center">
             <ListFilter className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">粉絲專頁</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center">
+            <UserPlus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">用戶管理</span>
           </TabsTrigger>
           <TabsTrigger value="usergroups" className="flex items-center">
             <Users className="h-4 w-4 mr-2" />
@@ -364,6 +369,10 @@ const Settings = () => {
         
         <TabsContent value="pages" className="space-y-4">
           <PageManagement onPageSelected={handlePageSelected} activePage={activePage} />
+        </TabsContent>
+        
+        <TabsContent value="users" className="space-y-4">
+          <UserManagement />
         </TabsContent>
         
         <TabsContent value="usergroups" className="space-y-4">

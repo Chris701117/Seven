@@ -32,6 +32,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User>;
+  deleteUser(id: number): Promise<boolean>;
   updateUserAccessToken(id: number, accessToken: string, fbUserId: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
   
@@ -771,6 +772,42 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    const user = await this.getUser(id);
+    if (!user) {
+      return false;
+    }
+    
+    // 刪除用戶的群組關係
+    const memberships: UserGroupMembership[] = [];
+    for (const [membershipId, membership] of this.userGroupMemberships.entries()) {
+      if (membership.userId === id) {
+        memberships.push(membership);
+      }
+    }
+    
+    // 刪除關聯的群組會員資料
+    for (const membership of memberships) {
+      this.userGroupMemberships.delete(membership.id);
+    }
+    
+    // 刪除用戶所擁有的頁面
+    const userPages: Page[] = [];
+    for (const [pageId, page] of this.pages.entries()) {
+      if (page.userId === id) {
+        userPages.push(page);
+      }
+    }
+    
+    // 刪除頁面
+    for (const page of userPages) {
+      await this.deletePage(page.id);
+    }
+    
+    // 最後刪除用戶
+    return this.users.delete(id);
   }
   
   // 邀請相關
