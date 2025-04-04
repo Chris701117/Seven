@@ -2,6 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { Toaster } from "@/components/ui/toaster";
+// Import logo for favicon and sidebar
+import "./assets/logo.png";
 
 // Enhanced error handling to help with debugging
 window.addEventListener('error', (event) => {
