@@ -100,7 +100,7 @@ export const posts = pgTable("posts", {
   postId: text("post_id"),
   pageId: text("page_id").notNull(),
   content: text("content").notNull(),
-  status: text("status").notNull(), // published, scheduled, draft, completed, deleted
+  status: text("status").notNull(), // published, scheduled, draft, completed, deleted, publish_failed
   category: text("category"), // 資訊、活動、公告
   scheduledTime: timestamp("scheduled_time"), // 開始發布時間
   endTime: timestamp("end_time"), // 貼文結束時間（進行區間結束）

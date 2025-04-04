@@ -1689,15 +1689,15 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                             
                             // 即使 API 調用失敗，也要手動更新前端貼文狀態
                             toast({
-                              title: "發布通知",
-                              description: "貼文已標記為已發布，但可能未在所有平台成功發布。請檢查您的 Facebook 頁面。",
-                              variant: "default",
+                              title: "發布失敗",
+                              description: "貼文發布到 Facebook 時發生錯誤。已標記為「發布失敗」狀態。",
+                              variant: "destructive",
                             });
                             
-                            // 手動更新貼文狀態為已發布
+                            // 手動更新貼文狀態為發布失敗
                             const updatedPost = {
                               ...post,
-                              status: "published",
+                              status: "publish_failed",
                               publishedTime: new Date().toISOString(),
                             };
                             
