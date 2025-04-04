@@ -1687,36 +1687,16 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                           .catch((error) => {
                             console.error("發布失敗:", error);
                             
-                            // 即使 API 調用失敗，也要手動更新前端貼文狀態
+                            // API調用失敗時顯示失敗訊息
                             toast({
                               title: "發布失敗",
-                              description: "貼文發布到 Facebook 時發生錯誤。已標記為「發布失敗」狀態。",
+                              description: "貼文發布到 Facebook 時發生錯誤。請檢查您的網絡連接和Facebook權限設置。",
                               variant: "destructive",
                             });
                             
-                            // 手動更新貼文狀態為發布失敗
-                            const updatedPost = {
-                              ...post,
-                              status: "publish_failed",
-                              publishedTime: new Date().toISOString(),
-                            };
-                            
-                            // 更新本地數據
-                            queryClient.setQueryData(
-                              [`/api/posts/${post.id}`], 
-                              updatedPost
-                            );
-                            
-                            // 更新列表數據
-                            queryClient.setQueriesData(
-                              { queryKey: [`/api/pages/${post.pageId}/posts`] },
-                              (oldData: any) => {
-                                if (!oldData) return oldData;
-                                return Array.isArray(oldData) 
-                                  ? oldData.map(p => p.id === post.id ? updatedPost : p)
-                                  : oldData;
-                              }
-                            );
+                            // 讓後端處理狀態更新為publish_failed
+                            queryClient.invalidateQueries({ queryKey: [`/api/pages/${post.pageId}/posts`] });
+                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
                             
                             onClose(); // 關閉對話框
                           });
