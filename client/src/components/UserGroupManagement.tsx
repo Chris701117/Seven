@@ -54,6 +54,7 @@ const permissionCategories = {
       { id: Permission.CREATE_USER, name: "創建用戶" },
       { id: Permission.EDIT_USER, name: "編輯用戶" },
       { id: Permission.DELETE_USER, name: "刪除用戶" },
+      { id: Permission.VIEW_USERS, name: "查看用戶" },
     ]
   },
   PAGE_MANAGEMENT: {
@@ -63,6 +64,7 @@ const permissionCategories = {
       { id: Permission.CREATE_PAGE, name: "創建粉絲頁" },
       { id: Permission.EDIT_PAGE, name: "編輯粉絲頁" },
       { id: Permission.DELETE_PAGE, name: "刪除粉絲頁" },
+      { id: Permission.VIEW_PAGES, name: "查看粉絲頁" },
     ]
   },
   POST_MANAGEMENT: {
@@ -72,6 +74,7 @@ const permissionCategories = {
       { id: Permission.EDIT_POST, name: "編輯貼文" },
       { id: Permission.DELETE_POST, name: "刪除貼文" },
       { id: Permission.PUBLISH_POST, name: "發布貼文" },
+      { id: Permission.VIEW_POSTS, name: "查看貼文" },
     ]
   },
   MARKETING_MANAGEMENT: {
@@ -81,6 +84,7 @@ const permissionCategories = {
       { id: Permission.CREATE_MARKETING_TASK, name: "創建行銷任務" },
       { id: Permission.EDIT_MARKETING_TASK, name: "編輯行銷任務" },
       { id: Permission.DELETE_MARKETING_TASK, name: "刪除行銷任務" },
+      { id: Permission.VIEW_MARKETING_TASKS, name: "查看行銷任務" },
     ]
   },
   OPERATION_MANAGEMENT: {
@@ -90,6 +94,7 @@ const permissionCategories = {
       { id: Permission.CREATE_OPERATION_TASK, name: "創建營運任務" },
       { id: Permission.EDIT_OPERATION_TASK, name: "編輯營運任務" },
       { id: Permission.DELETE_OPERATION_TASK, name: "刪除營運任務" },
+      { id: Permission.VIEW_OPERATION_TASKS, name: "查看營運任務" },
     ]
   },
   ANALYTICS: {
@@ -103,12 +108,21 @@ const permissionCategories = {
     title: "Onelink管理",
     permissions: [
       { id: Permission.MANAGE_ONELINK, name: "管理Onelink" },
+      { id: Permission.VIEW_ONELINK, name: "查看Onelink" },
     ]
   },
   SETTINGS: {
     title: "設定管理",
     permissions: [
       { id: Permission.MANAGE_SETTINGS, name: "管理設定" },
+      { id: Permission.VIEW_SETTINGS, name: "查看設定" },
+    ]
+  },
+  USER_GROUP_MANAGEMENT: {
+    title: "用戶群組管理",
+    permissions: [
+      { id: Permission.MANAGE_USER_GROUPS, name: "管理用戶群組" },
+      { id: Permission.VIEW_USER_GROUPS, name: "查看用戶群組" },
     ]
   }
 };
@@ -432,13 +446,40 @@ const UserGroupManagement = () => {
     });
   };
   
-  // 切換權限選擇
+  // 切換單個權限選擇
   const togglePermission = (permission: Permission) => {
     setSelectedPermissions(current => 
       current.includes(permission)
         ? current.filter(p => p !== permission)
         : [...current, permission]
     );
+  };
+  
+  // 切換一個類別的所有權限
+  const toggleCategoryPermissions = (categoryPermissions: { id: Permission }[]) => {
+    // 獲取類別中的所有權限
+    const categoryPermissionIds = categoryPermissions.map(p => p.id);
+    
+    // 檢查該類別的權限是否都已經被選中
+    const isAllSelected = categoryPermissionIds.every(id => selectedPermissions.includes(id));
+    
+    if (isAllSelected) {
+      // 如果全部選中，則取消所有選中
+      setSelectedPermissions(current => 
+        current.filter(p => !categoryPermissionIds.includes(p))
+      );
+    } else {
+      // 如果未全部選中，則全部選中
+      setSelectedPermissions(current => {
+        const newPermissions = [...current];
+        categoryPermissionIds.forEach(id => {
+          if (!newPermissions.includes(id)) {
+            newPermissions.push(id);
+          }
+        });
+        return newPermissions;
+      });
+    }
   };
   
   // 獲取可分配的用戶列表（不包括已在群組中的用戶）
@@ -501,28 +542,54 @@ const UserGroupManagement = () => {
                 <div className="space-y-4">
                   <Label>選擇權限</Label>
                   <div className="h-[300px] overflow-y-auto border rounded-md p-4 space-y-6">
-                    {Object.entries(permissionCategories).map(([category, { title, permissions }]) => (
-                      <div key={category} className="space-y-2">
-                        <h4 className="font-semibold">{title}</h4>
-                        <div className="ml-4 space-y-2">
-                          {permissions.map(perm => (
-                            <div key={perm.id} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`perm-${perm.id}`}
-                                checked={selectedPermissions.includes(perm.id)}
-                                onCheckedChange={() => togglePermission(perm.id)}
-                              />
-                              <Label 
-                                htmlFor={`perm-${perm.id}`}
-                                className="cursor-pointer"
-                              >
-                                {perm.name}
-                              </Label>
-                            </div>
-                          ))}
+                    {Object.entries(permissionCategories).map(([category, { title, permissions }]) => {
+                      // 檢查該類別的權限是否全部選中
+                      const allPermissionIds = permissions.map(p => p.id);
+                      const isAllSelected = allPermissionIds.every(id => selectedPermissions.includes(id));
+                      
+                      return (
+                        <div key={category} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold">{title}</h4>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="h-7 px-2 text-xs flex items-center"
+                              onClick={() => toggleCategoryPermissions(permissions)}
+                            >
+                              {isAllSelected ? (
+                                <>
+                                  <X className="h-3 w-3 mr-1" />
+                                  取消全選
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-3 w-3 mr-1" />
+                                  全選
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          <div className="ml-4 space-y-2">
+                            {permissions.map(perm => (
+                              <div key={perm.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`perm-${perm.id}`}
+                                  checked={selectedPermissions.includes(perm.id)}
+                                  onCheckedChange={() => togglePermission(perm.id)}
+                                />
+                                <Label 
+                                  htmlFor={`perm-${perm.id}`}
+                                  className="cursor-pointer"
+                                >
+                                  {perm.name}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -638,28 +705,54 @@ const UserGroupManagement = () => {
                           <div className="space-y-4">
                             <Label>選擇權限</Label>
                             <div className="h-[300px] overflow-y-auto border rounded-md p-4 space-y-6">
-                              {Object.entries(permissionCategories).map(([category, { title, permissions }]) => (
-                                <div key={category} className="space-y-2">
-                                  <h4 className="font-semibold">{title}</h4>
-                                  <div className="ml-4 space-y-2">
-                                    {permissions.map(perm => (
-                                      <div key={perm.id} className="flex items-center space-x-2">
-                                        <Checkbox 
-                                          id={`edit-perm-${perm.id}`}
-                                          checked={selectedPermissions.includes(perm.id)}
-                                          onCheckedChange={() => togglePermission(perm.id)}
-                                        />
-                                        <Label 
-                                          htmlFor={`edit-perm-${perm.id}`}
-                                          className="cursor-pointer"
-                                        >
-                                          {perm.name}
-                                        </Label>
-                                      </div>
-                                    ))}
+                              {Object.entries(permissionCategories).map(([category, { title, permissions }]) => {
+                                // 檢查該類別的權限是否全部選中
+                                const allPermissionIds = permissions.map(p => p.id);
+                                const isAllSelected = allPermissionIds.every(id => selectedPermissions.includes(id));
+                                
+                                return (
+                                  <div key={category} className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <h4 className="font-semibold">{title}</h4>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="h-7 px-2 text-xs flex items-center"
+                                        onClick={() => toggleCategoryPermissions(permissions)}
+                                      >
+                                        {isAllSelected ? (
+                                          <>
+                                            <X className="h-3 w-3 mr-1" />
+                                            取消全選
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Check className="h-3 w-3 mr-1" />
+                                            全選
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <div className="ml-4 space-y-2">
+                                      {permissions.map(perm => (
+                                        <div key={perm.id} className="flex items-center space-x-2">
+                                          <Checkbox 
+                                            id={`edit-perm-${perm.id}`}
+                                            checked={selectedPermissions.includes(perm.id)}
+                                            onCheckedChange={() => togglePermission(perm.id)}
+                                          />
+                                          <Label 
+                                            htmlFor={`edit-perm-${perm.id}`}
+                                            className="cursor-pointer"
+                                          >
+                                            {perm.name}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
