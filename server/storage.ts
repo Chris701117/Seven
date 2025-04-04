@@ -1141,8 +1141,14 @@ export class MemStorage implements IStorage {
         let fbGraphUrl = ''; 
         const params = new URLSearchParams();
         
-        // 添加共同參數
+        // 添加共同參數 - 確保使用頁面訪問令牌
+        // Facebook API 要求使用頁面訪問令牌而非用戶訪問令牌
         params.append('access_token', page.accessToken);
+        
+        // 驗證是否為正確的令牌類型
+        if (!page.accessToken.includes('EAAG') && !page.accessToken.includes('EAAJ')) {
+          console.warn('警告：可能不是有效的頁面訪問令牌格式');
+        }
         
         // 根據貼文內容確定使用哪個 API 端點
         if (post.mediaUrls && post.mediaUrls.length > 0) {

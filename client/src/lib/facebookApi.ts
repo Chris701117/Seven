@@ -418,7 +418,20 @@ export const facebookApi = {
         window.FB.login((response: any) => {
           if (response && response.authResponse) {
             console.log('Facebook 登入成功');
-            resolve(response);
+            
+            // 登入成功後，立即請求頁面訪問令牌
+            window.FB.api('/me/accounts', (accountsResponse: any) => {
+              if (accountsResponse && accountsResponse.data && accountsResponse.data.length > 0) {
+                console.log('成功獲取頁面訪問令牌:', accountsResponse.data);
+                
+                // 將頁面訪問令牌信息添加到響應中
+                response.pageTokens = accountsResponse.data;
+              } else {
+                console.warn('未找到可管理的頁面或未能獲取頁面訪問令牌');
+              }
+              
+              resolve(response);
+            });
           } else {
             console.warn('Facebook 登入取消或失敗', response);
             reject(new Error('用戶取消登入或登入失敗'));
