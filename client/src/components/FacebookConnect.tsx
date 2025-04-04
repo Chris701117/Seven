@@ -62,6 +62,25 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       const accessToken = authResponse.accessToken;
       const fbUserId = authResponse.userID;
       
+      // 檢查是否有頁面訪問令牌
+      console.log('Facebook 登入響應:', response);
+      if (response.pageTokens) {
+        console.log('獲取到頁面訪問令牌:', response.pageTokens);
+        // 這裡應該使用頁面訪問令牌而非用戶訪問令牌
+        toast({
+          title: "提示",
+          description: "已獲取頁面訪問令牌，將使用頁面令牌進行發布操作。",
+          variant: "default",
+        });
+      } else {
+        console.warn('未獲取到頁面訪問令牌，可能無法進行發布操作');
+        toast({
+          title: "警告",
+          description: "未獲取到頁面訪問令牌，可能無法進行發布操作。請確保您擁有管理粉絲專頁的權限。",
+          variant: "warning",
+        });
+      }
+      
       // 儲存令牌到我們的系統
       await facebookApi.saveAccessToken(accessToken, fbUserId);
       

@@ -725,7 +725,7 @@ export default function OnelinkPage() {
                     <TableRow>
                       <TableHead className="cursor-pointer" onClick={() => toggleSort('platform')}>
                         <div className="flex items-center">
-                          平台
+                          平台　Media Source (pid)
                           {sortField === 'platform' && (
                             <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
                           )}
@@ -733,7 +733,7 @@ export default function OnelinkPage() {
                       </TableHead>
                       <TableHead className="cursor-pointer" onClick={() => toggleSort('campaignCode')}>
                         <div className="flex items-center">
-                          活動代碼
+                          活動代碼　Campaign (c)
                           {sortField === 'campaignCode' && (
                             <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
                           )}
@@ -741,14 +741,14 @@ export default function OnelinkPage() {
                       </TableHead>
                       <TableHead className="cursor-pointer" onClick={() => toggleSort('materialId')}>
                         <div className="flex items-center">
-                          素材 ID
+                          素材編號　af_sub1
                           {sortField === 'materialId' && (
                             <ArrowUpDown className={`ml-1 h-4 w-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} />
                           )}
                         </div>
                       </TableHead>
-                      <TableHead>廣告群組</TableHead>
-                      <TableHead>自定義名稱</TableHead>
+                      <TableHead>廣告組　af_adset</TableHead>
+                      <TableHead>廣告名稱　af_ad</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -795,7 +795,7 @@ export default function OnelinkPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="platform">Media Source *</Label>
+                  <Label htmlFor="platform">平台　Media Source (pid) *</Label>
                   <Select 
                     value={formData.platform} 
                     onValueChange={(value) => handleSelectChange('platform', value)}
@@ -824,7 +824,7 @@ export default function OnelinkPage() {
                   )}
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="campaignCode">Campaign *</Label>
+                  <Label htmlFor="campaignCode">活動代碼　Campaign (c) *</Label>
                   <Input
                     id="campaignCode"
                     name="campaignCode"
@@ -835,7 +835,7 @@ export default function OnelinkPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="materialId">af_sub1 *</Label>
+                  <Label htmlFor="materialId">素材編號　af_sub1 *</Label>
                   <Input
                     id="materialId"
                     name="materialId"
@@ -851,7 +851,7 @@ export default function OnelinkPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="groupId">af_adset</Label>
+                  <Label htmlFor="groupId">廣告組　af_adset</Label>
                   <Input
                     id="groupId"
                     name="groupId"
@@ -861,7 +861,7 @@ export default function OnelinkPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="customName">af_ad</Label>
+                  <Label htmlFor="customName">廣告名稱　af_ad</Label>
                   <Input
                     id="customName"
                     name="customName"
