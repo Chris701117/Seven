@@ -38,11 +38,13 @@ import {
 import CreatePostModal from "@/components/CreatePostModal";
 import ContentGanttChart from "@/components/ContentGanttChart";
 import { formatDateDisplay } from "@/lib/utils";
+import { usePageContext } from "@/contexts/PageContext";
 
 const ContentCalendar = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activePageId, setActivePageId] = useState<string | null>(null);
+  // 使用全局PageContext代替本地state
+  const { activePage, pages, isLoading: isLoadingPages } = usePageContext();
   const [calendarView, setCalendarView] = useState<"month" | "list" | "gantt">("month");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -51,22 +53,10 @@ const ContentCalendar = () => {
   const [statusFilter, setStatusFilter] = useState<string>("scheduled");
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   
-  // Get all pages for the user
-  const { data: pages, isLoading: isLoadingPages } = useQuery<Page[]>({
-    queryKey: ['/api/pages'],
-  });
-  
-  // Set the first page as active when pages are loaded
-  useEffect(() => {
-    if (pages && pages.length > 0 && !activePageId) {
-      setActivePageId(pages[0].pageId);
-    }
-  }, [pages, activePageId]);
-  
   // Get all posts for the active page
   const { data: posts, isLoading: isLoadingPosts } = useQuery<Post[]>({
-    queryKey: [`/api/pages/${activePageId}/posts`],
-    enabled: !!activePageId,
+    queryKey: [`/api/pages/${activePage}/posts`],
+    enabled: !!activePage,
   });
   
   // 更新篩選貼文列表
@@ -540,7 +530,7 @@ const ContentCalendar = () => {
                                     description: "貼文已成功刪除",
                                   });
                                   // 重新載入貼文列表
-                                  queryClient.invalidateQueries({ queryKey: [`/api/pages/${activePageId}/posts`] });
+                                  queryClient.invalidateQueries({ queryKey: [`/api/pages/${activePage}/posts`] });
                                 })
                                 .catch((error) => {
                                   toast({
