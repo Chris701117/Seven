@@ -894,6 +894,211 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                 />
               </div>
               
+              {/* Schedule Panel */}
+              {form.watch("schedulePost") && (
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="flex items-center mb-2">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                    <h4 className="font-medium">設定發佈提醒時間</h4>
+                  </div>
+                  <div className="text-xs text-gray-500 mb-2">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    系統將在設定的時間提醒您發佈貼文，而非自動發佈。您將會在設定時間的前一天收到通知，並在發佈日當天再次收到提醒。
+                  </div>
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-1">開始時間：</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="scheduleDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
+                                <div className="flex">
+                                  <Input 
+                                    type="date" 
+                                    {...field} 
+                                    value={field.value || ''} 
+                                    className="pl-9 rounded-r-none"
+                                  />
+                                  <Button 
+                                    type="button"
+                                    variant="outline" 
+                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const today = new Date().toISOString().split('T')[0];
+                                      field.onChange(today);
+                                    }}
+                                  >
+                                    今天
+                                  </Button>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="scheduleTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
+                                      {field.value || '選擇時間'}
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const now = new Date();
+                                          const hours = now.getHours().toString().padStart(2, '0');
+                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
+                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                                          field.onChange(timeValue);
+                                        }}
+                                      >
+                                        現在
+                                      </Button>
+                                    </div>
+                                    {Array.from({ length: 24 }).map((_, hour) => (
+                                      <React.Fragment key={hour}>
+                                        {[0, 30].map(minute => {
+                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                          return (
+                                            <DropdownMenuItem 
+                                              key={timeValue}
+                                              onClick={() => field.onChange(timeValue)}
+                                              className={field.value === timeValue ? "bg-blue-100" : ""}
+                                            >
+                                              {timeValue}
+                                            </DropdownMenuItem>
+                                          );
+                                        })}
+                                      </React.Fragment>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">結束時間 (選填)：</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
+                                <div className="flex">
+                                  <Input 
+                                    type="date" 
+                                    {...field} 
+                                    value={field.value || ''} 
+                                    className="pl-9 rounded-r-none"
+                                  />
+                                  <Button 
+                                    type="button"
+                                    variant="outline" 
+                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
+                                    onClick={() => {
+                                      const today = new Date().toISOString().split('T')[0];
+                                      field.onChange(today);
+                                    }}
+                                  >
+                                    今天
+                                  </Button>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
+                                      {field.value || '選擇時間'}
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
+                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                        onClick={() => {
+                                          const now = new Date();
+                                          const hours = now.getHours().toString().padStart(2, '0');
+                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
+                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                                          field.onChange(timeValue);
+                                        }}
+                                      >
+                                        現在
+                                      </Button>
+                                    </div>
+                                    {Array.from({ length: 24 }).map((_, hour) => (
+                                      <React.Fragment key={hour}>
+                                        {[0, 30].map(minute => {
+                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                          return (
+                                            <DropdownMenuItem 
+                                              key={timeValue}
+                                              onClick={() => field.onChange(timeValue)}
+                                              className={field.value === timeValue ? "bg-blue-100" : ""}
+                                            >
+                                              {timeValue}
+                                            </DropdownMenuItem>
+                                          );
+                                        })}
+                                      </React.Fragment>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Multi-Platform Panel */}
               <div className="px-4 py-2 border-t border-gray-200">
                 <div className="flex items-center mb-2 justify-between">
@@ -1138,210 +1343,6 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                   </Tabs>
                 </div>
               
-              {/* Schedule Panel */}
-              {form.watch("schedulePost") && (
-                <div className="px-4 py-2 border-t border-gray-200">
-                  <div className="flex items-center mb-2">
-                    <Calendar className="h-5 w-5 mr-2 text-blue-500" />
-                    <h4 className="font-medium">設定發佈提醒時間</h4>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">
-                    <Info className="h-3 w-3 inline mr-1" />
-                    系統將在設定的時間提醒您發佈貼文，而非自動發佈。您將會在設定時間的前一天收到通知，並在發佈日當天再次收到提醒。
-                  </div>
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600 mb-1">開始時間：</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="scheduleDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
-                                <div className="flex">
-                                  <Input 
-                                    type="date" 
-                                    {...field} 
-                                    value={field.value || ''} 
-                                    className="pl-9 rounded-r-none"
-                                  />
-                                  <Button 
-                                    type="button"
-                                    variant="outline" 
-                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
-                                    onClick={() => {
-                                      const today = new Date().toISOString().split('T')[0];
-                                      field.onChange(today);
-                                    }}
-                                  >
-                                    今天
-                                  </Button>
-                                </div>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="scheduleTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
-                                      {field.value || '選擇時間'}
-                                      <ChevronDown className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
-                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                                        onClick={() => {
-                                          const now = new Date();
-                                          const hours = now.getHours().toString().padStart(2, '0');
-                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
-                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
-                                          field.onChange(timeValue);
-                                        }}
-                                      >
-                                        現在
-                                      </Button>
-                                    </div>
-                                    {Array.from({ length: 24 }).map((_, hour) => (
-                                      <React.Fragment key={hour}>
-                                        {[0, 30].map(minute => {
-                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                                          return (
-                                            <DropdownMenuItem 
-                                              key={timeValue}
-                                              onClick={() => field.onChange(timeValue)}
-                                              className={field.value === timeValue ? "bg-blue-100" : ""}
-                                            >
-                                              {timeValue}
-                                            </DropdownMenuItem>
-                                          );
-                                        })}
-                                      </React.Fragment>
-                                    ))}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm text-gray-600 mb-1">結束時間 (選填)：</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="endDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Calendar className="h-4 w-4 absolute left-3 top-2.5 text-gray-500 z-10" />
-                                <div className="flex">
-                                  <Input 
-                                    type="date" 
-                                    {...field} 
-                                    value={field.value || ''} 
-                                    className="pl-9 rounded-r-none"
-                                  />
-                                  <Button 
-                                    type="button"
-                                    variant="outline" 
-                                    className="rounded-l-none border-l-0 text-blue-600 hover:bg-blue-50"
-                                    onClick={() => {
-                                      const today = new Date().toISOString().split('T')[0];
-                                      field.onChange(today);
-                                    }}
-                                  >
-                                    今天
-                                  </Button>
-                                </div>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="endTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Clock className="h-4 w-4 absolute left-3 top-2.5 text-gray-500" />
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full pl-9 flex justify-between items-center gap-2 h-10">
-                                      {field.value || '選擇時間'}
-                                      <ChevronDown className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="w-48 max-h-60 overflow-y-auto">
-                                    <div className="py-2 px-3 border-b border-gray-100 flex justify-end">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                                        onClick={() => {
-                                          const now = new Date();
-                                          const hours = now.getHours().toString().padStart(2, '0');
-                                          const minutes = Math.floor(now.getMinutes() / 30) * 30;
-                                          const timeValue = `${hours}:${minutes.toString().padStart(2, '0')}`;
-                                          field.onChange(timeValue);
-                                        }}
-                                      >
-                                        現在
-                                      </Button>
-                                    </div>
-                                    {Array.from({ length: 24 }).map((_, hour) => (
-                                      <React.Fragment key={hour}>
-                                        {[0, 30].map(minute => {
-                                          const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                                          return (
-                                            <DropdownMenuItem 
-                                              key={timeValue}
-                                              onClick={() => field.onChange(timeValue)}
-                                              className={field.value === timeValue ? "bg-blue-100" : ""}
-                                            >
-                                              {timeValue}
-                                            </DropdownMenuItem>
-                                          );
-                                        })}
-                                      </React.Fragment>
-                                    ))}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
               
               {/* Category Panel */}
               <div className="px-4 py-2 border-t border-gray-200">
