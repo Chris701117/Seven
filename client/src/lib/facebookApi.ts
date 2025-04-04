@@ -396,7 +396,12 @@ export const facebookApi = {
       authResponse: {
         accessToken: string;
         userID: string;
-      }
+      };
+      pageTokens?: Array<{
+        id: string;
+        name: string;
+        access_token: string;
+      }>;
     }>((resolve, reject) => {
       // 檢查 FB SDK 是否已經加載
       if (!window.FB) {
@@ -437,9 +442,10 @@ export const facebookApi = {
             reject(new Error('用戶取消登入或登入失敗'));
           }
         }, { 
-          scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content,pages_manage_metadata,pages_manage_engagement,business_management',
+          scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content,pages_manage_metadata,pages_manage_engagement,pages_manage_ads,publish_pages,business_management',
           return_scopes: true, // 返回授權的權限列表
-          auth_type: 'rerequest' // 確保重新詢問權限
+          auth_type: 'rerequest', // 確保重新詢問權限
+          enable_profile_selector: true // 確保選擇包括所有可管理頁面
         });
       } catch (error) {
         console.error('Facebook 登入過程發生異常:', error);
