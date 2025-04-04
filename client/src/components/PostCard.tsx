@@ -106,37 +106,17 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
     },
     onError: (error) => {
-      // 即使 API 調用失敗，我們也要手動更新前端貼文狀態
+      // API調用失敗時顯示失敗訊息
       toast({
-        title: "發布通知",
-        description: "貼文已標記為已發布，但可能未在所有平台成功發布。請檢查您的 Facebook 頁面。",
-        variant: "default",
+        title: "發布失敗",
+        description: "貼文發布失敗，請檢查您的網絡連接和Facebook權限設置。",
+        variant: "destructive",
       });
       console.error("Failed to publish post to all platforms:", error);
       
-      // 手動更新貼文狀態為已發布
-      const updatedPost = {
-        ...post,
-        status: "published",
-        publishedTime: new Date().toISOString(),
-      };
-      
-      // 更新本地數據
-      queryClient.setQueryData(
-        [`/api/posts/${post.id}`], 
-        updatedPost
-      );
-      
-      // 更新列表數據
-      queryClient.setQueriesData(
-        { queryKey: [`/api/pages/${post.pageId}/posts`] },
-        (oldData: any) => {
-          if (!oldData) return oldData;
-          return Array.isArray(oldData) 
-            ? oldData.map(p => p.id === post.id ? updatedPost : p)
-            : oldData;
-        }
-      );
+      // 讓後端處理狀態更新為publish_failed
+      queryClient.invalidateQueries({ queryKey: [`/api/pages/${post.pageId}/posts`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
     },
   });
 
