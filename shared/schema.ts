@@ -9,6 +9,49 @@ export enum UserRole {
   USER = 'USER',
 }
 
+// 權限枚舉
+export enum Permission {
+  // 用戶管理
+  MANAGE_USERS = 'MANAGE_USERS',
+  CREATE_USER = 'CREATE_USER',
+  EDIT_USER = 'EDIT_USER',
+  DELETE_USER = 'DELETE_USER',
+  
+  // 粉絲頁管理
+  MANAGE_PAGES = 'MANAGE_PAGES',
+  CREATE_PAGE = 'CREATE_PAGE',
+  EDIT_PAGE = 'EDIT_PAGE',
+  DELETE_PAGE = 'DELETE_PAGE',
+  
+  // 貼文管理
+  CREATE_POST = 'CREATE_POST',
+  EDIT_POST = 'EDIT_POST',
+  DELETE_POST = 'DELETE_POST',
+  PUBLISH_POST = 'PUBLISH_POST',
+  
+  // 行銷管理
+  MANAGE_MARKETING = 'MANAGE_MARKETING',
+  CREATE_MARKETING_TASK = 'CREATE_MARKETING_TASK',
+  EDIT_MARKETING_TASK = 'EDIT_MARKETING_TASK',
+  DELETE_MARKETING_TASK = 'DELETE_MARKETING_TASK',
+  
+  // 營運管理
+  MANAGE_OPERATIONS = 'MANAGE_OPERATIONS',
+  CREATE_OPERATION_TASK = 'CREATE_OPERATION_TASK',
+  EDIT_OPERATION_TASK = 'EDIT_OPERATION_TASK',
+  DELETE_OPERATION_TASK = 'DELETE_OPERATION_TASK',
+  
+  // 分析數據
+  VIEW_ANALYTICS = 'VIEW_ANALYTICS',
+  EXPORT_DATA = 'EXPORT_DATA',
+  
+  // Onelink管理
+  MANAGE_ONELINK = 'MANAGE_ONELINK',
+  
+  // 設定管理
+  MANAGE_SETTINGS = 'MANAGE_SETTINGS',
+}
+
 // User schema for authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -17,17 +60,23 @@ export const users = pgTable("users", {
   displayName: text("display_name"), // 顯示名稱
   email: text("email").notNull().unique(), // 電子郵件 (必須)
   role: text("role").notNull().default('USER'), // 角色: ADMIN, PM, USER
+  groupId: integer("group_id"), // 群組ID
+  isActive: boolean("is_active").default(true), // 帳號是否啟用
   isEmailVerified: boolean("is_email_verified").default(false), // 電子郵件是否已驗證
   emailVerificationCode: text("email_verification_code"), // 電子郵件驗證碼
   emailVerificationExpires: timestamp("email_verification_expires"), // 驗證碼過期時間
   isTwoFactorEnabled: boolean("is_two_factor_enabled").default(false), // 是否啟用兩步驗證
   twoFactorSecret: text("two_factor_secret"), // 兩步驗證秘鑰
+  twoFactorQrCode: text("two_factor_qr_code"), // 兩步驗證QR碼URL
+  passwordResetToken: text("password_reset_token"), // 密碼重置令牌
+  passwordResetExpires: timestamp("password_reset_expires"), // 密碼重置過期時間
   lastLoginAt: timestamp("last_login_at"), // 上次登入時間
   createdAt: timestamp("created_at").notNull().defaultNow(), // 創建時間
   updatedAt: timestamp("updated_at"), // 更新時間
   invitedBy: integer("invited_by"), // 邀請者ID
   accessToken: text("access_token"), // Facebook 訪問令牌
   fbUserId: text("fb_user_id"), // Facebook 用戶ID
+  isAdminUser: boolean("is_admin_user").default(false), // 是否為管理員用戶（用於特殊操作驗證）
 });
 
 // 邀請連結表
@@ -58,6 +107,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   displayName: true,
   email: true,
   role: true,
+  groupId: true,
+  isActive: true,
 });
 
 export const insertInvitationSchema = createInsertSchema(invitations).pick({
@@ -331,8 +382,43 @@ export type InsertMarketingTask = z.infer<typeof insertMarketingTaskSchema>;
 export type OperationTask = typeof operationTasks.$inferSelect;
 export type InsertOperationTask = z.infer<typeof insertOperationTaskSchema>;
 
+// 用戶群組表
+export const userGroups = pgTable("user_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // 群組名稱
+  description: text("description"), // 群組描述
+  permissions: jsonb("permissions").default([]).notNull(), // 權限列表 (Permission陣列)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+// 用戶-群組關聯表
+export const userGroupMemberships = pgTable("user_group_memberships", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // 用戶ID
+  groupId: integer("group_id").notNull(), // 群組ID
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserGroupSchema = createInsertSchema(userGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserGroupMembershipSchema = createInsertSchema(userGroupMemberships).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type OnelinkField = typeof onelinkFields.$inferSelect;
 export type InsertOnelinkField = z.infer<typeof insertOnelinkFieldSchema>;
 
 export type Vendor = typeof vendors.$inferSelect;
 export type InsertVendor = z.infer<typeof insertVendorSchema>;
+
+export type UserGroup = typeof userGroups.$inferSelect;
+export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
+
+export type UserGroupMembership = typeof userGroupMemberships.$inferSelect;
+export type InsertUserGroupMembership = z.infer<typeof insertUserGroupMembershipSchema>;
