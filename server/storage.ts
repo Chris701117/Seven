@@ -16,6 +16,7 @@ import {
 // 引入會話和內存存儲相關庫
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import fetch from "node-fetch";
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -218,10 +219,12 @@ export class MemStorage implements IStorage {
       id: this.pageId++,
       pageId: "page_123456", // 更改為客戶端期望的格式
       pageName: "Home & Garden Tips",
+      name: "Home & Garden Tips", // 頁面完整名稱
       accessToken: "sample_page_access_token",
       userId: user.id,
       picture: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750",
-      pageImage: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750"
+      pageImage: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750",
+      devMode: true // 默認為開發模式
     };
     this.pages.set(page.id, page);
 
@@ -289,6 +292,11 @@ export class MemStorage implements IStorage {
         threads: false, 
         x: false 
       },
+      // 新增字段用於 Facebook Graph API
+      fbPostId: "fb_1234567890",
+      mediaUrls: ["https://images.unsplash.com/photo-1528495612343-9ca9f4a4de28"],
+      mediaType: "image",
+      // 其他字段
       reminderSent: false,
       reminderTime: null,
       isCompleted: true,
@@ -351,6 +359,11 @@ export class MemStorage implements IStorage {
         threads: false, 
         x: false 
       },
+      // Facebook Graph API 相關字段
+      fbPostId: "fb_9876543210",
+      mediaUrls: [],
+      mediaType: null,
+      // 其他字段
       reminderSent: false,
       reminderTime: null,
       isCompleted: true,
@@ -413,6 +426,11 @@ export class MemStorage implements IStorage {
         threads: false, 
         x: false 
       },
+      // 新增字段用於 Facebook Graph API
+      fbPostId: null,
+      mediaUrls: ["https://images.unsplash.com/photo-1591382386627-349b692688ff"],
+      mediaType: "image",
+      // 其他字段
       reminderSent: false,
       reminderTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // One day before scheduled time
       isCompleted: false,
@@ -457,6 +475,11 @@ export class MemStorage implements IStorage {
         threads: false, 
         x: false 
       },
+      // Facebook Graph API 相關字段
+      fbPostId: null,
+      mediaUrls: ["https://images.unsplash.com/photo-1556761175-b413da4baf72"],
+      mediaType: "image",
+      // 其他字段
       reminderSent: false,
       reminderTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago (to trigger immediate reminder)
       isCompleted: false,
@@ -501,6 +524,11 @@ export class MemStorage implements IStorage {
         threads: false, 
         x: false 
       },
+      // Facebook Graph API 相關字段
+      fbPostId: null,
+      mediaUrls: [],
+      mediaType: null,
+      // 其他字段
       reminderSent: false,
       reminderTime: null,
       isCompleted: false,
@@ -518,6 +546,10 @@ export class MemStorage implements IStorage {
 
   // User operations
   async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+  
+  async getUserById(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
 
@@ -849,6 +881,24 @@ export class MemStorage implements IStorage {
 
   async createPost(insertPost: InsertPost): Promise<Post> {
     const id = this.postId++;
+    
+    // 確定媒體類型
+    let mediaType = null;
+    if (insertPost.imageUrl) {
+      mediaType = "image";
+    } else if (insertPost.videoUrl) {
+      mediaType = "video";
+    }
+    
+    // 建立媒體URL陣列
+    const mediaUrls = [];
+    if (insertPost.imageUrl) {
+      mediaUrls.push(insertPost.imageUrl);
+    }
+    if (insertPost.videoUrl) {
+      mediaUrls.push(insertPost.videoUrl);
+    }
+    
     const post: Post = {
       ...insertPost,
       id,
@@ -864,6 +914,11 @@ export class MemStorage implements IStorage {
       category: insertPost.category || null,
       platformContent: insertPost.platformContent || { fb: "", ig: "", tiktok: "", threads: "", x: "" } as PlatformContent,
       platformStatus: insertPost.platformStatus || { fb: false, ig: false, tiktok: false, threads: false, x: false } as PlatformStatus,
+      // 新增 Facebook Graph API 相關字段
+      fbPostId: null,
+      mediaUrls,
+      mediaType,
+      // 其他字段
       reminderSent: false,
       reminderTime: insertPost.scheduledTime ? new Date(insertPost.scheduledTime.getTime() - 24 * 60 * 60 * 1000) : null, // Set reminder 1 day before
       isCompleted: false,
@@ -1042,21 +1097,170 @@ export class MemStorage implements IStorage {
       throw new Error(`Post with id ${id} not found`);
     }
     
-    // 在實際情況中，這裡會調用社交媒體API進行發布
-    // 這裡我們只是模擬發布成功
+    // 獲取頁面和用戶信息
+    const page = await this.getPageByPageId(post.pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${post.pageId} not found`);
+    }
+    
+    const user = await this.getUserById(page.userId);
+    if (!user) {
+      throw new Error(`User with ID ${page.userId} not found`);
+    }
+    
+    // 初始化平台狀態
     const updatedPlatformStatus: PlatformStatus = { 
-      fb: true, 
-      ig: true, 
-      tiktok: true, 
-      threads: true, 
-      x: true 
+      fb: false, 
+      ig: false, 
+      tiktok: false, 
+      threads: false, 
+      x: false 
     };
     
+    // 是否有任何平台發布成功
+    let anyPlatformSuccess = false;
+    
+    // 如果有頁面訪問令牌且不是開發模式，實際發布到Facebook
+    if (page.accessToken && !page.devMode) {
+      try {
+        console.log(`嘗試發布到Facebook頁面 ${page.name || page.pageName} (${page.pageId})`);
+        
+        // 根據媒體類型選擇不同的 Graph API 端點和參數
+        let fbGraphUrl = ''; 
+        const params = new URLSearchParams();
+        
+        // 添加共同參數
+        params.append('access_token', page.accessToken);
+        
+        // 根據貼文內容確定使用哪個 API 端點
+        if (post.mediaUrls && post.mediaUrls.length > 0) {
+          // 如果有媒體
+          if (post.mediaType === 'image') {
+            // 圖片貼文 - 有兩種方式：photos 或 feed with link
+            if (post.platformContent?.fb && post.platformContent.fb.trim() !== '') {
+              // 使用平台特定內容 (如果有)
+              params.append('message', post.platformContent.fb);
+            } else {
+              params.append('message', post.content);
+            }
+            
+            // 使用照片 API 端點
+            fbGraphUrl = `https://graph.facebook.com/v18.0/${page.pageId}/photos`;
+            
+            // 添加圖片 URL
+            params.append('url', post.mediaUrls[0]);
+          } else if (post.mediaType === 'video') {
+            // 視頻貼文
+            if (post.platformContent?.fb && post.platformContent.fb.trim() !== '') {
+              params.append('description', post.platformContent.fb);
+            } else {
+              params.append('description', post.content);
+            }
+            
+            // 使用視頻 API 端點
+            fbGraphUrl = `https://graph.facebook.com/v18.0/${page.pageId}/videos`;
+            
+            // 添加視頻 URL (注意：真實場景需要上傳視頻文件，這裡使用公開可訪問的 URL 作為示例)
+            params.append('file_url', post.mediaUrls[0]);
+          }
+        } else {
+          // 純文字貼文
+          fbGraphUrl = `https://graph.facebook.com/v18.0/${page.pageId}/feed`;
+          
+          if (post.platformContent?.fb && post.platformContent.fb.trim() !== '') {
+            params.append('message', post.platformContent.fb);
+          } else {
+            params.append('message', post.content);
+          }
+          
+          // 如果有連結
+          if (post.linkUrl) {
+            params.append('link', post.linkUrl);
+            
+            if (post.linkTitle) {
+              params.append('name', post.linkTitle);
+            }
+            
+            if (post.linkDescription) {
+              params.append('description', post.linkDescription);
+            }
+            
+            if (post.linkImageUrl) {
+              params.append('picture', post.linkImageUrl);
+            }
+          }
+        }
+        
+        console.log(`正在向 ${fbGraphUrl} 發送 POST 請求，參數:`, Object.fromEntries(params));
+        
+        // 發送請求
+        const response = await fetch(fbGraphUrl, {
+          method: 'POST',
+          body: params
+        });
+        
+        // 檢查響應
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Facebook發布成功:', result);
+          
+          // 更新帖子的社交媒體ID
+          if (result.id) {
+            post.fbPostId = result.id;
+          } else if (result.post_id) {
+            post.fbPostId = result.post_id;
+          }
+          
+          // 標記Facebook發布為成功
+          updatedPlatformStatus.fb = true;
+          anyPlatformSuccess = true;
+        } else {
+          // 處理 API 錯誤
+          let errorMessage = '';
+          try {
+            const errorData = await response.json();
+            errorMessage = JSON.stringify(errorData);
+            console.error('Facebook API 錯誤:', errorData);
+          } catch (e) {
+            const errorText = await response.text();
+            errorMessage = errorText;
+            console.error('Facebook發布失敗:', errorText);
+          }
+          throw new Error(`Facebook發布失敗: ${errorMessage}`);
+        }
+      } catch (error) {
+        console.error('Facebook發布過程中出錯:', error);
+        // 失敗時不會拋出異常，而是將該平台標記為失敗
+      }
+    } else {
+      console.log(`開發模式=${page.devMode}, 跳過實際Facebook發布，模擬成功`);
+      // 在開發模式下，我們模擬成功
+      if (page.devMode) {
+        updatedPlatformStatus.fb = true;
+        anyPlatformSuccess = true;
+        
+        // 在開發模式下，生成一個模擬的 Facebook 帖子 ID
+        if (!post.fbPostId) {
+          post.fbPostId = `dev_fb_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        }
+      }
+    }
+    
+    // 在這裡添加其他平台的發布邏輯（Instagram, TikTok等）
+    // 為簡化，我們暫時將Instagram標記為與fb相同的狀態，其他平台標記為不支持
+    updatedPlatformStatus.ig = updatedPlatformStatus.fb; // 假設 Instagram 與 Facebook 一起發布
+    updatedPlatformStatus.tiktok = false; // 暫時不支持TikTok
+    updatedPlatformStatus.threads = false; // 暫時不支持Threads
+    updatedPlatformStatus.x = false; // 暫時不支持X
+    
+    // 更新帖子狀態
     const updatedPost = { 
       ...post, 
+      fbPostId: post.fbPostId, // 確保保留已更新的 Facebook 帖子 ID
       platformStatus: updatedPlatformStatus,
-      status: "published",
-      publishedTime: new Date(),
+      // 只有當至少有一個平台發布成功時才更改狀態
+      status: anyPlatformSuccess ? "published" : post.status,
+      publishedTime: anyPlatformSuccess ? new Date() : post.publishedTime,
       updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
