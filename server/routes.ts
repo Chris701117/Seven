@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -11,6 +11,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
 import path from "path";
+import * as bcrypt from 'bcryptjs';
 
 // WebSocket client tracking
 interface ExtendedWebSocket extends WebSocket {
@@ -46,6 +47,14 @@ declare module "express-session" {
 let sendNotification: (userId: number, notification: Notification) => void;
 let sendReminderNotification: (post: Post) => Promise<boolean>;
 let sendCompletionNotification: (post: Post) => Promise<boolean>;
+
+// 登入驗證中間件
+const requireLogin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "未認證" });
+  }
+  next();
+};
 
 // 檢查權限中間件
 const checkPermission = (requiredPermission: Permission) => {
@@ -189,6 +198,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "登出成功" });
     });
+  });
+
+  // 驗證管理員密碼 - 用於敏感操作確認
+  app.post("/api/verify-admin", requireLogin, async (req, res) => {
+    try {
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: "密碼不能為空" });
+      }
+
+      const currentUser = await storage.getUser(req.session.userId);
+      
+      // 檢查用戶是否為管理員
+      const isAdmin = currentUser.isAdminUser;
+      if (!isAdmin) {
+        return res.status(403).json({ message: "只有管理員可以執行此操作" });
+      }
+      
+      // 驗證密碼
+      const passwordValid = await storage.verifyUserPassword(req.session.userId, password);
+      
+      if (!passwordValid) {
+        return res.status(401).json({ message: "管理員密碼不正確" });
+      }
+      
+      return res.status(200).json({ message: "管理員身份驗證成功" });
+    } catch (error) {
+      console.error("驗證管理員密碼時出錯:", error);
+      return res.status(500).json({ message: "服務器錯誤" });
+    }
   });
 
   // 測試API端點 - 沒有任何敏感操作，純粹用於檢查API可達性

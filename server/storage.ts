@@ -33,6 +33,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<boolean>;
+  verifyUserPassword(userId: number, password: string): Promise<boolean>;
   updateUserAccessToken(id: number, accessToken: string, fbUserId: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
   
@@ -574,6 +575,18 @@ export class MemStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
+  }
+  
+  async verifyUserPassword(userId: number, password: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false;
+    }
+    
+    // 在真實環境中，應該使用 bcrypt 來比較密碼
+    // 例如: return await bcrypt.compare(password, user.password);
+    // 這裡簡單地直接比較密碼
+    return user.password === password;
   }
   
   async getUserById(id: number): Promise<User | undefined> {

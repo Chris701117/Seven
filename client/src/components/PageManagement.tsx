@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Facebook, Plus, Trash2, RefreshCw, Edit2, CheckCircle, AlertCircle } from "lucide-react";
+import { Facebook, Plus, Trash2, RefreshCw, Edit2, CheckCircle, AlertCircle, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
@@ -31,6 +31,9 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
   });
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -62,6 +65,28 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
     onError: (error) => {
       toast({
         title: "添加粉絲頁失敗",
+        description: `錯誤: ${error instanceof Error ? error.message : '未知錯誤'}`,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // 驗證管理員密碼
+  const verifyPasswordMutation = useMutation({
+    mutationFn: (credentials: { password: string }) => {
+      return apiRequest("POST", "/api/verify-admin", credentials);
+    },
+    onSuccess: () => {
+      if (pageToDelete) {
+        deletePageMutation.mutate(pageToDelete.id);
+      }
+      setPasswordError('');
+      setAdminPassword('');
+    },
+    onError: (error) => {
+      setPasswordError('管理員密碼不正確，請重試。');
+      toast({
+        title: "密碼驗證失敗",
         description: `錯誤: ${error instanceof Error ? error.message : '未知錯誤'}`,
         variant: "destructive",
       });
@@ -141,11 +166,19 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
     setIsConfirmDeleteOpen(true);
   };
 
-  // 執行刪除粉絲頁
+  // 執行刪除粉絲頁（需要密碼驗證）
   const executeDeletePage = () => {
-    if (pageToDelete) {
-      deletePageMutation.mutate(pageToDelete.id);
+    if (pageToDelete && adminPassword) {
+      // 先驗證管理員密碼
+      verifyPasswordMutation.mutate({ password: adminPassword });
+    } else {
+      setPasswordError('請輸入管理員密碼');
     }
+  };
+  
+  // 切換密碼顯示/隱藏
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   // 創建測試粉絲頁
@@ -373,17 +406,57 @@ const PageManagement = ({ onPageSelected, activePage }: PageManagementProps) => 
             </AlertDescription>
           </Alert>
           
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="adminPassword" className="text-right">
+                管理員密碼
+              </Label>
+              <div className="relative col-span-3">
+                <Input 
+                  id="adminPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="請輸入管理員密碼以確認刪除"
+                  className={`pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 text-gray-400"
+                  onClick={togglePasswordVisibility}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            
+            {passwordError && (
+              <p className="text-sm text-red-500 col-start-2 col-span-3">
+                <KeyRound className="h-3 w-3 inline mr-1" />
+                {passwordError}
+              </p>
+            )}
+          </div>
+          
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsConfirmDeleteOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => {
+              setIsConfirmDeleteOpen(false);
+              setAdminPassword('');
+              setPasswordError('');
+            }}>
               取消
             </Button>
             <Button 
               type="button" 
               variant="destructive"
               onClick={executeDeletePage}
-              disabled={deletePageMutation.isPending}
+              disabled={deletePageMutation.isPending || verifyPasswordMutation.isPending}
             >
-              {deletePageMutation.isPending && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+              {(deletePageMutation.isPending || verifyPasswordMutation.isPending) && 
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              }
               確認刪除
             </Button>
           </DialogFooter>
