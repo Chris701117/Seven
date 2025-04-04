@@ -19,6 +19,9 @@ const FB_CONFIG = {
   status: false,      // 禁止自動檢查登錄狀態
 }
 
+// Token刷新設置
+const TOKEN_REFRESH_INTERVAL = 24 * 60 * 60 * 1000; // 每24小時刷新一次Token
+
 interface FacebookPost {
   id: string;
   message: string;
@@ -452,7 +455,48 @@ export const facebookApi = {
   },
   
   // Pages related functions
+  // 檢查Token是否需要刷新
+  checkTokenStatus: async () => {
+    try {
+      // 檢查是否為開發模式
+      if (localStorage.getItem('fb_dev_mode') === 'true') {
+        console.log('開發模式：跳過Token檢查');
+        return { valid: true, devMode: true };
+      }
+      
+      // 檢查Token狀態
+      return await apiRequest("GET", '/api/auth/facebook/token-status');
+    } catch (error) {
+      console.error('檢查Token狀態失敗:', error);
+      return { valid: false, error: error instanceof Error ? error.message : '未知錯誤' };
+    }
+  },
+  
+  // 刷新Facebook Token
+  refreshToken: async () => {
+    try {
+      // 檢查是否為開發模式
+      if (localStorage.getItem('fb_dev_mode') === 'true') {
+        console.log('開發模式：模擬Token刷新');
+        return { success: true, devMode: true };
+      }
+      
+      // 執行Token刷新
+      return await apiRequest("POST", '/api/auth/facebook/refresh-token');
+    } catch (error) {
+      console.error('刷新Token失敗:', error);
+      throw new Error(`刷新Token失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
+    }
+  },
+  
   fetchUserPages: async () => {
+    // 在獲取頁面前檢查Token狀態
+    const tokenStatus = await facebookApi.checkTokenStatus();
+    if (!tokenStatus.valid && !tokenStatus.devMode) {
+      console.log('Token無效，嘗試刷新...');
+      await facebookApi.refreshToken();
+    }
+    
     return apiRequest("GET", `/api/pages`);
   },
   
@@ -470,10 +514,24 @@ export const facebookApi = {
   },
   
   createPost: async (pageId: string, postData: any) => {
+    // 在創建貼文前檢查Token狀態
+    const tokenStatus = await facebookApi.checkTokenStatus();
+    if (!tokenStatus.valid && !tokenStatus.devMode) {
+      console.log('Token無效，嘗試刷新...');
+      await facebookApi.refreshToken();
+    }
+    
     return apiRequest("POST", `/api/pages/${pageId}/posts`, postData);
   },
   
   updatePost: async (postId: number, postData: any) => {
+    // 在更新貼文前檢查Token狀態
+    const tokenStatus = await facebookApi.checkTokenStatus();
+    if (!tokenStatus.valid && !tokenStatus.devMode) {
+      console.log('Token無效，嘗試刷新...');
+      await facebookApi.refreshToken();
+    }
+    
     return apiRequest("PATCH", `/api/posts/${postId}`, postData);
   },
   
@@ -483,6 +541,13 @@ export const facebookApi = {
   
   // 一鍵發布到所有平台
   publishToAllPlatforms: async (postId: number) => {
+    // 在發布貼文前檢查Token狀態
+    const tokenStatus = await facebookApi.checkTokenStatus();
+    if (!tokenStatus.valid && !tokenStatus.devMode) {
+      console.log('Token無效，嘗試刷新...');
+      await facebookApi.refreshToken();
+    }
+    
     return apiRequest("POST", `/api/posts/${postId}/publish-all`);
   },
   
