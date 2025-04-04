@@ -63,6 +63,12 @@ export function getPostStatusColor(status: string): {
         text: 'text-green-800',
         hover: 'hover:bg-green-200'
       };
+    case 'publish_failed':
+      return {
+        bg: 'bg-red-100',
+        text: 'text-red-800',
+        hover: 'hover:bg-red-200'
+      };
     case 'scheduled':
       return {
         bg: 'bg-blue-100',
