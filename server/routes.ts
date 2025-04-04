@@ -1,7 +1,11 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPostSchema, insertPageSchema, insertUserSchema, type Post } from "@shared/schema";
+import { 
+  insertPostSchema, insertPageSchema, insertUserSchema, type Post,
+  insertUserGroupSchema, type UserGroup, type UserGroupMembership,
+  type User, Permission 
+} from "@shared/schema";
 import session from "express-session";
 import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
@@ -2482,6 +2486,331 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("生成 Onelink URL 失敗:", error);
       res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+
+  // 用戶群組管理 API
+  // 獲取所有用戶群組
+  app.get("/api/user-groups", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以查看所有用戶群組
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groups = await storage.getUserGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("獲取用戶群組錯誤:", error);
+      res.status(500).json({ 
+        message: "獲取用戶群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 獲取特定用戶群組詳情
+  app.get("/api/user-groups/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以查看群組詳情
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: "無效的群組ID" });
+      }
+
+      const group = await storage.getUserGroupById(groupId);
+      if (!group) {
+        return res.status(404).json({ message: "找不到該用戶群組" });
+      }
+
+      // 獲取群組成員
+      const users = await storage.getUsersInGroup(groupId);
+      
+      res.json({
+        ...group,
+        users: users.map(({ password, ...user }) => user) // 去除密碼字段
+      });
+    } catch (error) {
+      console.error("獲取用戶群組詳情錯誤:", error);
+      res.status(500).json({ 
+        message: "獲取用戶群組詳情時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 創建新的用戶群組
+  app.post("/api/user-groups", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以創建用戶群組
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      // 驗證請求數據
+      const groupData = await insertUserGroupSchema.parse(req.body);
+      
+      // 創建新群組
+      const newGroup = await storage.createUserGroup(groupData);
+      
+      res.status(201).json(newGroup);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "無效的用戶群組數據", 
+          errors: error.errors 
+        });
+      }
+      
+      console.error("創建用戶群組錯誤:", error);
+      res.status(500).json({ 
+        message: "創建用戶群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 更新用戶群組
+  app.put("/api/user-groups/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以更新用戶群組
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: "無效的群組ID" });
+      }
+
+      // 檢查群組是否存在
+      const existingGroup = await storage.getUserGroupById(groupId);
+      if (!existingGroup) {
+        return res.status(404).json({ message: "找不到該用戶群組" });
+      }
+
+      // 更新群組數據
+      const groupData = req.body;
+      const updatedGroup = await storage.updateUserGroup(groupId, groupData);
+      
+      res.json(updatedGroup);
+    } catch (error) {
+      console.error("更新用戶群組錯誤:", error);
+      res.status(500).json({ 
+        message: "更新用戶群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 刪除用戶群組
+  app.delete("/api/user-groups/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以刪除用戶群組
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groupId = parseInt(req.params.id);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: "無效的群組ID" });
+      }
+
+      // 嘗試刪除群組
+      await storage.deleteUserGroup(groupId);
+      
+      res.json({ message: "用戶群組已成功刪除" });
+    } catch (error) {
+      console.error("刪除用戶群組錯誤:", error);
+      res.status(500).json({ 
+        message: "刪除用戶群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 獲取用戶所屬的所有群組
+  app.get("/api/users/:userId/groups", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 普通用戶只能查看自己的群組，管理員可以查看任何用戶的群組
+      if (user.role !== "ADMIN" && user.id !== targetUserId) {
+        return res.status(403).json({ message: "權限不足，您只能查看自己的群組" });
+      }
+
+      // 檢查目標用戶是否存在
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 獲取用戶的群組成員資格
+      const memberships = await storage.getUserGroupMemberships(targetUserId);
+      
+      // 獲取完整的群組信息
+      const groups: UserGroup[] = [];
+      for (const membership of memberships) {
+        const group = await storage.getUserGroupById(membership.groupId);
+        if (group) {
+          groups.push(group);
+        }
+      }
+      
+      res.json(groups);
+    } catch (error) {
+      console.error("獲取用戶群組錯誤:", error);
+      res.status(500).json({ 
+        message: "獲取用戶群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 添加用戶到群組
+  app.post("/api/user-groups/:groupId/users", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以添加用戶到群組
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groupId = parseInt(req.params.groupId);
+      if (isNaN(groupId)) {
+        return res.status(400).json({ message: "無效的群組ID" });
+      }
+
+      // 驗證請求數據
+      const { userId } = req.body;
+      if (!userId || isNaN(parseInt(userId))) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 添加用戶到群組
+      const membership = await storage.addUserToGroup(parseInt(userId), groupId);
+      
+      res.status(201).json(membership);
+    } catch (error) {
+      console.error("添加用戶到群組錯誤:", error);
+      res.status(500).json({ 
+        message: "添加用戶到群組時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
+  // 從群組移除用戶
+  app.delete("/api/user-groups/:groupId/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以從群組移除用戶
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const groupId = parseInt(req.params.groupId);
+      const targetUserId = parseInt(req.params.userId);
+      
+      if (isNaN(groupId) || isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的群組ID或用戶ID" });
+      }
+
+      // 從群組移除用戶
+      await storage.removeUserFromGroup(targetUserId, groupId);
+      
+      res.json({ message: "用戶已從群組中移除" });
+    } catch (error) {
+      console.error("從群組移除用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "從群組移除用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
     }
   });
 

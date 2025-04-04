@@ -10,7 +10,10 @@ import {
   vendors, type Vendor, type InsertVendor,
   invitations, type InsertInvitation,
   authCodes, type InsertAuthCode,
-  type PlatformContent, type PlatformStatus
+  userGroups, type UserGroup, type InsertUserGroup,
+  userGroupMemberships, type UserGroupMembership, type InsertUserGroupMembership,
+  type PlatformContent, type PlatformStatus,
+  Permission
 } from "@shared/schema";
 
 // 引入會話和內存存儲相關庫
@@ -124,6 +127,19 @@ export interface IStorage {
   createVendor(vendor: InsertVendor): Promise<Vendor>;
   updateVendor(id: number, vendor: Partial<Vendor>): Promise<Vendor>;
   deleteVendor(id: number): Promise<boolean>;
+  
+  // 用戶群組操作
+  getUserGroups(): Promise<UserGroup[]>;
+  getUserGroupById(id: number): Promise<UserGroup | undefined>;
+  createUserGroup(group: InsertUserGroup): Promise<UserGroup>;
+  updateUserGroup(id: number, group: Partial<UserGroup>): Promise<UserGroup>;
+  deleteUserGroup(id: number): Promise<boolean>;
+  
+  // 用戶-群組關係操作
+  getUserGroupMemberships(userId: number): Promise<UserGroupMembership[]>;
+  getUsersInGroup(groupId: number): Promise<User[]>;
+  addUserToGroup(userId: number, groupId: number): Promise<UserGroupMembership>;
+  removeUserFromGroup(userId: number, groupId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -138,6 +154,8 @@ export class MemStorage implements IStorage {
   private vendors: Map<number, Vendor>;
   private invitations: Map<number, typeof invitations.$inferSelect>;
   private authCodes: Map<number, typeof authCodes.$inferSelect>;
+  private userGroups: Map<number, UserGroup>;
+  private userGroupMemberships: Map<number, UserGroupMembership>;
 
   private userId: number;
   private pageId: number;
@@ -150,6 +168,8 @@ export class MemStorage implements IStorage {
   private vendorId: number;
   private invitationId: number;
   private authCodeId: number;
+  private userGroupId: number;
+  private userGroupMembershipId: number;
   
   public sessionStore: session.Store;
 
@@ -165,6 +185,8 @@ export class MemStorage implements IStorage {
     this.vendors = new Map();
     this.invitations = new Map();
     this.authCodes = new Map();
+    this.userGroups = new Map();
+    this.userGroupMemberships = new Map();
     
     this.userId = 1;
     this.pageId = 1;
@@ -177,6 +199,8 @@ export class MemStorage implements IStorage {
     this.vendorId = 1;
     this.invitationId = 1;
     this.authCodeId = 1;
+    this.userGroupId = 1;
+    this.userGroupMembershipId = 1;
     
     // 初始化會話存儲
     this.sessionStore = new MemoryStore({
@@ -189,6 +213,7 @@ export class MemStorage implements IStorage {
     this.initSampleOperationTasks();
     this.initSampleOnelinkFields();
     this.initSampleVendors();
+    this.initSampleUserGroups();
   }
 
   private initSampleData() {
@@ -1628,6 +1653,85 @@ export class MemStorage implements IStorage {
     this.vendors.set(vendor2.id, vendor2);
   }
   
+  private initSampleUserGroups() {
+    // 創建管理員群組
+    const adminGroup: UserGroup = {
+      id: this.userGroupId++,
+      name: "管理員",
+      description: "系統管理員群組，擁有所有權限",
+      permissions: Object.values(Permission) as Permission[],
+      createdAt: new Date(),
+      updatedAt: null
+    };
+    this.userGroups.set(adminGroup.id, adminGroup);
+    
+    // 創建專案經理群組
+    const pmGroup: UserGroup = {
+      id: this.userGroupId++,
+      name: "專案經理",
+      description: "專案經理群組，擁有管理貼文、頁面、行銷和營運的權限",
+      permissions: [
+        Permission.MANAGE_PAGES,
+        Permission.CREATE_PAGE,
+        Permission.EDIT_PAGE,
+        Permission.CREATE_POST,
+        Permission.EDIT_POST,
+        Permission.DELETE_POST,
+        Permission.PUBLISH_POST,
+        Permission.MANAGE_MARKETING,
+        Permission.CREATE_MARKETING_TASK,
+        Permission.EDIT_MARKETING_TASK,
+        Permission.DELETE_MARKETING_TASK,
+        Permission.MANAGE_OPERATIONS,
+        Permission.CREATE_OPERATION_TASK,
+        Permission.EDIT_OPERATION_TASK,
+        Permission.DELETE_OPERATION_TASK,
+        Permission.VIEW_ANALYTICS,
+        Permission.EXPORT_DATA
+      ],
+      createdAt: new Date(),
+      updatedAt: null
+    };
+    this.userGroups.set(pmGroup.id, pmGroup);
+    
+    // 創建一般用戶群組
+    const userGroup: UserGroup = {
+      id: this.userGroupId++,
+      name: "一般用戶",
+      description: "一般用戶群組，僅擁有基本操作權限",
+      permissions: [
+        Permission.CREATE_POST,
+        Permission.EDIT_POST,
+        Permission.VIEW_ANALYTICS
+      ],
+      createdAt: new Date(),
+      updatedAt: null
+    };
+    this.userGroups.set(userGroup.id, userGroup);
+    
+    // 將現有用戶加入到對應群組
+    const users = Array.from(this.users.values());
+    for (const user of users) {
+      const membershipId = this.userGroupMembershipId++;
+      let groupId = userGroup.id; // 預設為一般用戶群組
+      
+      if (user.role === UserRole.ADMIN) {
+        groupId = adminGroup.id;
+      } else if (user.role === UserRole.PM) {
+        groupId = pmGroup.id;
+      }
+      
+      const membership: UserGroupMembership = {
+        id: membershipId,
+        userId: user.id,
+        groupId: groupId,
+        createdAt: new Date()
+      };
+      
+      this.userGroupMemberships.set(membershipId, membership);
+    }
+  }
+  
   // 營銷模組操作
   async getMarketingTasks(): Promise<MarketingTask[]> {
     return Array.from(this.marketingTasks.values());
@@ -1885,6 +1989,121 @@ export class MemStorage implements IStorage {
   
   async deleteVendor(id: number): Promise<boolean> {
     return this.vendors.delete(id);
+  }
+  
+  // 用戶群組操作方法
+  async getUserGroups(): Promise<UserGroup[]> {
+    return Array.from(this.userGroups.values());
+  }
+  
+  async getUserGroupById(id: number): Promise<UserGroup | undefined> {
+    return this.userGroups.get(id);
+  }
+  
+  async createUserGroup(group: InsertUserGroup): Promise<UserGroup> {
+    const id = this.userGroupId++;
+    const newGroup: UserGroup = {
+      ...group,
+      id,
+      createdAt: new Date(),
+      updatedAt: null
+    };
+    this.userGroups.set(id, newGroup);
+    return newGroup;
+  }
+  
+  async updateUserGroup(id: number, groupData: Partial<UserGroup>): Promise<UserGroup> {
+    const group = await this.getUserGroupById(id);
+    if (!group) {
+      throw new Error(`用戶群組 ID ${id} 不存在`);
+    }
+    
+    const updatedGroup = {
+      ...group,
+      ...groupData,
+      updatedAt: new Date()
+    };
+    this.userGroups.set(id, updatedGroup);
+    return updatedGroup;
+  }
+  
+  async deleteUserGroup(id: number): Promise<boolean> {
+    // 檢查是否有用戶關聯到此群組
+    const memberships = Array.from(this.userGroupMemberships.values())
+      .filter(membership => membership.groupId === id);
+    
+    if (memberships.length > 0) {
+      throw new Error(`無法刪除群組，有 ${memberships.length} 個用戶屬於此群組`);
+    }
+    
+    return this.userGroups.delete(id);
+  }
+  
+  // 用戶-群組關係操作方法
+  async getUserGroupMemberships(userId: number): Promise<UserGroupMembership[]> {
+    return Array.from(this.userGroupMemberships.values())
+      .filter(membership => membership.userId === userId);
+  }
+  
+  async getUsersInGroup(groupId: number): Promise<User[]> {
+    const memberships = Array.from(this.userGroupMemberships.values())
+      .filter(membership => membership.groupId === groupId);
+    
+    const userIds = memberships.map(membership => membership.userId);
+    const users: User[] = [];
+    
+    for (const userId of userIds) {
+      const user = await this.getUser(userId);
+      if (user) {
+        users.push(user);
+      }
+    }
+    
+    return users;
+  }
+  
+  async addUserToGroup(userId: number, groupId: number): Promise<UserGroupMembership> {
+    // 檢查用戶和群組是否存在
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error(`用戶 ID ${userId} 不存在`);
+    }
+    
+    const group = await this.getUserGroupById(groupId);
+    if (!group) {
+      throw new Error(`群組 ID ${groupId} 不存在`);
+    }
+    
+    // 檢查用戶是否已在群組中
+    const existingMemberships = await this.getUserGroupMemberships(userId);
+    const alreadyInGroup = existingMemberships.some(m => m.groupId === groupId);
+    
+    if (alreadyInGroup) {
+      throw new Error(`用戶 ID ${userId} 已經是群組 ID ${groupId} 的成員`);
+    }
+    
+    // 添加用戶到群組
+    const id = this.userGroupMembershipId++;
+    const membership: UserGroupMembership = {
+      id,
+      userId,
+      groupId,
+      createdAt: new Date()
+    };
+    
+    this.userGroupMemberships.set(id, membership);
+    return membership;
+  }
+  
+  async removeUserFromGroup(userId: number, groupId: number): Promise<boolean> {
+    const memberships = await this.getUserGroupMemberships(userId);
+    const membershipToRemove = memberships.find(m => m.groupId === groupId);
+    
+    if (!membershipToRemove) {
+      throw new Error(`用戶 ID ${userId} 不是群組 ID ${groupId} 的成員`);
+    }
+    
+    return this.userGroupMemberships.delete(membershipToRemove.id);
   }
 }
 
