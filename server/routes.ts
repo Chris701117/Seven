@@ -2683,6 +2683,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 獲取所有用戶列表（僅管理員可訪問）
+  app.get("/api/users", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以獲取所有用戶列表
+      if (user.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      // 獲取所有用戶列表
+      const users = await storage.getAllUsers();
+      
+      // 移除敏感信息
+      const sanitizedUsers = users.map(({ password, ...user }) => user);
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error("獲取用戶列表錯誤:", error);
+      res.status(500).json({ 
+        message: "獲取用戶列表時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
   // 獲取用戶所屬的所有群組
   app.get("/api/users/:userId/groups", async (req, res) => {
     if (!req.session.userId) {
