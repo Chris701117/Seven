@@ -619,6 +619,17 @@ export class MemStorage implements IStorage {
       isAdminUser: insertUser.role === 'ADMIN' ? true : false // 如果是ADMIN角色，自動設置為管理員用戶
     };
     this.users.set(id, user);
+    
+    // 如果指定了groupId，自動將用戶添加到該群組
+    if (insertUser.groupId) {
+      try {
+        await this.addUserToGroup(id, insertUser.groupId);
+        console.log(`已自動將用戶(ID: ${id})添加到群組(ID: ${insertUser.groupId})`);
+      } catch (error) {
+        console.error(`自動添加用戶到群組失敗:`, error);
+      }
+    }
+    
     return user;
   }
   

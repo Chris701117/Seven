@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Menu, Plus } from "lucide-react";
+import { Menu, Plus, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import CreatePostModal from "./CreatePostModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationsMenu } from "./NotificationsMenu";
+import { useToast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
 
 interface HeaderProps {
@@ -30,9 +31,41 @@ const getPageTitle = (path: string) => {
 };
 
 const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const pageTitle = getPageTitle(location);
+  const { toast } = useToast();
+  
+  // 處理登出功能
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "登出成功",
+          description: "您已成功登出系統",
+        });
+        // 重定向到登入頁面
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1000);
+      } else {
+        throw new Error("登出失敗");
+      }
+    } catch (error) {
+      toast({
+        title: "登出失敗",
+        description: "無法登出系統，請稍後再試",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm z-10">
@@ -51,9 +84,25 @@ const Header = ({ toggleSidebar, user, isLoading }: HeaderProps) => {
           </div>
           <div className="flex items-center">
             {/* 通知菜單 */}
-            {user && <div>
-              <NotificationsMenu />
-            </div>}
+            {user && (
+              <>
+                <div>
+                  <NotificationsMenu />
+                </div>
+                {/* 登出按鈕 */}
+                <div className="ml-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="flex items-center text-red-500 hover:text-red-700"
+                  >
+                    <LogOut className="h-4 w-4 mr-1" />
+                    登出
+                  </Button>
+                </div>
+              </>
+            )}
             <div className="ml-4 relative flex-shrink-0">
               <div>
                 {isLoading ? (

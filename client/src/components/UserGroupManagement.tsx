@@ -421,30 +421,18 @@ const UserGroupManagement = () => {
     });
   };
   
-  // 處理更新群組
+  // 處理更新群組 - 僅更新權限
   const handleUpdateGroup = () => {
     if (!selectedGroupId) return;
     
-    if (!groupName.trim()) {
-      toast({
-        title: "驗證錯誤",
-        description: "群組名稱不能為空",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log('更新群組：', {
+    console.log('更新群組權限：', {
       id: selectedGroupId,
-      name: groupName,
-      description: groupDescription || null,
       permissions: selectedPermissions
     });
     
+    // 只更新權限，不修改名稱和描述
     updateGroupMutation.mutate({
       id: selectedGroupId,
-      name: groupName,
-      description: groupDescription || null,
       permissions: selectedPermissions
     });
   };
@@ -711,13 +699,15 @@ const UserGroupManagement = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-4">
                             <div className="space-y-2">
-                              <Label htmlFor="edit-group-name">群組名稱 *</Label>
+                              <Label htmlFor="edit-group-name">群組名稱</Label>
                               <Input 
                                 id="edit-group-name" 
                                 value={groupName}
-                                onChange={(e) => setGroupName(e.target.value)}
-                                placeholder="輸入群組名稱"
+                                readOnly
+                                disabled
+                                className="bg-gray-100"
                               />
+                              <p className="text-xs text-gray-500 italic">群組名稱不可修改</p>
                             </div>
                             
                             <div className="space-y-2">
@@ -725,9 +715,11 @@ const UserGroupManagement = () => {
                               <Input 
                                 id="edit-group-description" 
                                 value={groupDescription}
-                                onChange={(e) => setGroupDescription(e.target.value)}
-                                placeholder="輸入群組描述（可選）"
+                                readOnly
+                                disabled
+                                className="bg-gray-100"
                               />
+                              <p className="text-xs text-gray-500 italic">群組描述不可修改</p>
                             </div>
                           </div>
                           
