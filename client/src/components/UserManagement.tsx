@@ -42,8 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserRole } from "@shared/schema";
-import { Plus, Pencil, Trash2, UserPlus, UserIcon } from "lucide-react";
+import { Pencil, Trash2, UserPlus, UserIcon } from "lucide-react";
 
 const UserManagement = () => {
   const { toast } = useToast();
@@ -80,7 +79,6 @@ const UserManagement = () => {
       password: string;
       email: string;
       displayName?: string;
-      role: string;
       groupId?: number | null;
     }) => {
       const response = await fetch('/api/users', {
@@ -267,7 +265,6 @@ const UserManagement = () => {
       password,
       email,
       displayName,
-      role: UserRole.USER, // 指定為一般用戶，所有用戶權限通過群組管理
       groupId: selectedGroupId
     });
     
@@ -276,7 +273,6 @@ const UserManagement = () => {
       username,
       password,
       email,
-      role: UserRole.USER, // 默認為一般用戶，所有用戶權限通過群組管理
       isActive: true
     };
     
@@ -295,24 +291,9 @@ const UserManagement = () => {
     createUserMutation.mutate(userData);
   };
   
-  // 根據角色獲取中文顯示名稱
-  const getRoleDisplayName = (role: string) => {
-    switch(role) {
-      case UserRole.ADMIN: return "管理員";
-      case UserRole.PM: return "專案經理";
-      case UserRole.USER: return "一般用戶";
-      default: return role;
-    }
-  };
-  
-  // 根據角色獲取徽章變種
-  const getRoleBadgeVariant = (role: string) => {
-    switch(role) {
-      case UserRole.ADMIN: return "default";
-      case UserRole.PM: return "secondary";
-      case UserRole.USER: return "outline";
-      default: return "outline";
-    }
+  // 獲取群組徽章變種
+  const getGroupBadgeVariant = (groupId: number | null) => {
+    return groupId ? "outline" : "secondary";
   };
   
   return (
@@ -460,7 +441,6 @@ const UserManagement = () => {
                     <TableHead>用戶名</TableHead>
                     <TableHead>顯示名稱</TableHead>
                     <TableHead>電子郵箱</TableHead>
-                    <TableHead>角色</TableHead>
                     <TableHead>群組</TableHead>
                     <TableHead className="text-right">操作</TableHead>
                   </TableRow>
@@ -471,11 +451,6 @@ const UserManagement = () => {
                       <TableCell className="font-medium">{user.username}</TableCell>
                       <TableCell>{user.displayName || "-"}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {getRoleDisplayName(user.role)}
-                        </Badge>
-                      </TableCell>
                       <TableCell>
                         {user.groupId ? (
                           <Badge variant="outline">
