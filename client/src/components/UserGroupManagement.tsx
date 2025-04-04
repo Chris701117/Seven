@@ -898,12 +898,6 @@ const UserGroupManagement = () => {
                     <h4 className="font-semibold text-lg">群組成員</h4>
                     
                     <Dialog open={assignUserDialogOpen} onOpenChange={setAssignUserDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          添加成員
-                        </Button>
-                      </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>添加用戶到群組</DialogTitle>
@@ -969,14 +963,7 @@ const UserGroupManagement = () => {
                     <div className="text-center py-6 text-gray-500">
                       <Users className="h-12 w-12 mx-auto opacity-20 mb-2" />
                       <p>此群組暫無成員</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-4"
-                        onClick={() => setAssignUserDialogOpen(true)}
-                      >
-                        添加成員
-                      </Button>
+
                     </div>
                   ) : (
                     <Table>
@@ -985,7 +972,6 @@ const UserGroupManagement = () => {
                           <TableHead>用戶名</TableHead>
                           <TableHead>顯示名稱</TableHead>
                           <TableHead>電子郵箱</TableHead>
-                          <TableHead>角色</TableHead>
                           <TableHead className="text-right">操作</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -995,11 +981,6 @@ const UserGroupManagement = () => {
                             <TableCell className="font-medium">{user.username}</TableCell>
                             <TableCell>{user.displayName || "-"}</TableCell>
                             <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <Badge variant={user.role === 'ADMIN' ? "default" : (user.role === 'PM' ? "secondary" : "outline")}>
-                                {user.role === 'ADMIN' ? "管理員" : (user.role === 'PM' ? "專案經理" : "一般用戶")}
-                              </Badge>
-                            </TableCell>
                             <TableCell className="text-right">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
