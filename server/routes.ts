@@ -817,14 +817,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let posts;
       if (all === 'true') {
-        // 獲取所有狀態的貼文，包括草稿、排程和已發布
+        // 獲取所有狀態的貼文，包括草稿、排程、已發布和發布失敗
         const publishedPosts = await storage.getPostsByStatus(pageId, 'published');
         const scheduledPosts = await storage.getPostsByStatus(pageId, 'scheduled');
         const draftPosts = await storage.getPostsByStatus(pageId, 'draft');
+        const failedPosts = await storage.getPostsByStatus(pageId, 'publish_failed');
         
-        console.log(`獲取全部貼文數量: 已發布=${publishedPosts.length}, 排程中=${scheduledPosts.length}, 草稿=${draftPosts.length}`);
+        console.log(`獲取全部貼文數量: 已發布=${publishedPosts.length}, 排程中=${scheduledPosts.length}, 草稿=${draftPosts.length}, 發布失敗=${failedPosts.length}`);
         
-        posts = [...publishedPosts, ...scheduledPosts, ...draftPosts];
+        posts = [...publishedPosts, ...scheduledPosts, ...draftPosts, ...failedPosts];
       } else if (status) {
         posts = await storage.getPostsByStatus(pageId, status as string);
         console.log(`獲取指定狀態(${status})貼文數量: ${posts.length}`);
