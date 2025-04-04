@@ -30,42 +30,32 @@ import { ResponsiveContainer, LineChart, Line, BarChart as RechartsBarChart, Bar
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { facebookApi } from "@/lib/facebookApi";
+import { usePageContext } from "@/contexts/PageContext";
 
 const COLORS = ['#1877F2', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 const RADIAN = Math.PI / 180;
 
 const Analytics = () => {
   const { toast } = useToast();
-  const [activePageId, setActivePageId] = useState<string | null>(null);
+  // 使用全局PageContext代替本地state
+  const { activePage, pages, isLoading: isLoadingPages } = usePageContext();
   const [dateRange, setDateRange] = useState<"day" | "week" | "month">("week");
   const [activeTab, setActiveTab] = useState("overview");
   const [isConnectingFacebook, setIsConnectingFacebook] = useState(false);
   
-  // Get all pages for the user
-  const { data: pages, isLoading: isLoadingPages } = useQuery<Page[]>({
-    queryKey: ['/api/pages'],
-  });
-  
-  // Set the first page as active when pages are loaded
-  useEffect(() => {
-    if (pages && pages.length > 0 && !activePageId) {
-      setActivePageId(pages[0].pageId);
-    }
-  }, [pages, activePageId]);
-  
   // Get analytics data
-  const { chartData, analytics, isLoading: isLoadingAnalytics } = useAnalyticsData(activePageId, dateRange);
+  const { chartData, analytics, isLoading: isLoadingAnalytics } = useAnalyticsData(activePage, dateRange);
   
   // Get posts for engagement chart
   const { data: posts, isLoading: isLoadingPosts } = useQuery<Post[]>({
-    queryKey: [`/api/pages/${activePageId}/posts?status=published`],
-    enabled: !!activePageId,
+    queryKey: [`/api/pages/${activePage}/posts?status=published`],
+    enabled: !!activePage,
   });
   
   // Mutation for Facebook data sync
   const syncFacebookData = useMutation({
     mutationFn: async () => {
-      return facebookApi.syncPageInsights(activePageId || "");
+      return facebookApi.syncPageInsights(activePage || "");
     },
     onSuccess: () => {
       toast({
@@ -102,10 +92,8 @@ const Analytics = () => {
     { name: '連結', value: posts.filter(p => p.linkUrl).length }
   ] : [];
   
-  // Handle page change
-  const handlePageChange = (pageId: string) => {
-    setActivePageId(pageId);
-  };
+  // Handle page change - use setActivePage from PageContext
+  const { setActivePage } = usePageContext();
   
   // Handle export data
   const handleExportData = () => {
@@ -187,8 +175,8 @@ const Analytics = () => {
         <div className="flex items-center space-x-4">
           {pages && pages.length > 0 && (
             <Select 
-              value={activePageId || ""} 
-              onValueChange={handlePageChange}
+              value={activePage || ""} 
+              onValueChange={setActivePage}
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="選擇粉絲專頁" />
@@ -196,7 +184,7 @@ const Analytics = () => {
               <SelectContent>
                 {pages.map(page => (
                   <SelectItem key={page.pageId} value={page.pageId}>
-                    {page.name}
+                    {page.pageName}
                   </SelectItem>
                 ))}
               </SelectContent>
