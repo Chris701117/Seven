@@ -63,7 +63,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
         console.log("[獲取到的貼文數量]", response?.length || 0);
         
         // 檢查是否包含草稿貼文
-        const draftCount = response?.filter(p => p.status === 'draft')?.length || 0;
+        const draftCount = response?.filter((p: Post) => p.status === 'draft')?.length || 0;
         console.log("[其中草稿貼文數量]", draftCount);
         
         return response || [];
@@ -159,9 +159,17 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     // 日期篩選
     if (dateRange.start && dateRange.end) {
       filtered = filtered.filter(post => {
-        // 對於草稿，始終使用創建日期
-        const postDate = post.status === 'draft' ? post.createdAt : 
-                         (post.publishedTime || post.scheduledTime || post.createdAt);
+        // 對於不同狀態使用適當的日期
+        let postDate;
+        if (post.status === 'draft') {
+          postDate = post.createdAt;
+        } else if (post.status === 'published' || post.status === 'publish_failed') {
+          postDate = post.publishedTime || post.createdAt;
+        } else if (post.status === 'scheduled') {
+          postDate = post.scheduledTime || post.createdAt;
+        } else {
+          postDate = post.createdAt;
+        }
         
         if (postDate) {
           const postDateObj = new Date(postDate);
@@ -187,11 +195,18 @@ const PostList = ({ pageId, filter }: PostListProps) => {
     // 排序 - 確保草稿也能正確排序
     const sorted = [...filtered].sort((a, b) => {
       // 針對不同狀態的貼文使用適當的日期字段
+      // 返回日期字段作為字符串
       const getDateForSort = (post: Post): string => {
-        // 使用適當的日期字段並確保返回字符串類型
-        if (post.status === 'published' && post.publishedTime) return post.publishedTime;
-        if (post.status === 'scheduled' && post.scheduledTime) return post.scheduledTime;
-        return post.createdAt || ''; // 草稿和其他狀態
+        if (post.status === 'published' && post.publishedTime) {
+          return post.publishedTime.toString();
+        }
+        if (post.status === 'publish_failed' && post.publishedTime) {
+          return post.publishedTime.toString();
+        }
+        if (post.status === 'scheduled' && post.scheduledTime) {
+          return post.scheduledTime.toString();
+        }
+        return post.createdAt?.toString() || ''; // 草稿和其他狀態
       };
       
       const dateA = getDateForSort(a);
@@ -212,7 +227,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
       }
     });
     
-    console.log("篩選後貼文數量:", sorted.length, "包含草稿:", sorted.filter(p => p.status === 'draft').length);
+    console.log("篩選後貼文數量:", sorted.length, "包含草稿:", sorted.filter((p: Post) => p.status === 'draft').length);
     return sorted;
   }, [posts, currentFilter, categoryFilter, dateRange, searchTerm, sortOrder]);
 
