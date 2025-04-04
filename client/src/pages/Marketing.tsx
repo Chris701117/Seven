@@ -15,9 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import MarketingTaskCard from "@/components/MarketingTaskCard";
 import MarketingTaskModal from "@/components/MarketingTaskModal";
 import MarketingGanttChart from "@/components/MarketingGanttChart";
+import FullScreenMarketingGanttChart from "@/components/FullScreenMarketingGanttChart";
+import { Maximize2 } from 'lucide-react';
 
 export default function Marketing() {
   const { toast } = useToast();
@@ -28,6 +36,7 @@ export default function Marketing() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [view, setView] = useState<'cards' | 'gantt'>('cards');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFullScreenGanttOpen, setIsFullScreenGanttOpen] = useState(false);
 
   // 獲取所有行銷任務
   const { 
@@ -434,8 +443,33 @@ export default function Marketing() {
               )}
             </>
           ) : (
-            <div className="bg-white rounded-lg border">
+            <div className="bg-white rounded-lg border relative">
+              <div className="absolute top-4 right-4 z-10">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => setIsFullScreenGanttOpen(true)}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>全屏顯示甘特圖</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <MarketingGanttChart tasks={filteredTasks} />
+              
+              {/* 全屏甘特圖模態框 */}
+              <FullScreenMarketingGanttChart 
+                tasks={tasks} 
+                open={isFullScreenGanttOpen} 
+                onClose={() => setIsFullScreenGanttOpen(false)} 
+              />
             </div>
           )}
         </>
