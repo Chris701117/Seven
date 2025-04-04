@@ -26,7 +26,7 @@ const Sidebar = ({ isOpen, pages, activePage, onPageChange, isLoading }: Sidebar
       <div className="flex flex-col w-64 border-r border-neutral-200 bg-white">
         <div className="flex items-center justify-center h-16 border-b border-neutral-200">
           <h1 className="text-xl font-semibold text-gray-800">
-            <Facebook className="inline-block mr-2 text-primary" />
+            <img src={new URL('../assets/logo.png', import.meta.url).href} alt="Logo" className="inline-block mr-2 w-8 h-8" />
             七七七科技
           </h1>
         </div>
