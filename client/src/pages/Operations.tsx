@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { OperationTaskCard, OperationTaskModal, OperationGanttChart } from '@/components/Operation';
+import FullScreenOperationGanttChart from '@/components/FullScreenOperationGanttChart';
+import { Maximize2 } from 'lucide-react';
 
 export default function Operations() {
   const { toast } = useToast();
@@ -26,6 +34,7 @@ export default function Operations() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [view, setView] = useState<'cards' | 'gantt'>('cards');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFullScreenGanttOpen, setIsFullScreenGanttOpen] = useState(false);
 
   // 獲取所有營運任務
   const { 
@@ -432,8 +441,33 @@ export default function Operations() {
               )}
             </>
           ) : (
-            <div className="bg-white rounded-lg border">
+            <div className="bg-white rounded-lg border relative">
+              <div className="absolute top-4 right-4 z-10">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => setIsFullScreenGanttOpen(true)}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>全屏顯示甘特圖</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <OperationGanttChart tasks={filteredTasks} />
+              
+              {/* 全屏甘特圖模態框 */}
+              <FullScreenOperationGanttChart 
+                tasks={tasks} 
+                open={isFullScreenGanttOpen} 
+                onClose={() => setIsFullScreenGanttOpen(false)} 
+              />
             </div>
           )}
         </>
