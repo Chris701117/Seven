@@ -22,7 +22,8 @@ import {
   ExternalLink,
   Globe,
   Clock,
-  Zap
+  Zap,
+  RefreshCw
 } from "lucide-react";
 import { 
   DropdownMenu,
@@ -140,15 +141,6 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
   });
 
   // Format date/time for display
-  const getPostDateText = () => {
-    if (post.status === "published" && post.publishedTime) {
-      return `已發佈 · ${formatDistanceToNow(new Date(post.publishedTime), { addSuffix: true, locale: zhTW })}`;
-    } else if (post.status === "scheduled" && post.scheduledTime) {
-      return `已排程 · ${format(new Date(post.scheduledTime), "yyyy年MM月dd日 HH:mm", { locale: zhTW })}`;
-    } else {
-      return `草稿 · 最後編輯於${formatDistanceToNow(new Date(post.updatedAt || post.createdAt), { addSuffix: true, locale: zhTW })}`;
-    }
-  };
 
   // Status badge styling
   const getStatusBadge = () => {
@@ -163,6 +155,19 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">草稿</Badge>;
       default:
         return null;
+    }
+  };
+  
+  // Format date/time for display with publish_failed status
+  const getPostDateText = () => {
+    if (post.status === "published" && post.publishedTime) {
+      return `已發佈 · ${formatDistanceToNow(new Date(post.publishedTime), { addSuffix: true, locale: zhTW })}`;
+    } else if (post.status === "publish_failed" && post.publishedTime) {
+      return `發佈失敗 · ${formatDistanceToNow(new Date(post.publishedTime), { addSuffix: true, locale: zhTW })}`;
+    } else if (post.status === "scheduled" && post.scheduledTime) {
+      return `已排程 · ${format(new Date(post.scheduledTime), "yyyy年MM月dd日 HH:mm", { locale: zhTW })}`;
+    } else {
+      return `草稿 · 最後編輯於${formatDistanceToNow(new Date(post.updatedAt || post.createdAt), { addSuffix: true, locale: zhTW })}`;
     }
   };
 
@@ -297,8 +302,13 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
         
         {/* Status Badge for Non-Published Posts */}
         {post.status !== "published" && (
-          <div className="mb-2 flex">
+          <div className="mb-2 flex items-center">
             {getStatusBadge()}
+            {post.status === "publish_failed" && (
+              <span className="text-xs text-red-600 ml-2">
+                發布失敗，請檢查連接並重試
+              </span>
+            )}
           </div>
         )}
         
@@ -341,6 +351,28 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <Button variant="ghost" size="sm" className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md">
                 <Share2 className="mr-2 h-5 w-5" />
                 分享
+              </Button>
+            </>
+          ) : post.status === "publish_failed" ? (
+            <>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md"
+                onClick={() => setIsEditModalOpen(true)}
+              >
+                <Edit className="mr-2 h-5 w-5" />
+                編輯
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex-1 py-5 text-red-600 hover:bg-red-50 rounded-md"
+                onClick={() => setIsPublishAllDialogOpen(true)}
+                disabled={publishAllMutation.isPending}
+              >
+                <RefreshCw className="mr-2 h-5 w-5" />
+                重新嘗試發佈
               </Button>
             </>
           ) : post.status === "scheduled" ? (
