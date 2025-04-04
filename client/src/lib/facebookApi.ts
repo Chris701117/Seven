@@ -437,7 +437,7 @@ export const facebookApi = {
             reject(new Error('用戶取消登入或登入失敗'));
           }
         }, { 
-          scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content',
+          scope: 'email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content,pages_manage_metadata,pages_manage_engagement,business_management',
           return_scopes: true, // 返回授權的權限列表
           auth_type: 'rerequest' // 確保重新詢問權限
         });

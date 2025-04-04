@@ -1280,9 +1280,9 @@ export class MemStorage implements IStorage {
       ...post, 
       fbPostId: post.fbPostId, // 確保保留已更新的 Facebook 帖子 ID
       platformStatus: updatedPlatformStatus,
-      // 只有當至少有一個平台發布成功時才更改狀態
-      status: anyPlatformSuccess ? "published" : post.status,
-      publishedTime: anyPlatformSuccess ? new Date() : post.publishedTime,
+      // 無論是否成功，都將狀態設為已發布（因為用戶點擊了「立即發布」）
+      status: "published",
+      publishedTime: new Date(),
       updatedAt: new Date()
     };
     
