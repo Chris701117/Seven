@@ -1104,26 +1104,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // 一鍵多平台發布
   app.post("/api/posts/:id/publish-all", async (req, res) => {
+    console.log(`[DEBUG] 收到發布貼文請求，貼文ID: ${req.params.id}`);
+    
     if (!req.session.userId) {
+      console.log(`[ERROR] 未認證請求: 用戶未登入`);
       return res.status(401).json({ message: "未認證" });
     }
     
     try {
       const postId = parseInt(req.params.id);
+      console.log(`[DEBUG] 嘗試獲取貼文 ID: ${postId}`);
+      
       const post = await storage.getPostById(postId);
       
       if (!post) {
+        console.log(`[ERROR] 找不到貼文 ID: ${postId}`);
         return res.status(404).json({ message: "貼文未找到" });
       }
       
+      console.log(`[DEBUG] 找到貼文：狀態=${post.status}, 頁面ID=${post.pageId}`);
+      
+      
       const page = await storage.getPageByPageId(post.pageId);
-      if (!page || page.userId !== req.session.userId) {
+      if (!page) {
+        console.log(`[ERROR] 找不到頁面 ID: ${post.pageId}`);
+        return res.status(404).json({ message: "找不到頁面" });
+      }
+      
+      if (page.userId !== req.session.userId) {
+        console.log(`[ERROR] 用戶沒有權限: 頁面用戶ID=${page.userId}, 當前用戶ID=${req.session.userId}`);
         return res.status(403).json({ message: "未授權" });
       }
       
+      console.log(`[DEBUG] 找到頁面: ${page.pageName || page.name}, 開發模式: ${page.devMode || false}`);
+      
       // 檢查是否為開發模式
       if (req.session.fbDevMode) {
-        console.log('開發模式：跳過Token檢查，繼續發布');
+        console.log('[DEBUG] 使用開發模式：跳過Token檢查，繼續發布');
       } else {
         // 檢查用戶
         const user = await storage.getUser(req.session.userId);
@@ -1162,8 +1179,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         x: !!req.session.xConnected
       };
       
+      console.log(`[DEBUG] 平台連接狀態：FB=${platformsStatus.fb}, IG=${platformsStatus.ig}, TikTok=${platformsStatus.tiktok}, Threads=${platformsStatus.threads}, X=${platformsStatus.x}`);
+      
+      console.log(`[DEBUG] 開始執行一鍵發布，貼文ID=${postId}`);
+      
       // 執行一鍵發布
       const updatedPost = await storage.publishToAllPlatforms(postId);
+      
+      console.log(`[DEBUG] 發布完成後的貼文狀態：${updatedPost.status}`);
+      console.log(`[DEBUG] 平台發布狀態：`, updatedPost.platformStatus);
       
       // 發送WebSocket通知
       if (sendCompletionNotification && typeof sendCompletionNotification === 'function') {

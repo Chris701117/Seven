@@ -5,8 +5,9 @@ import { z } from "zod";
 import { insertPostSchema } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePageContext } from "@/contexts/PageContext";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { facebookApi } from "@/lib/facebookApi";
 import { Post } from "@shared/schema";
 import {
   Dialog,
@@ -1670,12 +1671,27 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
                     <Button 
                       type="button" 
                       onClick={() => {
-                        const values = form.getValues();
-                        // 不直接設置publishedTime，而是通過後端邏輯處理
-                        updatePostMutation.mutate({
-                          ...values,
-                          status: "published"
-                        });
+                        console.log("嘗試發布貼文ID:", post.id);
+                        facebookApi.publishToAllPlatforms(post.id)
+                          .then(() => {
+                            console.log("發布成功");
+                            toast({
+                              title: "發布成功",
+                              description: "貼文已成功發布到所有連接的平台！",
+                            });
+                            // 發布成功後，更新查詢緩存以反映最新狀態
+                            queryClient.invalidateQueries({ queryKey: [`/api/pages/${post.pageId}/posts`] });
+                            queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
+                            onClose(); // 關閉對話框
+                          })
+                          .catch((error) => {
+                            console.error("發布失敗:", error);
+                            toast({
+                              title: "發布失敗",
+                              description: "無法發布貼文，請檢查平台連接狀態並重試。",
+                              variant: "destructive",
+                            });
+                          });
                       }}
                       disabled={createPostMutation.isPending || updatePostMutation.isPending || !form.watch("content")}
                       className="bg-green-600 hover:bg-green-700 flex items-center"

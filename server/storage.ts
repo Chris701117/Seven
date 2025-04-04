@@ -1092,21 +1092,33 @@ export class MemStorage implements IStorage {
   }
 
   async publishToAllPlatforms(id: number): Promise<Post> {
+    console.log(`[DEBUG] 開始執行 publishToAllPlatforms，貼文ID: ${id}`);
+    
     const post = await this.getPostById(id);
     if (!post) {
+      console.error(`[ERROR] 找不到ID為 ${id} 的貼文`);
       throw new Error(`Post with id ${id} not found`);
     }
+    
+    console.log(`[DEBUG] 找到貼文，目前狀態: ${post.status}，頁面ID: ${post.pageId}`);
     
     // 獲取頁面和用戶信息
     const page = await this.getPageByPageId(post.pageId);
     if (!page) {
+      console.error(`[ERROR] 找不到ID為 ${post.pageId} 的頁面`);
       throw new Error(`Page with ID ${post.pageId} not found`);
     }
     
+    console.log(`[DEBUG] 找到頁面: ${page.pageName || page.name}，開發模式: ${page.devMode}`);
+    
     const user = await this.getUserById(page.userId);
     if (!user) {
+      console.error(`[ERROR] 找不到ID為 ${page.userId} 的用戶`);
       throw new Error(`User with ID ${page.userId} not found`);
     }
+    
+    console.log(`[DEBUG] 找到用戶: ${user.username}`);
+    
     
     // 初始化平台狀態
     const updatedPlatformStatus: PlatformStatus = { 
@@ -1254,6 +1266,10 @@ export class MemStorage implements IStorage {
     updatedPlatformStatus.x = false; // 暫時不支持X
     
     // 更新帖子狀態
+    console.log(`[DEBUG] 更新貼文狀態，平台發布狀態：FB=${updatedPlatformStatus.fb}, IG=${updatedPlatformStatus.ig}`);
+    console.log(`[DEBUG] 任何平台發布成功：${anyPlatformSuccess}, 當前貼文狀態: ${post.status}`);
+    
+    // 構建更新的貼文對象
     const updatedPost = { 
       ...post, 
       fbPostId: post.fbPostId, // 確保保留已更新的 Facebook 帖子 ID
@@ -1263,6 +1279,9 @@ export class MemStorage implements IStorage {
       publishedTime: anyPlatformSuccess ? new Date() : post.publishedTime,
       updatedAt: new Date()
     };
+    
+    console.log(`[DEBUG] 最終更新後的貼文狀態: ${updatedPost.status}, 發布時間: ${updatedPost.publishedTime}`);
+    
     this.posts.set(id, updatedPost);
     return updatedPost;
   }
