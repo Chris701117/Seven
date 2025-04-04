@@ -408,9 +408,15 @@ const UserGroupManagement = () => {
       return;
     }
     
+    console.log('創建群組：', {
+      name: groupName,
+      description: groupDescription || null,
+      permissions: selectedPermissions
+    });
+    
     createGroupMutation.mutate({
       name: groupName,
-      description: groupDescription,
+      description: groupDescription || null,
       permissions: selectedPermissions
     });
   };
@@ -428,10 +434,17 @@ const UserGroupManagement = () => {
       return;
     }
     
+    console.log('更新群組：', {
+      id: selectedGroupId,
+      name: groupName,
+      description: groupDescription || null,
+      permissions: selectedPermissions
+    });
+    
     updateGroupMutation.mutate({
       id: selectedGroupId,
       name: groupName,
-      description: groupDescription,
+      description: groupDescription || null,
       permissions: selectedPermissions
     });
   };

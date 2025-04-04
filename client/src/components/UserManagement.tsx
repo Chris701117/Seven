@@ -211,15 +211,28 @@ const UserManagement = () => {
       groupId: selectedGroupId
     });
     
-    createUserMutation.mutate({
+    // 處理表單數據，確保類型正確
+    const userData = {
       username,
       password,
       email,
-      displayName: displayName || null,
       role,
-      groupId: selectedGroupId,
       isActive: true
-    });
+    };
+    
+    // 只有當displayName有值時才添加
+    if (displayName.trim()) {
+      Object.assign(userData, { displayName });
+    }
+    
+    // 只有當選擇了群組時才添加groupId
+    if (selectedGroupId !== null) {
+      Object.assign(userData, { groupId: selectedGroupId });
+    }
+    
+    console.log('最終處理後的用戶數據:', userData);
+    
+    createUserMutation.mutate(userData);
   };
   
   // 根據角色獲取中文顯示名稱
@@ -336,14 +349,14 @@ const UserManagement = () => {
               <div className="space-y-2">
                 <Label htmlFor="group">用戶群組</Label>
                 <Select 
-                  value={selectedGroupId?.toString() || ""} 
-                  onValueChange={(value) => setSelectedGroupId(value ? parseInt(value) : null)}
+                  value={selectedGroupId?.toString() || "none"} 
+                  onValueChange={(value) => setSelectedGroupId(value === "none" ? null : parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="選擇用戶群組（可選）" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">無群組</SelectItem>
+                    <SelectItem value="none">無群組</SelectItem>
                     {groups?.map((group) => (
                       <SelectItem key={group.id} value={group.id.toString()}>
                         {group.name}
