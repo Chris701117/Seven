@@ -722,9 +722,20 @@ export class MemStorage implements IStorage {
       throw new Error(`User with id ${id} not found`);
     }
     
+    // 分析是否為頁面訪問令牌
+    const isPageToken = accessToken.includes('EAANn') || 
+                        accessToken.includes('EAAG') || 
+                        accessToken.includes('EAAJ') ||
+                        accessToken.includes('EAAB');
+                         
+    // 如果是開發模式令牌，設置開發模式標誌
+    const isDevToken = accessToken.startsWith('DEV_MODE_');
+    
+    console.log(`更新用戶訪問令牌 - 用戶ID: ${id}, 令牌類型: ${isPageToken ? '頁面令牌' : '用戶令牌'}, 開發模式: ${isDevToken}`);
+    
     const updatedUser = { 
       ...user, 
-      accessToken, 
+      accessToken,
       fbUserId,
       updatedAt: new Date()
     };
@@ -1145,8 +1156,13 @@ export class MemStorage implements IStorage {
         // Facebook API 要求使用頁面訪問令牌而非用戶訪問令牌
         params.append('access_token', page.accessToken);
         
-        // 驗證是否為正確的令牌類型
-        if (!page.accessToken.includes('EAAG') && !page.accessToken.includes('EAAJ')) {
+        // 驗證是否為正確的令牌類型 - 接受更多類型的有效令牌前綴
+        // Facebook令牌格式隨時可能更改，添加EAANn等新格式支持
+        if (!page.accessToken.includes('EAAG') && 
+            !page.accessToken.includes('EAAJ') && 
+            !page.accessToken.includes('EAANn') && 
+            !page.accessToken.includes('EAAB') && 
+            !page.accessToken.includes('EAA')) {
           console.warn('警告：可能不是有效的頁面訪問令牌格式');
         }
         
@@ -1219,7 +1235,8 @@ export class MemStorage implements IStorage {
         
         // 檢查響應
         if (response.ok) {
-          const result = await response.json();
+          // 解析JSON響應，強制類型轉換以解決TypeScript錯誤
+          const result = await response.json() as { id?: string; post_id?: string };
           console.log('Facebook發布成功:', result);
           
           // 更新帖子的社交媒體ID

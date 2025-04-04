@@ -64,20 +64,27 @@ const FacebookConnect = ({ onConnect }: FacebookConnectProps) => {
       
       // 檢查是否有頁面訪問令牌
       console.log('Facebook 登入響應:', response);
-      if (response.pageTokens) {
+      if (response.pageTokens && response.pageTokens.length > 0) {
         console.log('獲取到頁面訪問令牌:', response.pageTokens);
-        // 這裡應該使用頁面訪問令牌而非用戶訪問令牌
+        
+        // 提取頁面訪問令牌，並將其存儲以供後續使用
+        const pageTokens = response.pageTokens;
+        
+        // 告知用戶獲取了頁面訪問令牌
         toast({
-          title: "提示",
-          description: "已獲取頁面訪問令牌，將使用頁面令牌進行發布操作。",
+          title: "成功",
+          description: `已獲取 ${pageTokens.length} 個頁面的訪問令牌，您現在可以發布到這些頁面。`,
           variant: "default",
         });
+
+        // 將頁面令牌保存到本地存儲，方便後續使用
+        localStorage.setItem('fb_page_tokens', JSON.stringify(pageTokens));
       } else {
         console.warn('未獲取到頁面訪問令牌，可能無法進行發布操作');
         toast({
           title: "警告",
-          description: "未獲取到頁面訪問令牌，可能無法進行發布操作。請確保您擁有管理粉絲專頁的權限。",
-          variant: "warning",
+          description: "未獲取到頁面訪問令牌，可能無法進行發布操作。請確保您擁有管理粉絲專頁的權限，並確保勾選了'pages_read_engagement'和'pages_manage_posts'權限。",
+          variant: "destructive",
         });
       }
       
