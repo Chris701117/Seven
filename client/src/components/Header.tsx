@@ -97,11 +97,23 @@ const Header = ({ toggleSidebar, user, isLoading, isSidebarOpen }: HeaderProps) 
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">{pageTitle}</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">{pageTitle}</h2>
+          </div>
+          
+          {/* 新增貼文按鈕 - 顯示在所有尺寸螢幕上 */}
+          <div className="flex items-center">
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-white h-9 xs:h-10 touch-target"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-0 xs:mr-2" />
+              <span className="hidden xs:inline">新增貼文</span>
+            </Button>
           </div>
           
           {/* 桌面版用戶操作區 */}
-          <div className="hidden sm:flex items-center space-x-3">
+          <div className="hidden sm:flex items-center ml-2 space-x-3">
             {user && (
               <>
                 <div>
@@ -130,12 +142,12 @@ const Header = ({ toggleSidebar, user, isLoading, isSidebarOpen }: HeaderProps) 
           </div>
           
           {/* 移動端用戶操作區 - 下拉菜單 */}
-          <div className="flex sm:hidden items-center space-x-1">
+          <div className="flex sm:hidden items-center ml-2">
             {user && (
               <>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full touch-target">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full touch-target">
                       <Bell className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -146,11 +158,11 @@ const Header = ({ toggleSidebar, user, isLoading, isSidebarOpen }: HeaderProps) 
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full touch-target">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full touch-target">
                       {isLoading ? (
-                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-7 w-7 rounded-full" />
                       ) : (
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-7 w-7">
                           <AvatarFallback>{user?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                         </Avatar>
                       )}
