@@ -3,6 +3,12 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Facebook 相關常量定義
+export const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "958057036410330"; // 設置預設值為用戶提供的 ID
+export const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
+export const USE_FIXED_2FA_SECRET = true; // 使用固定的二步驗證密鑰
+export const FIXED_2FA_SECRET = "JBSWY3DPEHPK3PXP"; // 預設固定的二步驗證密鑰，只用於測試環境
+
 const app = express();
 
 // 確保了Express能適當解析請求體
