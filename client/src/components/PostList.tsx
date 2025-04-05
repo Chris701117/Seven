@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PostCard from "./PostCard";
 import { Post } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Calendar as CalendarIcon, ChevronDown, Filter, ArrowUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +30,10 @@ import { getCategoryDisplayName } from "@/lib/utils";
 interface PostListProps {
   pageId: string;
   filter?: string;
+  isCompactView?: boolean; // 是否使用緊湊視圖（適合移動設備）
 }
 
-const PostList = ({ pageId, filter }: PostListProps) => {
+const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
   const queryClient = useQueryClient();
   const [currentFilter, setCurrentFilter] = useState(filter || "all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -50,6 +51,25 @@ const PostList = ({ pageId, filter }: PostListProps) => {
   // 是否顯示日曆選擇器
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  
+  // 用於檢測小螢幕設備的狀態 - 在 server-side rendering 環境中安全使用
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  
+  // 監聽螢幕大小變化
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 640);
+    };
+    
+    // 初始檢查
+    checkScreenSize();
+    
+    // 添加事件監聽器
+    window.addEventListener('resize', checkScreenSize);
+    
+    // 清理事件監聽器
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // 獲取貼文數據
   const { data: posts, isLoading, refetch } = useQuery<Post[]>({
@@ -276,49 +296,54 @@ const PostList = ({ pageId, filter }: PostListProps) => {
         </div>
       </div>
       
-      {/* 篩選工具列 */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 bg-white p-2 rounded-lg border">
-        <div className="relative">
+      {/* 篩選工具列 - 響應式設計 */}
+      <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 mb-4 bg-white p-3 rounded-lg border">
+        {/* 搜尋框 - 在移動設備上寬度100% */}
+        <div className="relative w-full sm:w-auto mb-2 sm:mb-0">
           <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-500" />
           <Input 
             placeholder="搜尋貼文..." 
-            className="pl-8 h-9 w-[200px]"
+            className="pl-8 h-9 w-full sm:w-[200px]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="h-9 w-[150px]">
-            <SelectValue placeholder="貼文類別" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">所有類別</SelectItem>
-            <SelectItem value="promotion">宣傳</SelectItem>
-            <SelectItem value="event">活動</SelectItem>
-            <SelectItem value="announcement">公告</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* 篩選器按鈕組 - 更適合移動設備的下拉選擇器 */}
+        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-9 w-full sm:w-[130px]">
+              <SelectValue placeholder="貼文類別" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">所有類別</SelectItem>
+              <SelectItem value="promotion">宣傳</SelectItem>
+              <SelectItem value="event">活動</SelectItem>
+              <SelectItem value="announcement">公告</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={currentFilter} onValueChange={setCurrentFilter}>
+            <SelectTrigger className="h-9 w-full sm:w-[130px]">
+              <SelectValue placeholder="貼文狀態" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">所有狀態</SelectItem>
+              <SelectItem value="published">已發布</SelectItem>
+              <SelectItem value="publish_failed">發布失敗</SelectItem>
+              <SelectItem value="scheduled">排程中</SelectItem>
+              <SelectItem value="draft">草稿</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         
-        <Select value={currentFilter} onValueChange={setCurrentFilter}>
-          <SelectTrigger className="h-9 w-[150px]">
-            <SelectValue placeholder="貼文狀態" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">所有狀態</SelectItem>
-            <SelectItem value="published">已發布</SelectItem>
-            <SelectItem value="publish_failed">發布失敗</SelectItem>
-            <SelectItem value="scheduled">排程中</SelectItem>
-            <SelectItem value="draft">草稿</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <div className="flex gap-2">
+        {/* 日期篩選器和排序按鈕 */}
+        <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-1">
                 <CalendarIcon className="h-4 w-4" />
-                <span>預設日期</span>
+                <span className="hidden xs:inline">預設日期</span>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
@@ -347,7 +372,7 @@ const PostList = ({ pageId, filter }: PostListProps) => {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-1">
                 <CalendarIcon className="h-4 w-4" />
-                <span>日曆選擇</span>
+                <span className="hidden xs:inline">日曆選擇</span>
                 <ChevronDown className="h-3 w-3 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -362,17 +387,17 @@ const PostList = ({ pageId, filter }: PostListProps) => {
               />
             </PopoverContent>
           </Popover>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
+            onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-1" />
+            <span className="hidden xs:inline">{sortOrder === 'newest' ? '最新優先' : '最舊優先'}</span>
+          </Button>
         </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-9"
-          onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
-        >
-          <ArrowUpDown className="h-4 w-4 mr-1" />
-          {sortOrder === 'newest' ? '最新優先' : '最舊優先'}
-        </Button>
         
         {/* 篩選條件標籤 */}
         {(categoryFilter !== 'all' || currentFilter !== 'all' || dateFilter !== 'all' || searchTerm) && (
@@ -476,13 +501,14 @@ const PostList = ({ pageId, filter }: PostListProps) => {
           ))}
         </div>
       ) : filteredPosts && filteredPosts.length > 0 ? (
-        // Data loaded
-        <div className="grid grid-cols-1 gap-4">
+        // Data loaded with responsive design for mobile
+        <div className="grid grid-cols-1 gap-3 xs:gap-4">
           {filteredPosts.map((post) => (
             <PostCard 
               key={post.id} 
               post={post} 
               onPostDeleted={handlePostDeleted}
+              isCompactView={isCompactView || isSmallScreen} // 在小螢幕上自動使用緊湊視圖
             />
           ))}
         </div>
