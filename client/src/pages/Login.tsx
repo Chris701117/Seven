@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
-import { Loader2, QrCode, KeyRound, Shield } from 'lucide-react';
+import { Loader2, QrCode, KeyRound, Shield, XCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // 定義登入表單的結構
@@ -51,6 +51,7 @@ export default function Login() {
   const [userId, setUserId] = useState<number | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
+  const [twoFactorError, setTwoFactorError] = useState<boolean>(false);
   const { toast } = useToast();
 
   // 初始化登入表單
@@ -165,6 +166,7 @@ export default function Login() {
     if (!userId) return;
     
     setIsLoading(true);
+    setTwoFactorError(false);
     try {
       // 使用首次登入的二步驗證設置 API，直接獲取JSON響應
       await apiRequest('POST', '/api/auth/setup-2fa', {
@@ -183,6 +185,7 @@ export default function Login() {
       setLocation('/');
     } catch (error) {
       // 設置失敗
+      setTwoFactorError(true);
       toast({
         variant: 'destructive',
         title: '設置失敗',
@@ -282,6 +285,7 @@ export default function Login() {
                               maxLength={6} 
                               inputMode="numeric"
                               pattern="[0-9]*"
+                              className="text-center text-lg py-5"
                               {...field} 
                             />
                           </FormControl>
@@ -289,6 +293,19 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
+                    
+                    {/* 驗證失敗提示 */}
+                    {twoFactorError && (
+                      <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-5 w-5 text-red-600" />
+                          <p className="font-medium text-red-800">設置失敗</p>
+                        </div>
+                        <p className="text-red-700 text-sm mt-1 ml-7">
+                          驗證碼不正確，請重新嘗試
+                        </p>
+                      </div>
+                    )}
                     
                     <div className="flex justify-between space-x-2 mt-3">
                       <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>
@@ -353,36 +370,32 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                {/* 二步驗證提示 - 修改為圖片中的樣式 */}
-                <div className="p-4 mb-4 bg-blue-50 border border-blue-100 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <QrCode className="h-5 w-5 text-blue-600" />
-                    <p className="font-medium text-blue-800">二步驗證</p>
-                  </div>
-                  <p className="text-blue-700 text-sm mt-2">
+                <div className="flex flex-col items-center mb-4">
+                  <h3 className="text-center font-medium text-lg mb-2">輸入驗證碼</h3>
+                  <p className="text-center text-muted-foreground text-sm">
                     請打開Google Authenticator應用並輸入顯示的6位數驗證碼
                   </p>
                 </div>
                 
-                {/* 測試環境提示 - 僅顯示掃描說明，不提供簡化方式 */}
-                <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                {/* 測試環境說明 - 以提示卡片形式展示 */}
+                <div className="p-4 mb-6 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-green-600" />
-                    <p className="font-medium text-green-800">測試環境說明</p>
+                    <Shield className="h-5 w-5 text-yellow-600" />
+                    <p className="font-medium text-yellow-800">測試環境提示</p>
                   </div>
-                  <p className="text-green-700 text-sm mt-2">
-                    請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼。測試環境使用固定密鑰：JBSWY3DPEHPK3PXP
+                  <p className="text-yellow-700 text-sm mt-1 ml-7">
+                    請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼
+                  </p>
+                  <p className="text-yellow-700 font-medium text-sm mt-1 ml-7">
+                    測試環境密鑰：JBSWY3DPEHPK3PXP
                   </p>
                 </div>
                 
-
-
                 <FormField
                   control={twoFactorForm.control}
                   name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">驗證碼</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="請輸入6位數驗證碼" 
@@ -390,14 +403,29 @@ export default function Login() {
                           inputMode="numeric"
                           pattern="[0-9]*"
                           autoComplete="one-time-code"
-                          className="h-11 px-3 py-2"
+                          className="text-center text-lg py-6"
                           {...field} 
                         />
                       </FormControl>
-                      <FormMessage />
+                      <div className="flex justify-center mt-2">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
+                
+                {/* 驗證失敗提示 */}
+                {twoFactorError && (
+                  <div className="p-4 mb-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-5 w-5 text-red-600" />
+                      <p className="font-medium text-red-800">設置失敗</p>
+                    </div>
+                    <p className="text-red-700 text-sm mt-1 ml-7">
+                      驗證碼不正確，請重新嘗試
+                    </p>
+                  </div>
+                )}
                 
                 <div className="flex justify-between space-x-2 mt-3">
                   <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>

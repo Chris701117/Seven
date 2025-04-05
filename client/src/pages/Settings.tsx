@@ -335,57 +335,73 @@ const Settings = () => {
             <CardContent className="space-y-4">
               {showQRCode ? (
                 <div className="space-y-6">
-                  {/* 測試環境提示 - 僅顯示掃描說明，不提供簡化方式 */}
-                  <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                  <h2 className="text-xl font-semibold text-center">設置二步驗證</h2>
+                  <p className="text-center text-muted-foreground">
+                    請使用Google Authenticator掃描下方QR碼並輸入驗證碼
+                  </p>
+                  
+                  {/* 必須啟用二步驗證提示 */}
+                  <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-green-600" />
-                      <p className="font-medium text-green-800">測試環境說明</p>
+                      <Shield className="h-5 w-5 text-yellow-600" />
+                      <p className="font-medium text-yellow-800">必須啟用二步驗證</p>
                     </div>
-                    <p className="text-green-700 text-sm mt-2">
-                      此QR碼使用固定密鑰：JBSWY3DPEHPK3PXP。請使用Google Authenticator掃描QR碼後，輸入顯示的驗證碼完成設置。
+                    <p className="text-yellow-700 text-sm mt-1 ml-7">
+                      為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
                     </p>
                   </div>
                   
-                  {/* QR碼掃描指引 - 簡潔風格 */}
-                  <div className="flex flex-col items-center justify-center space-y-4 p-4 border border-gray-100 rounded-md">
-                    <div className="text-center mb-4">
-                      <h3 className="font-semibold">掃描 QR 碼</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        使用 Google Authenticator 或其他支持 TOTP 的應用掃描此 QR 碼
-                      </p>
+                  {/* 第一步：下載應用 */}
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-800">第1步：下載 Google Authenticator 應用</h3>
+                    <div className="flex justify-center gap-4 mt-3">
+                      <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        Android下載
+                      </a>
+                      <a href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        iOS下載
+                      </a>
                     </div>
-                    
+                  </div>
+                  
+                  {/* 第二步：掃描QR碼 */}
+                  <div className="mt-4">
+                    <h3 className="font-medium text-gray-800 mb-3">第2步：掃描QR碼</h3>
                     {qrCodeUrl && (
-                      <div className="bg-white p-4 rounded-md">
+                      <div className="bg-white flex justify-center border rounded-md p-2">
                         <img src={qrCodeUrl} alt="二步驗證 QR 碼" className="w-48 h-48" />
                       </div>
                     )}
                     
                     {tfaSecret && (
-                      <div className="text-center mt-2">
-                        <p className="text-sm font-medium">手動輸入密鑰：</p>
-                        <p className="bg-gray-100 p-2 rounded-md font-mono text-sm mt-1">
-                          {tfaSecret}
-                        </p>
+                      <div className="mt-3">
+                        <p className="text-sm text-center text-gray-500">如無法掃描，請手動輸入以下密鑰：</p>
+                        <div className="bg-gray-100 p-2 text-center rounded-md mt-1">
+                          <p className="font-mono text-sm select-all">
+                            {tfaSecret}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="verification-code">驗證碼</Label>
+                  {/* 第三步：輸入驗證碼 */}
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-800 mb-3">第3步：輸入驗證碼</h3>
                     <Input 
                       id="verification-code" 
-                      placeholder="請輸入六位數驗證碼" 
+                      placeholder="請輸入6位數驗證碼" 
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value)}
                       maxLength={6}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="text-center text-lg py-6"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      請輸入應用生成的六位數驗證碼來完成設置
-                    </p>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="flex justify-between mt-6">
                     <Button 
                       variant="outline" 
                       onClick={() => {
@@ -394,14 +410,16 @@ const Settings = () => {
                         setQrCodeUrl('');
                         setTfaSecret('');
                       }}
+                      className="px-6"
                     >
-                      取消
+                      返回
                     </Button>
                     <Button 
                       onClick={handleVerify2FA}
                       disabled={!verificationCode || verificationCode.length !== 6}
+                      className="px-10 bg-blue-600 hover:bg-blue-700"
                     >
-                      驗證並啟用
+                      驗證並完成設置
                     </Button>
                   </div>
                 </div>
