@@ -232,6 +232,19 @@ export class MemStorage implements IStorage {
     // 為示例用戶創建加密密碼
     const hashedPassword = await bcrypt.hash("password123", 10);
     
+    // 先創建一個管理員群組
+    const adminGroup = {
+      id: this.userGroupId++,
+      name: 'Administrators',
+      description: '系統管理員群組',
+      permissions: { 
+        permissions: Object.values(Permission) 
+      }, // 所有權限
+      createdAt: new Date(),
+      updatedAt: null
+    };
+    this.userGroups.set(adminGroup.id, adminGroup);
+    
     // Create a sample user with new fields
     const user: User = {
       id: this.userId++,
@@ -240,17 +253,23 @@ export class MemStorage implements IStorage {
       displayName: "示範用戶",
       email: "demo@example.com",
       role: UserRole.ADMIN,
+      groupId: adminGroup.id, // 設置為管理員群組
+      isActive: true,
       isEmailVerified: true, 
       emailVerificationCode: null,
       emailVerificationExpires: null,
       isTwoFactorEnabled: false,
       twoFactorSecret: null,
+      twoFactorQrCode: null, // 添加缺少的二步驗證QR碼字段
+      passwordResetToken: null,
+      passwordResetExpires: null,
       lastLoginAt: new Date(),
       createdAt: new Date(),
       updatedAt: null,
       invitedBy: null,
       accessToken: "sample_fb_access_token",
-      fbUserId: "10123456789"
+      fbUserId: "10123456789",
+      isAdminUser: true
     };
     this.users.set(user.id, user);
 
@@ -626,10 +645,16 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
+    
+    // 確保groupId是null而不是undefined
+    const groupId = insertUser.groupId || null;
+    
     const user: User = { 
       ...insertUser, 
       id, 
+      groupId,
       displayName: insertUser.displayName || null,
+      isActive: true,
       isEmailVerified: false,
       emailVerificationCode: null,
       emailVerificationExpires: null,
@@ -649,10 +674,10 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     
     // 如果指定了groupId，自動將用戶添加到該群組
-    if (insertUser.groupId) {
+    if (groupId) {
       try {
-        await this.addUserToGroup(id, insertUser.groupId);
-        console.log(`已自動將用戶(ID: ${id})添加到群組(ID: ${insertUser.groupId})`);
+        await this.addUserToGroup(id, groupId);
+        console.log(`已自動將用戶(ID: ${id})添加到群組(ID: ${groupId})`);
       } catch (error) {
         console.error(`自動添加用戶到群組失敗:`, error);
       }
@@ -859,6 +884,7 @@ export class MemStorage implements IStorage {
     const invitationRecord = {
       id,
       ...invitation,
+      role: invitation.role || 'USER', // 確保role有默認值
       isAccepted: false,
       createdAt: new Date()
     };
@@ -948,7 +974,9 @@ export class MemStorage implements IStorage {
       ...insertPage, 
       id,
       picture: insertPage.picture || null,
-      pageImage: insertPage.pageImage || null
+      pageImage: insertPage.pageImage || null,
+      name: insertPage.name || null,
+      devMode: insertPage.devMode !== undefined ? insertPage.devMode : true // 默認為開發模式
     };
     this.pages.set(id, page);
     return page;
@@ -2088,8 +2116,10 @@ export class MemStorage implements IStorage {
   async createUserGroup(group: InsertUserGroup): Promise<UserGroup> {
     const id = this.userGroupId++;
     const newGroup: UserGroup = {
-      ...group,
       id,
+      name: group.name,
+      description: group.description || null,
+      permissions: group.permissions || {},
       createdAt: new Date(),
       updatedAt: null
     };
