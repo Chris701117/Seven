@@ -335,19 +335,19 @@ const Settings = () => {
             <CardContent className="space-y-4">
               {showQRCode ? (
                 <div className="space-y-6">
-                  {/* 測試環境提示 */}
-                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                    <div className="flex items-center">
-                      <Shield className="h-4 w-4 text-green-600 mr-2" />
+                  {/* 測試環境提示 - 簡潔風格 */}
+                  <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-green-600" />
                       <p className="font-medium text-green-800">測試環境提示</p>
                     </div>
-                    <p className="text-sm text-green-700 mt-1">
+                    <p className="text-green-700 text-sm mt-2">
                       在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
                     </p>
                   </div>
                   
-                  {/* 原始QR碼掃描指引 */}
-                  <div className="flex flex-col items-center justify-center space-y-4 p-4 border rounded-md">
+                  {/* QR碼掃描指引 - 簡潔風格 */}
+                  <div className="flex flex-col items-center justify-center space-y-4 p-4 border border-gray-100 rounded-md">
                     <div className="text-center mb-4">
                       <h3 className="font-semibold">掃描 QR 碼</h3>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -409,14 +409,14 @@ const Settings = () => {
                 <div>
                   {is2FAEnabled ? (
                     <div>
-                      <div className="flex items-center space-x-4 p-4 border border-green-100 bg-green-50 rounded-md mb-4">
-                        <Lock className="h-6 w-6 text-green-600" />
-                        <div>
-                          <p className="font-medium">二步驗證已啟用</p>
-                          <p className="text-sm text-gray-500">
-                            您的帳戶受到額外的安全保護
-                          </p>
+                      <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Lock className="h-5 w-5 text-green-600" />
+                          <p className="font-medium text-green-800">二步驗證已啟用</p>
                         </div>
+                        <p className="text-green-700 text-sm mt-2">
+                          您的帳戶受到額外的安全保護
+                        </p>
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">
                         為確保帳戶安全，二步驗證為必需功能，無法禁用。
@@ -424,14 +424,14 @@ const Settings = () => {
                     </div>
                   ) : (
                     <div>
-                      <div className="flex items-center space-x-4 p-4 border border-yellow-100 bg-yellow-50 rounded-md mb-4">
-                        <Unlock className="h-6 w-6 text-yellow-600" />
-                        <div>
-                          <p className="font-medium">二步驗證未啟用</p>
-                          <p className="text-sm text-gray-500">
-                            啟用二步驗證以增強您的帳戶安全性
-                          </p>
+                      <div className="p-4 mb-4 bg-yellow-50 border border-yellow-100 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Unlock className="h-5 w-5 text-yellow-600" />
+                          <p className="font-medium text-yellow-800">二步驗證未啟用</p>
                         </div>
+                        <p className="text-yellow-700 text-sm mt-2">
+                          啟用二步驗證以增強您的帳戶安全性
+                        </p>
                       </div>
                       <Button 
                         onClick={handleEnable2FA}
@@ -487,12 +487,14 @@ const Settings = () => {
                 <CardContent className="space-y-4">
                   {isConnected ? (
                     <div className="space-y-4">
-                      <div className="flex items-center space-x-4 p-4 border border-green-100 bg-green-50 rounded-md">
-                        <Facebook className="h-6 w-6 text-primary" />
-                        <div>
-                          <p className="font-medium">已連接到 Facebook</p>
-                          <p className="text-sm text-gray-500">您的帳號已連接到 Facebook。</p>
+                      <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Facebook className="h-5 w-5 text-green-600" />
+                          <p className="font-medium text-green-800">已連接到 Facebook</p>
                         </div>
+                        <p className="text-green-700 text-sm mt-2">
+                          您的帳號已成功連接到 Facebook
+                        </p>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <Button 
