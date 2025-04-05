@@ -1789,10 +1789,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 軟刪除 - 不實際刪除圖片，只標記為已刪除
+      console.log(`正在軟刪除貼文 ID=${postId}`);
       const deleted = await storage.deletePost(postId);
       if (!deleted) {
+        console.error(`軟刪除貼文失敗，ID=${postId}`);
         return res.status(500).json({ message: "刪除貼文時發生錯誤" });
       }
+      
+      // 確認貼文已成功標記為刪除
+      const updatedPost = await storage.getPostById(postId);
+      console.log(`貼文軟刪除結果:`, { 
+        id: updatedPost?.id, 
+        isDeleted: updatedPost?.isDeleted, 
+        deletedAt: updatedPost?.deletedAt 
+      });
 
       res.json({ message: "Post deleted" });
     } catch (error) {

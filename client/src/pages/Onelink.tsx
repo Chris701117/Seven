@@ -817,7 +817,12 @@ export default function OnelinkPage() {
                       name="platform"
                       placeholder="輸入自定義平台名稱"
                       value={formData.platform === 'custom' ? '' : formData.platform}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        // 當輸入自定義平台名稱時，直接更新 formData
+                        if (e.target.value !== 'custom') {
+                          setFormData(prev => ({ ...prev, platform: e.target.value }));
+                        }
+                      }}
                       className="mt-2"
                       required
                     />
