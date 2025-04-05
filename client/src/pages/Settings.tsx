@@ -296,39 +296,7 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="account" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>帳戶信息</CardTitle>
-              <CardDescription>
-                更新您的帳戶詳細信息
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">用戶名</Label>
-                <Input 
-                  id="username" 
-                  defaultValue={(user as any)?.username || ""} 
-                  disabled={!user}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">電子郵箱</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  defaultValue={(user as any)?.email || ""} 
-                  disabled={true} // 禁用電子郵箱修改功能
-                />
-                <p className="text-xs text-muted-foreground">電子郵箱不可修改</p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveAccountSettings} disabled={!user}>
-                保存變更
-              </Button>
-            </CardFooter>
-          </Card>
+
           
           <Card>
             <CardHeader>
@@ -438,13 +406,9 @@ const Settings = () => {
                           </p>
                         </div>
                       </div>
-                      <Button 
-                        variant="destructive" 
-                        onClick={handleDisable2FA}
-                      >
-                        <Unlock className="h-4 w-4 mr-2" />
-                        禁用二步驗證
-                      </Button>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        為確保帳戶安全，二步驗證為必需功能，無法禁用。
+                      </p>
                     </div>
                   ) : (
                     <div>
