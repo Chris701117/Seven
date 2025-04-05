@@ -335,6 +335,17 @@ const Settings = () => {
             <CardContent className="space-y-4">
               {showQRCode ? (
                 <div className="space-y-6">
+                  {/* 測試環境提示 */}
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <Shield className="h-4 w-4 text-green-600 mr-2" />
+                      <p className="font-medium text-green-800">測試環境提示</p>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                      在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
+                    </p>
+                  </div>
+                  
                   <div className="flex flex-col items-center justify-center space-y-4 p-4 border rounded-md">
                     <div className="text-center mb-4">
                       <p className="font-medium">掃描 QR 碼</p>

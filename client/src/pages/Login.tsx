@@ -230,6 +230,15 @@ export default function Login() {
                 </AlertDescription>
               </Alert>
               
+              {/* 測試環境提示 */}
+              <Alert className="bg-green-50 border-green-200">
+                <Shield className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">測試環境提示</AlertTitle>
+                <AlertDescription className="text-green-700">
+                  在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
+                </AlertDescription>
+              </Alert>
+              
               <div className="space-y-4">
                 <div className="space-y-2">
                   <h3 className="text-center font-semibold">第1步：下載 Google Authenticator 應用</h3>
@@ -353,6 +362,15 @@ export default function Login() {
                   <AlertTitle className="text-blue-800">二步驗證</AlertTitle>
                   <AlertDescription className="text-blue-700">
                     請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                  </AlertDescription>
+                </Alert>
+                
+                {/* 測試環境提示 */}
+                <Alert className="bg-green-50 border-green-200">
+                  <Shield className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">測試環境提示</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
                   </AlertDescription>
                 </Alert>
 
