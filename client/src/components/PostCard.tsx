@@ -246,7 +246,7 @@ const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps)
       
       {/* Content Section */}
       <div className="px-3 sm:px-4 pb-3">
-        <p className={`text-[15px] leading-relaxed mb-3 whitespace-pre-line ${isCompactView ? 'line-clamp-3' : ''}`}>
+        <p className={`text-[15px] leading-relaxed mb-3 whitespace-pre-line ${isCompactView ? 'line-clamp-2 xs:line-clamp-3' : ''}`}>
           {post.content}
         </p>
         
@@ -256,7 +256,7 @@ const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps)
             <img 
               src={post.imageUrl} 
               alt="貼文圖片" 
-              className={`w-full object-contain ${isCompactView ? 'max-h-[300px]' : 'max-h-[500px]'}`}
+              className={`w-full object-contain ${isCompactView ? 'max-h-[200px] xs:max-h-[250px] sm:max-h-[300px]' : 'max-h-[300px] sm:max-h-[400px] md:max-h-[500px]'}`}
               loading="lazy"
             />
           </div>
@@ -269,17 +269,17 @@ const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps)
               <img 
                 src={post.linkImageUrl} 
                 alt="連結預覽" 
-                className={`w-full object-cover ${isCompactView ? 'h-[120px]' : 'h-[180px]'}`}
+                className={`w-full object-cover ${isCompactView ? 'h-[100px] xs:h-[120px]' : 'h-[140px] sm:h-[180px]'}`}
                 loading="lazy"
               />
             )}
-            <div className="p-3 bg-gray-50">
+            <div className="p-2 sm:p-3 bg-gray-50">
               <div className="text-xs uppercase text-gray-500 mb-1 truncate">
                 {post.linkUrl.replace(/^https?:\/\/(www\.)?/, '')}
               </div>
               <div className="font-semibold text-gray-900 truncate">{post.linkTitle || "連結標題"}</div>
               {post.linkDescription && (
-                <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                <div className="text-sm text-gray-600 mt-1 line-clamp-1 xs:line-clamp-2">
                   {post.linkDescription}
                 </div>
               )}
@@ -412,18 +412,18 @@ const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps)
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+        <AlertDialogContent className="max-w-[95vw] w-full xs:max-w-[90vw] sm:max-w-lg p-4 sm:p-6">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg sm:text-xl">確定要刪除嗎？</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
+            <AlertDialogTitle className="text-base xs:text-lg sm:text-xl">確定要刪除嗎？</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs xs:text-sm">
               此操作無法撤銷。貼文將被永久刪除。
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
-            <AlertDialogCancel className="mt-0 sm:mt-0">取消</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2 mt-4">
+            <AlertDialogCancel className="mt-0 sm:mt-0 h-10 text-sm">取消</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeletePost} 
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 h-10 text-sm"
             >
               刪除
             </AlertDialogAction>
@@ -442,19 +442,19 @@ const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps)
       
       {/* 一鍵發佈確認對話框 */}
       <AlertDialog open={isPublishAllDialogOpen} onOpenChange={setIsPublishAllDialogOpen}>
-        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+        <AlertDialogContent className="max-w-[95vw] w-full xs:max-w-[90vw] sm:max-w-lg p-4 sm:p-6">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg sm:text-xl">一鍵發佈到所有平台</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
+            <AlertDialogTitle className="text-base xs:text-lg sm:text-xl">一鍵發佈到所有平台</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs xs:text-sm">
               此操作將把貼文發佈到所有已連接的平台（FB、IG、TikTok、Threads、X）。
               確認所有平台內容已準備好了嗎？
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
-            <AlertDialogCancel className="mt-0 sm:mt-0">取消</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2 mt-4">
+            <AlertDialogCancel className="mt-0 sm:mt-0 h-10 text-sm">取消</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handlePublishAll} 
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 h-10 text-sm"
               disabled={publishAllMutation.isPending}
             >
               {publishAllMutation.isPending ? "發佈中..." : "確認發佈"}

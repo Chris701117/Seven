@@ -304,7 +304,7 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
           <Input 
             placeholder="搜尋貼文..." 
             className="pl-8 h-9 w-full sm:w-[200px]"
-            value={searchTerm}
+            value={searchTerm || ""}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
@@ -401,12 +401,14 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
         
         {/* 篩選條件標籤 */}
         {(categoryFilter !== 'all' || currentFilter !== 'all' || dateFilter !== 'all' || searchTerm) && (
-          <div className="flex flex-wrap gap-2 mt-2 w-full">
+          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2 w-full">
             {categoryFilter !== 'all' && (
-              <Badge variant="secondary" className="px-2 py-1">
-                類別: {getCategoryDisplayName(categoryFilter)}
+              <Badge variant="secondary" className="px-1.5 xs:px-2 py-0.5 xs:py-1 text-xs xs:text-sm">
+                <span className="truncate max-w-[60px] xs:max-w-none inline-block align-bottom">
+                  類別: {getCategoryDisplayName(categoryFilter)}
+                </span>
                 <button 
-                  className="ml-1 text-xs hover:text-red-500" 
+                  className="ml-1 text-xs hover:text-red-500 inline-flex items-center justify-center" 
                   onClick={() => setCategoryFilter('all')}
                 >
                   ×
@@ -415,14 +417,16 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
             )}
             
             {currentFilter !== 'all' && (
-              <Badge variant="secondary" className="px-2 py-1">
-                狀態: {currentFilter === 'published' ? '已發布' : 
-                      currentFilter === 'publish_failed' ? '發布失敗' : 
-                      currentFilter === 'scheduled' ? '排程中' : 
-                      currentFilter === 'draft' ? '草稿' : 
-                      currentFilter}
+              <Badge variant="secondary" className="px-1.5 xs:px-2 py-0.5 xs:py-1 text-xs xs:text-sm">
+                <span className="truncate max-w-[80px] xs:max-w-none inline-block align-bottom">
+                  狀態: {currentFilter === 'published' ? '已發布' : 
+                        currentFilter === 'publish_failed' ? '發布失敗' : 
+                        currentFilter === 'scheduled' ? '排程中' : 
+                        currentFilter === 'draft' ? '草稿' : 
+                        currentFilter}
+                </span>
                 <button 
-                  className="ml-1 text-xs hover:text-red-500" 
+                  className="ml-1 text-xs hover:text-red-500 inline-flex items-center justify-center" 
                   onClick={() => setCurrentFilter('all')}
                 >
                   ×
@@ -431,14 +435,16 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
             )}
             
             {dateFilter !== 'all' && (
-              <Badge variant="secondary" className="px-2 py-1">
-                日期: {dateFilter === 'today' ? '今天' : 
-                      dateFilter === 'yesterday' ? '昨天' : 
-                      dateFilter === 'last7days' ? '最近7天' : 
-                      dateFilter === 'last30days' ? '最近30天' : 
-                      dateFilter}
+              <Badge variant="secondary" className="px-1.5 xs:px-2 py-0.5 xs:py-1 text-xs xs:text-sm">
+                <span className="truncate max-w-[80px] xs:max-w-none inline-block align-bottom">
+                  日期: {dateFilter === 'today' ? '今天' : 
+                        dateFilter === 'yesterday' ? '昨天' : 
+                        dateFilter === 'last7days' ? '最近7天' : 
+                        dateFilter === 'last30days' ? '最近30天' : 
+                        dateFilter}
+                </span>
                 <button 
-                  className="ml-1 text-xs hover:text-red-500" 
+                  className="ml-1 text-xs hover:text-red-500 inline-flex items-center justify-center" 
                   onClick={() => setDateFilter('all')}
                 >
                   ×
@@ -447,10 +453,12 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
             )}
             
             {searchTerm && (
-              <Badge variant="secondary" className="px-2 py-1">
-                搜尋: {searchTerm}
+              <Badge variant="secondary" className="px-1.5 xs:px-2 py-0.5 xs:py-1 text-xs xs:text-sm">
+                <span className="truncate max-w-[80px] xs:max-w-none inline-block align-bottom">
+                  搜尋: {searchTerm}
+                </span>
                 <button 
-                  className="ml-1 text-xs hover:text-red-500" 
+                  className="ml-1 text-xs hover:text-red-500 inline-flex items-center justify-center" 
                   onClick={() => setSearchTerm('')}
                 >
                   ×
@@ -461,7 +469,7 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-6 text-xs px-2 ml-auto" 
+              className="h-6 text-xs px-2 ml-auto touch-target" 
               onClick={() => {
                 setCategoryFilter('all');
                 setCurrentFilter('all');
@@ -469,33 +477,33 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
                 setSearchTerm('');
               }}
             >
-              清除所有篩選
+              清除篩選
             </Button>
           </div>
         )}
       </div>
       
       {isLoading ? (
-        // Loading state
-        <div className="grid grid-cols-1 gap-4">
-          {[...Array(4)].map((_, index) => (
+        // Loading state with responsive dimensions
+        <div className="grid grid-cols-1 gap-3 xs:gap-4">
+          {[...Array(3)].map((_, index) => (
             <div key={index} className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-3 sm:p-4 border-b border-gray-200">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center">
-                    <Skeleton className="w-10 h-10 rounded-full mr-3" />
+                    <Skeleton className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3 flex-shrink-0" />
                     <div>
-                      <Skeleton className="h-4 w-32 mb-1" />
-                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-4 w-24 xs:w-32 mb-1" />
+                      <Skeleton className="h-3 w-20 xs:w-24" />
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="p-4">
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-11/12 mb-2" />
-                <Skeleton className="h-4 w-3/4 mb-3" />
-                <Skeleton className="h-52 w-full rounded-md mb-4" />
+              <div className="p-3 sm:p-4">
+                <Skeleton className="h-3 sm:h-4 w-full mb-2" />
+                <Skeleton className="h-3 sm:h-4 w-11/12 mb-2" />
+                <Skeleton className="h-3 sm:h-4 w-3/4 mb-3" />
+                <Skeleton className="h-40 xs:h-48 sm:h-52 w-full rounded-md mb-3 sm:mb-4" />
               </div>
             </div>
           ))}
@@ -514,22 +522,22 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
         </div>
       ) : (
         // No posts
-        <div className="bg-white p-8 text-center rounded-lg shadow-sm">
-          <p className="text-gray-500 mb-4">
+        <div className="bg-white p-4 xs:p-6 sm:p-8 text-center rounded-lg shadow-sm">
+          <p className="text-gray-500 mb-2 xs:mb-4 text-sm xs:text-base">
             {posts && posts.length > 0 
               ? "沒有符合篩選條件的貼文" 
               : "沒有找到任何貼文"}
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs xs:text-sm text-gray-400">
             {posts && posts.length > 0 
-              ? "請嘗試調整篩選條件或清除所有篩選" 
+              ? "請嘗試調整篩選條件或清除篩選" 
               : "點擊「新增貼文」按鈕來創建您的第一個貼文"}
           </p>
           {posts && posts.length > 0 && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="mt-4" 
+              className="mt-3 xs:mt-4 h-8 text-xs xs:text-sm touch-target" 
               onClick={() => {
                 setCategoryFilter('all');
                 setCurrentFilter('all');
