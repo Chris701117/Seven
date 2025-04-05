@@ -277,8 +277,7 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
 
   return (
     <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">貼文總覽</h3>
+      <div className="flex justify-end items-center mb-4">
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => {
