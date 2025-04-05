@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* 响应式辅助类 */
+  .responsive-container {
+    @apply w-full px-3 sm:px-6 lg:px-8 mx-auto;
+  }
+  
+  /* 移动设备上的触摸区域增强 */
+  .touch-target {
+    @apply p-3 sm:p-2;
+  }
+  
+  /* 移动设备友好的垂直间距 */
+  .mobile-spacing {
+    @apply my-3 sm:my-4;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

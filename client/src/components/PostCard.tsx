@@ -50,9 +50,10 @@ import CreatePostModal from "./CreatePostModal";
 interface PostCardProps {
   post: Post;
   onPostDeleted: (postId: number) => void;
+  isCompactView?: boolean; // 是否在移動設備上使用緊湊視圖
 }
 
-const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
+const PostCard = ({ post, onPostDeleted, isCompactView = false }: PostCardProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -164,14 +165,14 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
   };
 
   return (
-    <div className="post-card bg-white shadow-md rounded-lg overflow-hidden transition-all duration-200 mb-4 border border-gray-200">
+    <div className={`post-card bg-white shadow-md rounded-lg overflow-hidden transition-all duration-200 mb-4 border border-gray-200 ${isCompactView ? 'compact-view' : ''}`}>
       {/* Header Section */}
       <div className="p-3 sm:p-4">
         <div className="flex justify-between items-start">
           <div className="flex items-start">
             {isPageLoading ? (
               <>
-                <Skeleton className="w-10 h-10 rounded-full mr-3" />
+                <Skeleton className={`rounded-full mr-3 flex-shrink-0 ${isCompactView ? 'w-8 h-8' : 'w-10 h-10'}`} />
                 <div>
                   <Skeleton className="h-5 w-32 mb-1" />
                   <Skeleton className="h-4 w-24" />
@@ -182,35 +183,37 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
                 <img 
                   src={page?.picture || "https://via.placeholder.com/40"} 
                   alt="頁面大頭貼" 
-                  className="w-10 h-10 rounded-full mr-3" 
+                  className={`rounded-full mr-3 flex-shrink-0 ${isCompactView ? 'w-8 h-8' : 'w-10 h-10'}`}
                 />
-                <div>
-                  <div className="font-semibold text-[15px] text-gray-900">{page?.pageName}</div>
-                  <div className="flex items-center text-xs text-gray-500">
+                <div className={`${isCompactView ? 'max-w-[calc(100%-40px)]' : ''} min-w-0`}>
+                  <div className="font-semibold text-[15px] text-gray-900 truncate">{page?.pageName}</div>
+                  <div className="flex items-center text-xs text-gray-500 flex-wrap">
                     {post.status === "published" ? (
                       <>
-                        <span>{getPostDateText()}</span>
-                        <span className="mx-1">·</span>
-                        <Globe className="h-3 w-3 mr-1" />
-                        <span>公開</span>
+                        <span className="truncate max-w-[120px] xs:max-w-[180px] sm:max-w-full">{getPostDateText()}</span>
+                        <span className="mx-1 hidden xs:inline">·</span>
+                        <div className="flex items-center xs:inline-flex mt-0.5 xs:mt-0">
+                          <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span>公開</span>
+                        </div>
                       </>
                     ) : post.status === "scheduled" ? (
                       <>
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>{getPostDateText()}</span>
+                        <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="truncate">{getPostDateText()}</span>
                       </>
                     ) : (
-                      <span>{getPostDateText()}</span>
+                      <span className="truncate">{getPostDateText()}</span>
                     )}
                   </div>
                 </div>
               </>
             )}
           </div>
-          <div className="flex">
+          <div className="flex flex-shrink-0 ml-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-100 rounded-full h-8 w-8 p-0">
+                <Button variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-100 rounded-full h-8 w-8 p-0 touch-target">
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -243,7 +246,9 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
       
       {/* Content Section */}
       <div className="px-3 sm:px-4 pb-3">
-        <p className="text-[15px] leading-relaxed mb-3 whitespace-pre-line">{post.content}</p>
+        <p className={`text-[15px] leading-relaxed mb-3 whitespace-pre-line ${isCompactView ? 'line-clamp-3' : ''}`}>
+          {post.content}
+        </p>
         
         {/* Media Preview - Full Width Facebook Style */}
         {post.imageUrl && (
@@ -251,7 +256,8 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
             <img 
               src={post.imageUrl} 
               alt="貼文圖片" 
-              className="w-full object-contain max-h-[500px]" 
+              className={`w-full object-contain ${isCompactView ? 'max-h-[300px]' : 'max-h-[500px]'}`}
+              loading="lazy"
             />
           </div>
         )}
@@ -263,14 +269,15 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <img 
                 src={post.linkImageUrl} 
                 alt="連結預覽" 
-                className="w-full h-[180px] object-cover" 
+                className={`w-full object-cover ${isCompactView ? 'h-[120px]' : 'h-[180px]'}`}
+                loading="lazy"
               />
             )}
             <div className="p-3 bg-gray-50">
               <div className="text-xs uppercase text-gray-500 mb-1 truncate">
                 {post.linkUrl.replace(/^https?:\/\/(www\.)?/, '')}
               </div>
-              <div className="font-semibold text-gray-900">{post.linkTitle || "連結標題"}</div>
+              <div className="font-semibold text-gray-900 truncate">{post.linkTitle || "連結標題"}</div>
               {post.linkDescription && (
                 <div className="text-sm text-gray-600 mt-1 line-clamp-2">
                   {post.linkDescription}
@@ -320,17 +327,17 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
         <div className="flex justify-between">
           {post.status === "published" ? (
             <>
-              <Button variant="ghost" size="sm" className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md">
-                <ThumbsUp className="mr-2 h-5 w-5" />
-                讚
+              <Button variant="ghost" size="sm" className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target">
+                <ThumbsUp className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">讚</span>
               </Button>
-              <Button variant="ghost" size="sm" className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md">
-                <MessageSquare className="mr-2 h-5 w-5" />
-                留言
+              <Button variant="ghost" size="sm" className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target">
+                <MessageSquare className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">留言</span>
               </Button>
-              <Button variant="ghost" size="sm" className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md">
-                <Share2 className="mr-2 h-5 w-5" />
-                分享
+              <Button variant="ghost" size="sm" className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target">
+                <Share2 className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">分享</span>
               </Button>
             </>
           ) : post.status === "publish_failed" ? (
@@ -338,21 +345,21 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target"
                 onClick={() => setIsEditModalOpen(true)}
               >
-                <Edit className="mr-2 h-5 w-5" />
-                編輯
+                <Edit className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">編輯</span>
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-red-600 hover:bg-red-50 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-red-600 hover:bg-red-50 rounded-md touch-target"
                 onClick={() => setIsPublishAllDialogOpen(true)}
                 disabled={publishAllMutation.isPending}
               >
-                <RefreshCw className="mr-2 h-5 w-5" />
-                重新嘗試發佈
+                <RefreshCw className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">重試發佈</span>
               </Button>
             </>
           ) : post.status === "scheduled" ? (
@@ -360,21 +367,21 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target"
                 onClick={() => setIsEditModalOpen(true)}
               >
-                <Edit className="mr-2 h-5 w-5" />
-                編輯
+                <Edit className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">編輯</span>
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-blue-600 hover:bg-blue-50 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-blue-600 hover:bg-blue-50 rounded-md touch-target"
                 onClick={() => setIsPublishAllDialogOpen(true)}
                 disabled={publishAllMutation.isPending}
               >
-                <Zap className="mr-2 h-5 w-5" />
-                立即發佈
+                <Zap className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">立即發佈</span>
               </Button>
             </>
           ) : (
@@ -382,21 +389,21 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-gray-600 hover:bg-gray-100 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-gray-600 hover:bg-gray-100 rounded-md touch-target"
                 onClick={() => setIsEditModalOpen(true)}
               >
-                <Edit className="mr-2 h-5 w-5" />
-                編輯
+                <Edit className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">編輯</span>
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex-1 py-5 text-blue-600 hover:bg-blue-50 rounded-md"
+                className="flex-1 py-3 xs:py-5 text-blue-600 hover:bg-blue-50 rounded-md touch-target"
                 onClick={() => setIsPublishAllDialogOpen(true)}
                 disabled={publishAllMutation.isPending}
               >
-                <Zap className="mr-2 h-5 w-5" />
-                一鍵發佈
+                <Zap className="mr-1 xs:mr-2 h-4 w-4 xs:h-5 xs:w-5" />
+                <span className="text-sm xs:text-base">一鍵發佈</span>
               </Button>
             </>
           )}
@@ -405,15 +412,15 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>確定要刪除嗎？</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg sm:text-xl">確定要刪除嗎？</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
               此操作無法撤銷。貼文將被永久刪除。
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
+            <AlertDialogCancel className="mt-0 sm:mt-0">取消</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeletePost} 
               className="bg-red-600 hover:bg-red-700"
@@ -435,16 +442,16 @@ const PostCard = ({ post, onPostDeleted }: PostCardProps) => {
       
       {/* 一鍵發佈確認對話框 */}
       <AlertDialog open={isPublishAllDialogOpen} onOpenChange={setIsPublishAllDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>一鍵發佈到所有平台</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg sm:text-xl">一鍵發佈到所有平台</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
               此操作將把貼文發佈到所有已連接的平台（FB、IG、TikTok、Threads、X）。
               確認所有平台內容已準備好了嗎？
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
+            <AlertDialogCancel className="mt-0 sm:mt-0">取消</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handlePublishAll} 
               className="bg-blue-600 hover:bg-blue-700"
