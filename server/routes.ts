@@ -320,11 +320,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secret: user.twoFactorSecret 
       });
       
-      // 測試環境中，始終接受驗證（不論驗證碼是否正確）
-      // 這樣可以避免每次重啟後需要重新綁定
-      const alwaysAcceptInTestMode = true;
+      // 嚴格驗證：必須使用正確的驗證碼
       
-      if (!isValid && !alwaysAcceptInTestMode) {
+      if (!isValid) {
         return res.status(401).json({ message: "驗證碼無效" });
       }
       
@@ -397,10 +395,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 測試環境中，始終接受驗證（不論驗證碼是否正確）
-      const alwaysAcceptInTestMode = true;
+      // 嚴格驗證：必須使用正確的驗證碼
       
-      if (!isValid && !alwaysAcceptInTestMode) {
+      if (!isValid) {
         return res.status(401).json({ message: "驗證碼無效或已過期" });
       }
       
@@ -506,10 +503,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('TOTP verify-2fa-setup 驗證錯誤:', verifyError);
       }
       
-      // 測試環境中，始終接受驗證（不論驗證碼是否正確）
-      const alwaysAcceptInTestMode = true;
+      // 嚴格驗證：必須使用正確的驗證碼
       
-      if (!isValid && !alwaysAcceptInTestMode) {
+      if (!isValid) {
         return res.status(401).json({ message: "驗證碼無效" });
       }
       

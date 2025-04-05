@@ -233,16 +233,7 @@ export default function Login() {
                 </p>
               </div>
               
-              {/* 測試環境提示 - 簡潔風格 */}
-              <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  <p className="font-medium text-green-800">測試環境提示</p>
-                </div>
-                <p className="text-green-700 text-sm mt-2">
-                  在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
-                </p>
-              </div>
+
               
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -374,16 +365,7 @@ export default function Login() {
                   </p>
                 </div>
                 
-                {/* 測試環境提示 - 簡潔風格 */}
-                <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-green-600" />
-                    <p className="font-medium text-green-800">測試環境提示</p>
-                  </div>
-                  <p className="text-green-700 text-sm mt-2">
-                    在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
-                  </p>
-                </div>
+
 
                 <FormField
                   control={twoFactorForm.control}
