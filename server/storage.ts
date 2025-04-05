@@ -20,7 +20,8 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import fetch from "node-fetch";
-import * as bcrypt from 'bcryptjs';
+// 不再使用 bcrypt，改用明文密碼存储
+// import * as bcrypt from 'bcryptjs';
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -229,8 +230,8 @@ export class MemStorage implements IStorage {
   }
 
   private async initSampleData() {
-    // 為示例用戶創建加密密碼
-    const hashedPassword = await bcrypt.hash("password123", 10);
+    // 為示例用戶使用明文密碼
+    const plainPassword = "password123";
     
     // 先創建一個管理員群組
     const adminGroup = {
@@ -249,7 +250,7 @@ export class MemStorage implements IStorage {
     const user: User = {
       id: this.userId++,
       username: "demouser",
-      password: hashedPassword, // 使用加密密碼
+      password: plainPassword, // 使用明文密碼
       displayName: "示範用戶",
       email: "demo@example.com",
       role: UserRole.ADMIN,
@@ -614,13 +615,8 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    // 使用 bcrypt 來比較密碼
-    try {
-      return await bcrypt.compare(password, user.password);
-    } catch (error) {
-      console.error('密碼比較錯誤:', error);
-      return false;
-    }
+    // 直接比較明文密碼
+    return password === user.password;
   }
   
   async getUserById(id: number): Promise<User | undefined> {

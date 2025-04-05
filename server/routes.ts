@@ -11,7 +11,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
 import path from "path";
-import * as bcrypt from 'bcryptjs';
+// 不再使用 bcrypt，改用明文密碼存储
+// import * as bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
 
@@ -155,9 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
       
-      // 使用 bcrypt 比較密碼
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
+      // 直接比較密碼
+      if (password !== user.password) {
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
 
@@ -217,14 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "用戶名已被使用" });
       }
       
-      // 密碼雜湊處理
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // 創建用戶（使用雜湊後的密碼）
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
+      // 創建用戶（直接使用明文密碼）
+      const user = await storage.createUser(userData);
       
       req.session.userId = user.id;
       res.status(201).json({ message: "註冊成功", userId: user.id });
@@ -2914,13 +2908,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "電子郵件已被使用" });
       }
 
-      // 對密碼進行加密
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      // 直接使用明文密碼
       
       // 創建新用戶
       const newUser = await storage.createUser({
-        ...userData,
-        password: hashedPassword // 使用加密後的密碼
+        ...userData
+        // 直接使用明文密碼
       });
 
       // 移除敏感信息
@@ -2984,9 +2977,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 用戶可以修改自己的這些字段
       if (req.body.displayName !== undefined) updateData.displayName = req.body.displayName;
       
-      // 如果更新密碼，先加密
+      // 直接使用明文密碼
       if (req.body.password !== undefined) {
-        updateData.password = await bcrypt.hash(req.body.password, 10);
+        updateData.password = req.body.password;
       }
       
       // 更新用戶
