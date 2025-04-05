@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
+import { Loader2 } from 'lucide-react';
 
 // 定義登入表單的結構
 const formSchema = z.object({
@@ -27,12 +28,21 @@ const formSchema = z.object({
   }),
 });
 
+// 定義二步驗證表單的結構
+const twoFactorSchema = z.object({
+  code: z.string().min(6, {
+    message: '驗證碼應為6位數字',
+  }).max(6),
+});
+
 export default function Login() {
   const [_, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [requireTwoFactor, setRequireTwoFactor] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
   const { toast } = useToast();
 
-  // 初始化表單
+  // 初始化登入表單
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,21 +51,40 @@ export default function Login() {
     },
   });
 
-  // 表單提交處理
+  // 初始化二步驗證表單
+  const twoFactorForm = useForm<z.infer<typeof twoFactorSchema>>({
+    resolver: zodResolver(twoFactorSchema),
+    defaultValues: {
+      code: '',
+    },
+  });
+
+  // 登入表單提交處理
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
       // 使用新的參數形式調用apiRequest
       const response = await apiRequest('POST', '/api/auth/login', values);
+      const data = await response.json();
       
-      // 登入成功
-      toast({
-        title: '登入成功',
-        description: '歡迎回來！',
-      });
-      
-      // 重定向到首頁
-      setLocation('/');
+      // 如果需要二步驗證
+      if (data.requireTwoFactor) {
+        setRequireTwoFactor(true);
+        setUserId(data.userId);
+        toast({
+          title: '需要驗證',
+          description: '請輸入Google Authenticator中的驗證碼',
+        });
+      } else {
+        // 登入成功
+        toast({
+          title: '登入成功',
+          description: '歡迎回來！',
+        });
+        
+        // 重定向到首頁
+        setLocation('/');
+      }
     } catch (error) {
       // 登入失敗
       toast({
@@ -69,6 +98,44 @@ export default function Login() {
     }
   }
 
+  // 二步驗證表單提交處理
+  async function onSubmitTwoFactor(values: z.infer<typeof twoFactorSchema>) {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await apiRequest('POST', '/api/auth/verify-2fa', {
+        userId,
+        code: values.code
+      });
+      
+      // 驗證成功
+      toast({
+        title: '驗證成功',
+        description: '歡迎回來！',
+      });
+      
+      // 重定向到首頁
+      setLocation('/');
+    } catch (error) {
+      // 驗證失敗
+      toast({
+        variant: 'destructive',
+        title: '驗證失敗',
+        description: '驗證碼不正確或已過期',
+      });
+      console.error('驗證錯誤:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // 返回登入頁
+  const handleGoBack = () => {
+    setRequireTwoFactor(false);
+    setUserId(null);
+  };
+
   // 邀請制系統不再提供註冊功能
 
   return (
@@ -79,45 +146,94 @@ export default function Login() {
             歡迎回來
           </CardTitle>
           <CardDescription className="text-center">
-            請輸入您的帳號密碼登入系統
+            {requireTwoFactor ? 
+              '請輸入Google Authenticator中的驗證碼' : 
+              '請輸入您的帳號密碼登入系統'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>用戶名</FormLabel>
-                    <FormControl>
-                      <Input placeholder="請輸入用戶名" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>密碼</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="請輸入密碼" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? '登入中...' : '登入'}
-              </Button>
-            </form>
-          </Form>
+          {!requireTwoFactor ? (
+            // 第一步：用戶名和密碼登入
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>用戶名</FormLabel>
+                      <FormControl>
+                        <Input placeholder="請輸入用戶名" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>密碼</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="請輸入密碼" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      登入中...
+                    </>
+                  ) : '登入'}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            // 第二步：二步驗證
+            <Form {...twoFactorForm}>
+              <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
+                <FormField
+                  control={twoFactorForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>驗證碼</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="請輸入6位數驗證碼" 
+                          maxLength={6} 
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-between space-x-2">
+                  <Button type="button" variant="outline" onClick={handleGoBack} disabled={isLoading}>
+                    返回
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        驗證中...
+                      </>
+                    ) : '驗證'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-center text-sm text-muted-foreground">
