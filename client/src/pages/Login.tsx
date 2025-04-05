@@ -207,10 +207,10 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-2xl font-medium text-center">
             {requireTwoFactorSetup ? '設置二步驗證' : (requireTwoFactor ? '二步驗證' : '歡迎回來')}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-base">
             {requireTwoFactorSetup ? 
               '請使用Google Authenticator掃描下方QR碼並輸入驗證碼' : 
               (requireTwoFactor ? 
@@ -358,6 +358,7 @@ export default function Login() {
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
                 {/* 原始引導提示 - 修改為圖片中的樣式 */}
+                {/* 完全匹配圖片中的樣式 */}
                 <div className="p-4 mb-4 bg-blue-50 border border-blue-200 rounded-md">
                   <div className="flex items-center gap-2">
                     <QrCode className="h-5 w-5 text-blue-600" />
@@ -382,7 +383,7 @@ export default function Login() {
                   name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>驗證碼</FormLabel>
+                      <FormLabel className="text-sm font-medium">驗證碼</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="請輸入6位數驗證碼" 
@@ -390,6 +391,7 @@ export default function Login() {
                           inputMode="numeric"
                           pattern="[0-9]*"
                           autoComplete="one-time-code"
+                          className="h-11 px-3 py-2"
                           {...field} 
                         />
                       </FormControl>
@@ -398,11 +400,11 @@ export default function Login() {
                   )}
                 />
                 
-                <div className="flex justify-between space-x-2">
-                  <Button type="button" variant="outline" onClick={handleGoBack} disabled={isLoading}>
+                <div className="flex justify-between space-x-2 mt-3">
+                  <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>
                     返回
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={isLoading}>
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
