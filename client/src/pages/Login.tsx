@@ -353,8 +353,7 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                {/* 原始引導提示 - 修改為圖片中的樣式 */}
-                {/* 完全匹配圖片中的簡潔樣式 */}
+                {/* 二步驗證提示 - 修改為圖片中的樣式 */}
                 <div className="p-4 mb-4 bg-blue-50 border border-blue-100 rounded-md">
                   <div className="flex items-center gap-2">
                     <QrCode className="h-5 w-5 text-blue-600" />
@@ -362,6 +361,17 @@ export default function Login() {
                   </div>
                   <p className="text-blue-700 text-sm mt-2">
                     請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                  </p>
+                </div>
+                
+                {/* 測試環境提示 - 僅顯示掃描說明，不提供簡化方式 */}
+                <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-green-600" />
+                    <p className="font-medium text-green-800">測試環境說明</p>
+                  </div>
+                  <p className="text-green-700 text-sm mt-2">
+                    請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼。測試環境使用固定密鑰：JBSWY3DPEHPK3PXP
                   </p>
                 </div>
                 

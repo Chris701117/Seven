@@ -335,7 +335,16 @@ const Settings = () => {
             <CardContent className="space-y-4">
               {showQRCode ? (
                 <div className="space-y-6">
-
+                  {/* 測試環境提示 - 僅顯示掃描說明，不提供簡化方式 */}
+                  <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-green-600" />
+                      <p className="font-medium text-green-800">測試環境說明</p>
+                    </div>
+                    <p className="text-green-700 text-sm mt-2">
+                      此QR碼使用固定密鑰：JBSWY3DPEHPK3PXP。請使用Google Authenticator掃描QR碼後，輸入顯示的驗證碼完成設置。
+                    </p>
+                  </div>
                   
                   {/* QR碼掃描指引 - 簡潔風格 */}
                   <div className="flex flex-col items-center justify-center space-y-4 p-4 border border-gray-100 rounded-md">
