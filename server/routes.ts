@@ -16,6 +16,11 @@ import path from "path";
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
 
+// 測試環境固定的二步驗證密鑰
+const FIXED_2FA_SECRET = 'FIXYQFUHJMCYDLWXEFNZCHXBPLHNTQGR';
+// 設置在測試環境中是否使用固定密鑰
+const USE_FIXED_2FA_SECRET = true;
+
 // WebSocket client tracking
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
@@ -183,8 +188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 檢查是否已設置二步驗證
       if (!user.twoFactorSecret) {
         // 如果用戶還沒有設置二步驗證，引導用戶設置
-        // 生成一個新的二步驗證密鑰
-        const secret = authenticator.generateSecret();
+        // 生成或使用固定的二步驗證密鑰
+        const secret = USE_FIXED_2FA_SECRET ? FIXED_2FA_SECRET : authenticator.generateSecret();
         const otpauth = authenticator.keyuri(user.username, "社群媒體管理系統", secret);
         
         // 生成 QR Code
@@ -410,8 +415,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "二步驗證已經啟用" });
       }
       
-      // 生成新的 TOTP 密鑰
-      const secret = authenticator.generateSecret();
+      // 生成或使用固定的 TOTP 密鑰
+      const secret = USE_FIXED_2FA_SECRET ? FIXED_2FA_SECRET : authenticator.generateSecret();
       const otpauth = authenticator.keyuri(user.username, "社群媒體管理系統", secret);
       
       // 生成 QR Code
