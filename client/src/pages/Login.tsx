@@ -133,6 +133,7 @@ export default function Login() {
     if (!userId) return;
     
     setIsLoading(true);
+    setTwoFactorError(false);
     try {
       // 使用apiRequest直接獲取JSON響應
       await apiRequest('POST', '/api/auth/verify-2fa', {
@@ -150,12 +151,16 @@ export default function Login() {
       setLocation('/');
     } catch (error) {
       // 驗證失敗
+      setTwoFactorError(true);
       toast({
         variant: 'destructive',
         title: '驗證失敗',
         description: '驗證碼不正確或已過期',
       });
       console.error('驗證錯誤:', error);
+      
+      // 清空驗證碼輸入
+      twoFactorForm.reset({ code: '' });
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +197,9 @@ export default function Login() {
         description: '驗證碼不正確，請重新嘗試',
       });
       console.error('二步驗證設置錯誤:', error);
+      
+      // 清空驗證碼輸入
+      setupTwoFactorForm.reset({ code: '' });
     } finally {
       setIsLoading(false);
     }
@@ -299,7 +307,7 @@ export default function Login() {
                       <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
                         <div className="flex items-center gap-2">
                           <XCircle className="h-5 w-5 text-red-600" />
-                          <p className="font-medium text-red-800">設置失敗</p>
+                          <p className="font-medium text-red-800">設置二步驗證失敗</p>
                         </div>
                         <p className="text-red-700 text-sm mt-1 ml-7">
                           驗證碼不正確，請重新嘗試
@@ -307,11 +315,11 @@ export default function Login() {
                       </div>
                     )}
                     
-                    <div className="flex justify-between space-x-2 mt-3">
-                      <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>
+                    <div className="flex justify-between space-x-2 mt-6">
+                      <Button type="button" variant="outline" className="px-8 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
                         返回
                       </Button>
-                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -370,25 +378,36 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                <div className="flex flex-col items-center mb-4">
-                  <h3 className="text-center font-medium text-lg mb-2">輸入驗證碼</h3>
-                  <p className="text-center text-muted-foreground text-sm">
-                    請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                {/* 標題區塊 - 紅色邊框設計 */}
+                <div className="border-2 border-red-500 rounded-md p-4 mb-2">
+                  <h3 className="text-center font-medium text-xl">二步驗證</h3>
+                  <p className="text-center text-sm mt-1">
+                    請輸入Google Authenticator中的驗證碼
                   </p>
                 </div>
                 
-                {/* 測試環境說明 - 以提示卡片形式展示 */}
-                <div className="p-4 mb-6 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-yellow-600" />
-                    <p className="font-medium text-yellow-800">測試環境提示</p>
+                <div className="text-center text-base mb-2">
+                  輸入驗證碼
+                </div>
+                
+                <p className="text-center text-muted-foreground text-sm mb-4">
+                  請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                </p>
+                
+                {/* 測試環境說明 - 黃色背景提示卡片 */}
+                <div className="p-4 mb-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <Shield className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-800">測試環境提示</p>
+                      <p className="text-yellow-700 text-sm mt-1">
+                        請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼
+                      </p>
+                      <p className="text-yellow-700 font-medium text-sm mt-1">
+                        測試環境密鑰：JBSWY3DPEHPK3PXP
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-yellow-700 text-sm mt-1 ml-7">
-                    請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼
-                  </p>
-                  <p className="text-yellow-700 font-medium text-sm mt-1 ml-7">
-                    測試環境密鑰：JBSWY3DPEHPK3PXP
-                  </p>
                 </div>
                 
                 <FormField
@@ -403,7 +422,7 @@ export default function Login() {
                           inputMode="numeric"
                           pattern="[0-9]*"
                           autoComplete="one-time-code"
-                          className="text-center text-lg py-6"
+                          className="text-center text-lg py-5 border-gray-300"
                           {...field} 
                         />
                       </FormControl>
@@ -419,7 +438,7 @@ export default function Login() {
                   <div className="p-4 mb-4 bg-red-50 border-l-4 border-red-500 rounded-md">
                     <div className="flex items-center gap-2">
                       <XCircle className="h-5 w-5 text-red-600" />
-                      <p className="font-medium text-red-800">設置失敗</p>
+                      <p className="font-medium text-red-800">驗證失敗</p>
                     </div>
                     <p className="text-red-700 text-sm mt-1 ml-7">
                       驗證碼不正確，請重新嘗試
@@ -427,11 +446,11 @@ export default function Login() {
                   </div>
                 )}
                 
-                <div className="flex justify-between space-x-2 mt-3">
-                  <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>
+                <div className="flex justify-between space-x-2 mt-6">
+                  <Button type="button" variant="outline" className="px-8 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
                     返回
                   </Button>
-                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
