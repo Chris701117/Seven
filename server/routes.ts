@@ -16,10 +16,8 @@ import path from "path";
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
 
-// 測試環境固定的二步驗證密鑰
-const FIXED_2FA_SECRET = 'FIXYQFUHJMCYDLWXEFNZCHXBPLHNTQGR';
-// 設置在測試環境中是否使用固定密鑰
-const USE_FIXED_2FA_SECRET = true;
+// 從 index.ts 引入變數
+import { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, USE_FIXED_2FA_SECRET, FIXED_2FA_SECRET } from "./index";
 
 // WebSocket client tracking
 interface ExtendedWebSocket extends WebSocket {
@@ -128,10 +126,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configuration routes - Facebook 配置
   app.get("/api/config/facebook", (req, res) => {
-    const appId = process.env.FACEBOOK_APP_ID || "";
-    const hasAppSecret = !!process.env.FACEBOOK_APP_SECRET;
     const domain = req.get('host') || '';
     const environment = process.env.NODE_ENV || 'development';
+    
+    // 使用常量中的 FACEBOOK_APP_ID
+    const appId = FACEBOOK_APP_ID;
+    const hasAppSecret = !!FACEBOOK_APP_SECRET;
     
     // 檢查 App ID 是否存在
     if (!appId) {
