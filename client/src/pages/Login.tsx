@@ -82,9 +82,8 @@ export default function Login() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // 使用新的參數形式調用apiRequest
-      const response = await apiRequest('POST', '/api/auth/login', values);
-      const data = await response.json();
+      // 使用新的參數形式調用apiRequest，直接獲取JSON響應
+      const data = await apiRequest('POST', '/api/auth/login', values);
       
       // 如果需要設置二步驗證
       if (data.requireTwoFactorSetup) {
@@ -134,7 +133,8 @@ export default function Login() {
     
     setIsLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/verify-2fa', {
+      // 使用apiRequest直接獲取JSON響應
+      await apiRequest('POST', '/api/auth/verify-2fa', {
         userId,
         code: values.code
       });
@@ -166,8 +166,8 @@ export default function Login() {
     
     setIsLoading(true);
     try {
-      // 使用首次登入的二步驗證設置 API
-      const response = await apiRequest('POST', '/api/auth/setup-2fa', {
+      // 使用首次登入的二步驗證設置 API，直接獲取JSON響應
+      await apiRequest('POST', '/api/auth/setup-2fa', {
         userId,
         code: values.code
       });
