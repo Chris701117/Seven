@@ -189,19 +189,17 @@ const RecycleBin = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
-      <div className="flex items-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         <Link href="/">
-          <a className="flex items-center text-gray-600 hover:text-gray-900 mr-4">
+          <a className="flex items-center text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-5 w-5 mr-1" />
             <span>返回貼文管理</span>
           </a>
         </Link>
-        <h1 className="text-2xl font-bold flex-1">還原區</h1>
         <Button 
           variant="outline" 
           onClick={() => refetchPosts()} 
           disabled={isPostsLoading || !activePageId}
-          className="ml-2"
         >
           <RefreshCcw className="h-4 w-4 mr-2" />
           重新整理

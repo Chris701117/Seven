@@ -98,27 +98,6 @@ const Dashboard = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">{activePageData ? `${activePageData.pageName} 貼文管理` : '請選擇粉絲專頁'}</h2>
-        <Button
-          onClick={() => {
-            if (!activePageData) {
-              toast({
-                title: "無法建立貼文",
-                description: "請先選擇一個粉絲專頁",
-                variant: "destructive",
-              });
-              return;
-            }
-            setSelectedPost(null); // 確保創建新貼文時清空選中狀態
-            setIsCreateModalOpen(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={!activePageData}
-        >
-          <Plus className="mr-2 h-4 w-4" /> 建立貼文
-        </Button>
-      </div>
       
       {activePageData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
