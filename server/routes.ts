@@ -12,6 +12,8 @@ import { z } from "zod";
 import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
 import path from "path";
 import * as bcrypt from 'bcryptjs';
+import { authenticator } from 'otplib';
+import * as qrcode from 'qrcode';
 
 // WebSocket client tracking
 interface ExtendedWebSocket extends WebSocket {
@@ -27,6 +29,16 @@ interface Notification {
   post: Post;
   message: string;
   timestamp: string;
+}
+
+// 生成隨機驗證碼的輔助函數
+function generateRandomCode(length: number): string {
+  const characters = '0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
 }
 
 // Active connections
@@ -138,11 +150,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = await loginSchema.parse(req.body);
       const user = await storage.getUserByUsername(username);
 
-      if (!user || user.password !== password) {
+      // 檢查用戶是否存在及密碼是否正確
+      if (!user) {
+        return res.status(401).json({ message: "用戶名或密碼不正確" });
+      }
+      
+      // 在目前的實現中，密碼是明文存儲的，但以後應改為使用 bcrypt
+      const isPasswordValid = user.password === password;
+      if (!isPasswordValid) {
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
 
+      // 檢查是否啟用了二步驗證
+      if (user.isTwoFactorEnabled && user.twoFactorSecret) {
+        // 生成一個一次性驗證碼，有效期10分鐘
+        const authCode = generateRandomCode(6);
+        await storage.createAuthCode({
+          userId: user.id,
+          code: authCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10分鐘後過期
+        });
+        
+        // 僅進行第一階段驗證，返回特定標記和用戶ID
+        return res.json({ 
+          requireTwoFactor: true, 
+          userId: user.id,
+          message: "需要二步驗證" 
+        });
+      }
+
+      // 如果沒有啟用二步驗證，直接登入成功
       req.session.userId = user.id;
+      
+      // 更新最後登入時間
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+      
       res.json({ message: "登入成功", userId: user.id });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -200,6 +242,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // 二步驗證API
+  app.post("/api/auth/verify-2fa", async (req, res) => {
+    try {
+      const verifySchema = z.object({
+        userId: z.number(),
+        code: z.string().length(6)
+      });
+      
+      const { userId, code } = await verifySchema.parse(req.body);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+      
+      if (!user.isTwoFactorEnabled || !user.twoFactorSecret) {
+        return res.status(400).json({ message: "此用戶未啟用二步驗證" });
+      }
+      
+      // 檢查驗證碼是否正確
+      const authCode = await storage.getAuthCodeByUserIdAndCode(userId, code);
+      
+      // 如果找不到驗證碼或驗證碼已使用，則驗證失敗
+      if (!authCode || authCode.isUsed || new Date() > authCode.expiresAt) {
+        return res.status(401).json({ message: "驗證碼無效或已過期" });
+      }
+      
+      // 標記驗證碼為已使用
+      await storage.markAuthCodeAsUsed(authCode.id);
+      
+      // 驗證成功，設置會話
+      req.session.userId = userId;
+      
+      // 更新最後登入時間
+      await storage.updateUser(userId, { lastLoginAt: new Date() });
+      
+      res.json({ message: "驗證成功", userId });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      console.error("二步驗證錯誤:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 啟用二步驗證
+  app.post("/api/user/enable-2fa", requireLogin, async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "未認證" });
+      }
+      
+      // 獲取用戶資料
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+      
+      // 如果已經啟用了，返回錯誤
+      if (user.isTwoFactorEnabled) {
+        return res.status(400).json({ message: "二步驗證已經啟用" });
+      }
+      
+      // 生成新的 TOTP 密鑰
+      const secret = authenticator.generateSecret();
+      const otpauth = authenticator.keyuri(user.username, "社群媒體管理系統", secret);
+      
+      // 生成 QR Code
+      const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
+      
+      // 更新用戶的二步驗證信息
+      const updatedUser = await storage.setTwoFactorSecret(req.session.userId, secret);
+      
+      // 返回設置信息（但尚未啟用）
+      res.json({ 
+        success: true, 
+        qrCode: qrCodeDataUrl,
+        secret: secret, // 僅在初始化時發送一次
+        message: "請掃描 QR 碼並驗證以啟用二步驗證"
+      });
+    } catch (error) {
+      console.error("啟用二步驗證錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "啟用二步驗證失敗", 
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  // 驗證並完成二步驗證啟用
+  app.post("/api/user/verify-2fa-setup", requireLogin, async (req, res) => {
+    try {
+      const verifySchema = z.object({
+        code: z.string().length(6)
+      });
+      
+      const { code } = await verifySchema.parse(req.body);
+      
+      // 確保 userId 存在
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "未認證" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+      
+      if (!user.twoFactorSecret) {
+        return res.status(400).json({ message: "請先初始化二步驗證" });
+      }
+      
+      if (user.isTwoFactorEnabled) {
+        return res.status(400).json({ message: "二步驗證已經啟用" });
+      }
+      
+      // 驗證 TOTP 代碼
+      const isValid = authenticator.verify({ 
+        token: code, 
+        secret: user.twoFactorSecret 
+      });
+      
+      if (!isValid) {
+        return res.status(401).json({ message: "驗證碼無效" });
+      }
+      
+      // 驗證成功，啟用二步驗證
+      const updatedUser = await storage.enableTwoFactor(user.id);
+      
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ 
+        success: true, 
+        message: "二步驗證已成功啟用",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors });
+      }
+      console.error("驗證二步驗證設置錯誤:", error);
+      res.status(500).json({ message: "伺服器錯誤" });
+    }
+  });
+  
+  // 禁用二步驗證
+  app.post("/api/user/disable-2fa", requireLogin, async (req, res) => {
+    try {
+      // 確保 userId 存在
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "未認證" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+      
+      if (!user.isTwoFactorEnabled) {
+        return res.status(400).json({ message: "二步驗證尚未啟用" });
+      }
+      
+      // 禁用二步驗證
+      const updatedUser = await storage.disableTwoFactor(user.id);
+      
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ 
+        success: true, 
+        message: "二步驗證已禁用",
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error("禁用二步驗證錯誤:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "禁用二步驗證失敗", 
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
   // 驗證管理員密碼 - 用於敏感操作確認
   app.post("/api/verify-admin", requireLogin, async (req, res) => {
     try {
@@ -209,7 +435,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "密碼不能為空" });
       }
 
+      // 確保 userId 存在
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "未認證" });
+      }
+      
       const currentUser = await storage.getUser(req.session.userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
       
       // 檢查用戶是否為管理員
       const isAdmin = currentUser.isAdminUser;
@@ -218,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 驗證密碼
-      const passwordValid = await storage.verifyUserPassword(req.session.userId, password);
+      const passwordValid = await storage.verifyUserPassword(currentUser.id, password);
       
       if (!passwordValid) {
         return res.status(401).json({ message: "管理員密碼不正確" });

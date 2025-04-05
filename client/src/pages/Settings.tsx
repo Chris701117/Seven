@@ -8,7 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Facebook, Instagram, Bell, User, LogOut, ListFilter, Users, Shield, UserPlus } from "lucide-react";
+import { 
+  Facebook, 
+  Instagram, 
+  Bell, 
+  User, 
+  LogOut, 
+  ListFilter, 
+  Users, 
+  Shield, 
+  UserPlus,
+  Lock,
+  Unlock,
+  QrCode
+} from "lucide-react";
 import { SiTiktok, SiX } from "react-icons/si";
 import FacebookConnect from "../components/FacebookConnect";
 import InstagramConnect from "../components/InstagramConnect";
@@ -37,6 +50,11 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("account");
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [tfaSecret, setTfaSecret] = useState('');
   
   // 使用 Page Context
   const { activePage, setActivePage } = usePageContext();
@@ -50,6 +68,9 @@ const Settings = () => {
   useEffect(() => {
     if (user && (user as any)?.accessToken) {
       setIsConnected(true);
+    }
+    if (user && (user as any)?.isTwoFactorEnabled) {
+      setIs2FAEnabled(true);
     }
   }, [user]);
   
@@ -102,6 +123,136 @@ const Settings = () => {
       toast({
         title: "斷開失敗",
         description: "無法斷開 Facebook 連接，請稍後再試。",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // 啟用二步驗證
+  const handleEnable2FA = async () => {
+    try {
+      // 顯示正在處理的提示
+      toast({
+        title: "設置中",
+        description: "正在為您設置二步驗證...",
+      });
+      
+      // 調用啟用二步驗證API
+      const response = await fetch('/api/user/enable-2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `伺服器錯誤: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // 設置QR Code URL和密鑰
+      setQrCodeUrl(data.qrCode);
+      setTfaSecret(data.secret);
+      setShowQRCode(true);
+      
+      toast({
+        title: "掃描QR碼",
+        description: "請使用Google Authenticator掃描QR碼",
+      });
+    } catch (error) {
+      console.error("啟用二步驗證失敗:", error);
+      toast({
+        title: "設置失敗",
+        description: error instanceof Error ? error.message : "無法設置二步驗證，請稍後再試",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // 驗證並完成二步驗證設置
+  const handleVerify2FA = async () => {
+    try {
+      if (!verificationCode || verificationCode.length !== 6) {
+        toast({
+          title: "驗證失敗",
+          description: "請輸入6位數驗證碼",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 調用驗證API
+      const response = await fetch('/api/user/verify-2fa-setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: verificationCode }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `伺服器錯誤: ${response.status}`);
+      }
+      
+      // 設置狀態
+      setIs2FAEnabled(true);
+      setShowQRCode(false);
+      setVerificationCode('');
+      
+      // 重新獲取用戶資料
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
+      toast({
+        title: "設置成功",
+        description: "您已成功啟用二步驗證，下次登入時將需要驗證碼",
+      });
+    } catch (error) {
+      console.error("驗證失敗:", error);
+      toast({
+        title: "驗證失敗",
+        description: error instanceof Error ? error.message : "驗證碼無效或已過期",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // 禁用二步驗證
+  const handleDisable2FA = async () => {
+    try {
+      // 調用禁用二步驗證API
+      const response = await fetch('/api/user/disable-2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `伺服器錯誤: ${response.status}`);
+      }
+      
+      // 更新狀態
+      setIs2FAEnabled(false);
+      
+      // 重新獲取用戶資料
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      
+      toast({
+        title: "已禁用",
+        description: "二步驗證已成功禁用",
+      });
+    } catch (error) {
+      console.error("禁用二步驗證失敗:", error);
+      toast({
+        title: "操作失敗",
+        description: error instanceof Error ? error.message : "無法禁用二步驗證，請稍後再試",
         variant: "destructive",
       });
     }
@@ -166,9 +317,10 @@ const Settings = () => {
                 <Input 
                   id="email" 
                   type="email" 
-                  defaultValue="user@example.com" 
-                  disabled={!user}
+                  defaultValue={(user as any)?.email || ""} 
+                  disabled={true} // 禁用電子郵箱修改功能
                 />
+                <p className="text-xs text-muted-foreground">電子郵箱不可修改</p>
               </div>
             </CardContent>
             <CardFooter>
@@ -202,6 +354,120 @@ const Settings = () => {
             <CardFooter>
               <Button>更新密碼</Button>
             </CardFooter>
+          </Card>
+          
+          {/* 二步驗證卡片 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>二步驗證</CardTitle>
+              <CardDescription>
+                啟用二步驗證以增強帳戶安全性
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {showQRCode ? (
+                <div className="space-y-6">
+                  <div className="flex flex-col items-center justify-center space-y-4 p-4 border rounded-md">
+                    <div className="text-center mb-4">
+                      <p className="font-medium">掃描 QR 碼</p>
+                      <p className="text-sm text-muted-foreground">
+                        使用 Google Authenticator 或其他支持 TOTP 的應用掃描此 QR 碼
+                      </p>
+                    </div>
+                    
+                    {qrCodeUrl && (
+                      <div className="bg-white p-4 rounded-md">
+                        <img src={qrCodeUrl} alt="二步驗證 QR 碼" className="w-48 h-48" />
+                      </div>
+                    )}
+                    
+                    {tfaSecret && (
+                      <div className="text-center mt-2">
+                        <p className="text-sm font-medium">手動輸入密鑰：</p>
+                        <p className="bg-gray-100 p-2 rounded-md font-mono text-sm mt-1">
+                          {tfaSecret}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code">驗證碼</Label>
+                    <Input 
+                      id="verification-code" 
+                      placeholder="請輸入六位數驗證碼" 
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      maxLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      請輸入應用生成的六位數驗證碼來完成設置
+                    </p>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowQRCode(false);
+                        setVerificationCode('');
+                        setQrCodeUrl('');
+                        setTfaSecret('');
+                      }}
+                    >
+                      取消
+                    </Button>
+                    <Button 
+                      onClick={handleVerify2FA}
+                      disabled={!verificationCode || verificationCode.length !== 6}
+                    >
+                      驗證並啟用
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {is2FAEnabled ? (
+                    <div>
+                      <div className="flex items-center space-x-4 p-4 border border-green-100 bg-green-50 rounded-md mb-4">
+                        <Lock className="h-6 w-6 text-green-600" />
+                        <div>
+                          <p className="font-medium">二步驗證已啟用</p>
+                          <p className="text-sm text-gray-500">
+                            您的帳戶受到額外的安全保護
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleDisable2FA}
+                      >
+                        <Unlock className="h-4 w-4 mr-2" />
+                        禁用二步驗證
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center space-x-4 p-4 border border-yellow-100 bg-yellow-50 rounded-md mb-4">
+                        <Unlock className="h-6 w-6 text-yellow-600" />
+                        <div>
+                          <p className="font-medium">二步驗證未啟用</p>
+                          <p className="text-sm text-gray-500">
+                            啟用二步驗證以增強您的帳戶安全性
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={handleEnable2FA}
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        啟用二步驗證
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
           </Card>
           
 
