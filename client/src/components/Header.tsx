@@ -97,19 +97,6 @@ const Header = ({ toggleSidebar, user, isLoading, isSidebarOpen }: HeaderProps) 
             >
               <Menu className="h-6 w-6" />
             </button>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">{pageTitle}</h2>
-          </div>
-          
-          {/* 新增貼文按鈕 - 顯示在所有尺寸螢幕上 */}
-          <div className="flex items-center">
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-white h-9 xs:h-10 touch-target"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-0 xs:mr-2" />
-              <span className="hidden xs:inline">新增貼文</span>
-            </Button>
           </div>
           
           {/* 桌面版用戶操作區 */}
