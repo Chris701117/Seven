@@ -222,13 +222,16 @@ export default function Login() {
           {requireTwoFactorSetup ? (
             // 設置二步驗證
             <div className="space-y-4">
-              <Alert className="bg-amber-50 border-amber-400">
-                <Shield className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">必須啟用二步驗證</AlertTitle>
-                <AlertDescription className="text-amber-700">
+              {/* 原始警告提示 */}
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-400 rounded-md">
+                <div className="flex items-center mb-1">
+                  <Shield className="h-4 w-4 text-amber-600 mr-2" />
+                  <h2 className="font-semibold text-amber-800">必須啟用二步驗證</h2>
+                </div>
+                <p className="text-amber-700 text-sm">
                   為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
               
               {/* 測試環境提示 */}
               <Alert className="bg-green-50 border-green-200">
@@ -357,13 +360,16 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                <Alert className="bg-blue-50 border-blue-200">
-                  <QrCode className="h-4 w-4 text-blue-600" />
-                  <AlertTitle className="text-blue-800">二步驗證</AlertTitle>
-                  <AlertDescription className="text-blue-700">
+                {/* 原始引導提示 */}
+                <div className="p-4 mb-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="flex items-center mb-2">
+                    <QrCode className="h-4 w-4 text-blue-600 mr-2" />
+                    <h2 className="font-semibold text-blue-800">二步驗證</h2>
+                  </div>
+                  <p className="text-blue-700 text-sm">
                     請打開Google Authenticator應用並輸入顯示的6位數驗證碼
-                  </AlertDescription>
-                </Alert>
+                  </p>
+                </div>
                 
                 {/* 測試環境提示 */}
                 <Alert className="bg-green-50 border-green-200">

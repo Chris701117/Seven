@@ -346,10 +346,11 @@ const Settings = () => {
                     </p>
                   </div>
                   
+                  {/* 原始QR碼掃描指引 */}
                   <div className="flex flex-col items-center justify-center space-y-4 p-4 border rounded-md">
                     <div className="text-center mb-4">
-                      <p className="font-medium">掃描 QR 碼</p>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="font-semibold">掃描 QR 碼</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
                         使用 Google Authenticator 或其他支持 TOTP 的應用掃描此 QR 碼
                       </p>
                     </div>
