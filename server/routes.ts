@@ -155,8 +155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
       
-      // 在目前的實現中，密碼是明文存儲的，但以後應改為使用 bcrypt
-      const isPasswordValid = user.password === password;
+      // 使用 bcrypt 比較密碼
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
@@ -204,7 +204,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "用戶名已被使用" });
       }
       
-      const user = await storage.createUser(userData);
+      // 密碼雜湊處理
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      // 創建用戶（使用雜湊後的密碼）
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
+      
       req.session.userId = user.id;
       res.status(201).json({ message: "註冊成功", userId: user.id });
     } catch (error) {
@@ -261,16 +269,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "此用戶未啟用二步驗證" });
       }
       
-      // 檢查驗證碼是否正確
+      // 檢查是否有儲存的驗證碼
       const authCode = await storage.getAuthCodeByUserIdAndCode(userId, code);
       
-      // 如果找不到驗證碼或驗證碼已使用，則驗證失敗
-      if (!authCode || authCode.isUsed || new Date() > authCode.expiresAt) {
-        return res.status(401).json({ message: "驗證碼無效或已過期" });
+      let isValid = false;
+      
+      // 先檢查儲存的一次性驗證碼
+      if (authCode && !authCode.isUsed && new Date() <= authCode.expiresAt) {
+        isValid = true;
+        // 標記驗證碼為已使用
+        await storage.markAuthCodeAsUsed(authCode.id);
+      } 
+      // 如果沒有儲存的驗證碼或驗證失敗，則檢查是否為 TOTP (Google Authenticator)
+      else if (user.twoFactorSecret) {
+        // 驗證 TOTP 代碼
+        isValid = authenticator.verify({ 
+          token: code, 
+          secret: user.twoFactorSecret 
+        });
       }
       
-      // 標記驗證碼為已使用
-      await storage.markAuthCodeAsUsed(authCode.id);
+      if (!isValid) {
+        return res.status(401).json({ message: "驗證碼無效或已過期" });
+      }
       
       // 驗證成功，設置會話
       req.session.userId = userId;

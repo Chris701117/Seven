@@ -20,6 +20,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import fetch from "node-fetch";
+import * as bcrypt from 'bcryptjs';
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -210,21 +211,32 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000, // 每24小時清理過期會話
     });
     
-    // Add sample data
-    this.initSampleData();
+    // 初始化示例數據（使用 Promise 來處理非同步函數）
+    this.initialize();
+  }
+  
+  // 初始化所有示例數據
+  private async initialize() {
+    // 按順序初始化所有數據
+    await this.initSampleData();
     this.initSampleMarketingTasks();
     this.initSampleOperationTasks();
     this.initSampleOnelinkFields();
     this.initSampleVendors();
     this.initSampleUserGroups();
+    
+    console.log('示例數據初始化完成');
   }
 
-  private initSampleData() {
+  private async initSampleData() {
+    // 為示例用戶創建加密密碼
+    const hashedPassword = await bcrypt.hash("password123", 10);
+    
     // Create a sample user with new fields
     const user: User = {
       id: this.userId++,
       username: "demouser",
-      password: "password123",
+      password: hashedPassword, // 使用加密密碼
       displayName: "示範用戶",
       email: "demo@example.com",
       role: UserRole.ADMIN,
@@ -583,10 +595,13 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    // 在真實環境中，應該使用 bcrypt 來比較密碼
-    // 例如: return await bcrypt.compare(password, user.password);
-    // 這裡簡單地直接比較密碼
-    return user.password === password;
+    // 使用 bcrypt 來比較密碼
+    try {
+      return await bcrypt.compare(password, user.password);
+    } catch (error) {
+      console.error('密碼比較錯誤:', error);
+      return false;
+    }
   }
   
   async getUserById(id: number): Promise<User | undefined> {
