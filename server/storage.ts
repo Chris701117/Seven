@@ -259,9 +259,9 @@ export class MemStorage implements IStorage {
       isEmailVerified: true, 
       emailVerificationCode: null,
       emailVerificationExpires: null,
-      isTwoFactorEnabled: false,
-      twoFactorSecret: null,
-      twoFactorQrCode: null, // 添加缺少的二步驗證QR碼字段
+      isTwoFactorEnabled: true, // 啟用二步驗證
+      twoFactorSecret: "JBSWY3DPEHPK3PXP", // 固定的測試密鑰
+      twoFactorQrCode: "data:image/png;base64,testing-qr-code", // 固定的測試QR碼
       passwordResetToken: null,
       passwordResetExpires: null,
       lastLoginAt: new Date(),
@@ -1101,6 +1101,7 @@ export class MemStorage implements IStorage {
       return false;
     }
     
+    console.log(`正在軟刪除貼文 ID=${id}`);
     const updatedPost = { 
       ...post, 
       isDeleted: true,
@@ -1108,6 +1109,11 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
+    console.log(`貼文軟刪除結果:`, { 
+      id: updatedPost.id, 
+      isDeleted: updatedPost.isDeleted, 
+      deletedAt: updatedPost.deletedAt 
+    });
     return true;
   }
 
@@ -1132,12 +1138,16 @@ export class MemStorage implements IStorage {
   }
 
   async getDeletedPosts(pageId: string): Promise<Post[]> {
-    return Array.from(this.posts.values())
+    console.log(`獲取已刪除貼文: 頁面ID=${pageId}`);
+    const deletedPosts = Array.from(this.posts.values())
       .filter((post) => post.pageId === pageId && post.isDeleted)
       .sort((a, b) => {
         // 按刪除時間排序，最近刪除的放在前面
         return (b.deletedAt?.getTime() || 0) - (a.deletedAt?.getTime() || 0);
       });
+    
+    console.log(`找到 ${deletedPosts.length} 個已刪除貼文`);
+    return deletedPosts;
   }
 
   async permanentlyDeletePost(id: number): Promise<boolean> {

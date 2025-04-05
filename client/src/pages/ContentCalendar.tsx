@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   Calendar as CalendarIcon,
   List,
-  BarChart4
+  BarChart4,
+  Plus
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -262,6 +263,25 @@ const ContentCalendar = () => {
   
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-2">
+        <h2 className="text-2xl font-bold tracking-tight">內容日曆</h2>
+        
+        {/* 新增貼文按鈕 - 只有當用戶選擇了頁面時才顯示 */}
+        {activePage && (
+          <Button
+            onClick={() => {
+              setSelectedEvent(null);
+              setSelectedDate(new Date());
+              setIsCreateModalOpen(true);
+            }}
+            className="flex items-center gap-1 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            新增貼文
+          </Button>
+        )}
+      </div>
+      
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
           <Tabs defaultValue={calendarView} onValueChange={(value) => setCalendarView(value as "month" | "list" | "gantt")}>
