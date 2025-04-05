@@ -207,10 +207,10 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-medium text-center">
+          <CardTitle className="text-2xl font-normal text-center">
             {requireTwoFactorSetup ? '設置二步驗證' : (requireTwoFactor ? '二步驗證' : '歡迎回來')}
           </CardTitle>
-          <CardDescription className="text-center text-base">
+          <CardDescription className="text-center text-gray-500">
             {requireTwoFactorSetup ? 
               '請使用Google Authenticator掃描下方QR碼並輸入驗證碼' : 
               (requireTwoFactor ? 
@@ -222,22 +222,27 @@ export default function Login() {
           {requireTwoFactorSetup ? (
             // 設置二步驗證
             <div className="space-y-4">
-              <Alert className="bg-amber-50 border-amber-400">
-                <Shield className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">必須啟用二步驗證</AlertTitle>
-                <AlertDescription className="text-amber-700">
+              {/* 簡潔風格提醒 */}
+              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-amber-600" />
+                  <p className="font-medium text-amber-800">必須啟用二步驗證</p>
+                </div>
+                <p className="text-amber-700 text-sm mt-2">
                   為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
               
-              {/* 測試環境提示 */}
-              <Alert className="bg-green-50 border-green-200">
-                <Shield className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">測試環境提示</AlertTitle>
-                <AlertDescription className="text-green-700">
+              {/* 測試環境提示 - 簡潔風格 */}
+              <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-green-600" />
+                  <p className="font-medium text-green-800">測試環境提示</p>
+                </div>
+                <p className="text-green-700 text-sm mt-2">
                   在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
-                </AlertDescription>
-              </Alert>
+                </p>
+              </div>
               
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -294,11 +299,11 @@ export default function Login() {
                       )}
                     />
                     
-                    <div className="flex justify-between space-x-2">
-                      <Button type="button" variant="outline" onClick={handleGoBack} disabled={isLoading}>
+                    <div className="flex justify-between space-x-2 mt-3">
+                      <Button type="button" variant="outline" className="px-4 py-1" onClick={handleGoBack} disabled={isLoading}>
                         返回
                       </Button>
-                      <Button type="submit" className="flex-1" disabled={isLoading}>
+                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -358,8 +363,8 @@ export default function Login() {
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
                 {/* 原始引導提示 - 修改為圖片中的樣式 */}
-                {/* 完全匹配圖片中的樣式 */}
-                <div className="p-4 mb-4 bg-blue-50 border border-blue-200 rounded-md">
+                {/* 完全匹配圖片中的簡潔樣式 */}
+                <div className="p-4 mb-4 bg-blue-50 border border-blue-100 rounded-md">
                   <div className="flex items-center gap-2">
                     <QrCode className="h-5 w-5 text-blue-600" />
                     <p className="font-medium text-blue-800">二步驗證</p>
@@ -369,14 +374,16 @@ export default function Login() {
                   </p>
                 </div>
                 
-                {/* 測試環境提示 */}
-                <Alert className="bg-green-50 border-green-200">
-                  <Shield className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">測試環境提示</AlertTitle>
-                  <AlertDescription className="text-green-700">
+                {/* 測試環境提示 - 簡潔風格 */}
+                <div className="p-4 mb-4 bg-green-50 border border-green-100 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-green-600" />
+                    <p className="font-medium text-green-800">測試環境提示</p>
+                  </div>
+                  <p className="text-green-700 text-sm mt-2">
                     在測試環境中，您可以輸入任何6位數驗證碼（如：123456）來完成驗證。
-                  </AlertDescription>
-                </Alert>
+                  </p>
+                </div>
 
                 <FormField
                   control={twoFactorForm.control}
