@@ -124,19 +124,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuration routes - Facebook 配置
   app.get("/api/config/facebook", (req, res) => {
     const appId = process.env.FACEBOOK_APP_ID || "";
+    const hasAppSecret = !!process.env.FACEBOOK_APP_SECRET;
+    const domain = req.get('host') || '';
+    const environment = process.env.NODE_ENV || 'development';
     
     // 檢查 App ID 是否存在
     if (!appId) {
       console.warn("警告: FACEBOOK_APP_ID 環境變量未設置");
     }
     
-    // 返回 App ID 和環境信息，幫助調試
-    res.json({ 
-      appId, 
-      domain: req.get('host'), 
-      environment: process.env.NODE_ENV || 'development',
-      hasAppSecret: !!process.env.FACEBOOK_APP_SECRET
+    // 檢查 App Secret 是否存在
+    if (!hasAppSecret) {
+      console.warn("警告: FACEBOOK_APP_SECRET 環境變量未設置");
+    }
+    
+    // 檢查並輸出設置的環境變數
+    console.log("Facebook 配置: ", {
+      appId,
+      hasAppSecret,
+      domain,
+      environment
     });
+    
+    // 返回完整的配置信息
+    const response = { 
+      appId, 
+      domain, 
+      environment,
+      hasAppSecret
+    };
+    
+    console.log("返回的Facebook配置內容:", response);
+    res.status(200).json(response);
   });
 
   // Authentication routes
