@@ -262,8 +262,7 @@ const ContentCalendar = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">內容日曆</h2>
+      <div className="flex items-center justify-end">
         <div className="flex items-center space-x-2">
           <Tabs defaultValue={calendarView} onValueChange={(value) => setCalendarView(value as "month" | "list" | "gantt")}>
             <TabsList>
@@ -281,19 +280,6 @@ const ContentCalendar = () => {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={() => {
-            // 清空所有選中的狀態
-            console.log("選中的貼文變更:", null);
-            setSelectedEvent(null);
-            setSelectedDate(null);
-            
-            // 短暫延遲確保狀態已更新
-            setTimeout(() => {
-              setIsCreateModalOpen(true);
-            }, 100);
-          }}>
-            安排貼文
-          </Button>
         </div>
       </div>
       
@@ -435,18 +421,18 @@ const ContentCalendar = () => {
                 {filteredPosts
                   .sort((a, b) => {
                     // 針對不同狀態的貼文使用適當的日期字段
-                    const getDateForSort = (post: Post): string => {
-                      if (post.status === 'published' && post.publishedTime) return post.publishedTime;
-                      if (post.status === 'scheduled' && post.scheduledTime) return post.scheduledTime;
-                      return post.createdAt || '';
+                    const getDateForSort = (post: Post): Date | null => {
+                      if (post.status === 'published' && post.publishedTime) return new Date(post.publishedTime);
+                      if (post.status === 'scheduled' && post.scheduledTime) return new Date(post.scheduledTime);
+                      return post.createdAt ? new Date(post.createdAt) : null;
                     };
                     
                     const dateA = getDateForSort(a);
                     const dateB = getDateForSort(b);
                     
                     // 確保日期值有效
-                    const timeA = dateA ? new Date(dateA).getTime() : 0;
-                    const timeB = dateB ? new Date(dateB).getTime() : 0;
+                    const timeA = dateA ? dateA.getTime() : 0;
+                    const timeB = dateB ? dateB.getTime() : 0;
                     
                     return timeA - timeB; // 升序排序，優先顯示即將到來的貼文
                   })
