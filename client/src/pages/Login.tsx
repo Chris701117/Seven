@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -16,7 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, QrCode, KeyRound, Shield } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // 定義登入表單的結構
 const formSchema = z.object({
@@ -35,11 +36,21 @@ const twoFactorSchema = z.object({
   }).max(6),
 });
 
+// 定義設置二步驗證表單的結構
+const setupTwoFactorSchema = z.object({
+  code: z.string().min(6, {
+    message: '驗證碼應為6位數字',
+  }).max(6),
+});
+
 export default function Login() {
   const [_, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
+  const [requireTwoFactorSetup, setRequireTwoFactorSetup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
   const { toast } = useToast();
 
   // 初始化登入表單
@@ -59,6 +70,14 @@ export default function Login() {
     },
   });
 
+  // 初始化設置二步驗證表單
+  const setupTwoFactorForm = useForm<z.infer<typeof setupTwoFactorSchema>>({
+    resolver: zodResolver(setupTwoFactorSchema),
+    defaultValues: {
+      code: '',
+    },
+  });
+
   // 登入表單提交處理
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -67,8 +86,19 @@ export default function Login() {
       const response = await apiRequest('POST', '/api/auth/login', values);
       const data = await response.json();
       
-      // 如果需要二步驗證
-      if (data.requireTwoFactor) {
+      // 如果需要設置二步驗證
+      if (data.requireTwoFactorSetup) {
+        setRequireTwoFactorSetup(true);
+        setUserId(data.userId);
+        setQrCode(data.qrCode);
+        setSecret(data.secret);
+        toast({
+          title: '需要設置二步驗證',
+          description: '首次登入需要設置Google Authenticator，請掃描QR碼',
+        });
+      }
+      // 如果需要二步驗證驗證
+      else if (data.requireTwoFactor) {
         setRequireTwoFactor(true);
         setUserId(data.userId);
         toast({
@@ -130,29 +160,149 @@ export default function Login() {
     }
   }
 
+  // 設置二步驗證表單提交處理
+  async function onSubmitSetupTwoFactor(values: z.infer<typeof setupTwoFactorSchema>) {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    try {
+      // 使用首次登入的二步驗證設置 API
+      const response = await apiRequest('POST', '/api/auth/setup-2fa', {
+        userId,
+        code: values.code
+      });
+      
+      // 設置和登入成功
+      toast({
+        title: '設置成功',
+        description: '二步驗證已成功設置並驗證！',
+        variant: 'default'
+      });
+      
+      // 重定向到首頁
+      setLocation('/');
+    } catch (error) {
+      // 設置失敗
+      toast({
+        variant: 'destructive',
+        title: '設置失敗',
+        description: '驗證碼不正確，請重新嘗試',
+      });
+      console.error('二步驗證設置錯誤:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   // 返回登入頁
   const handleGoBack = () => {
     setRequireTwoFactor(false);
+    setRequireTwoFactorSetup(false);
     setUserId(null);
+    setQrCode(null);
+    setSecret(null);
   };
-
-  // 邀請制系統不再提供註冊功能
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-100 to-purple-100">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            歡迎回來
+            {requireTwoFactorSetup ? '設置二步驗證' : (requireTwoFactor ? '二步驗證' : '歡迎回來')}
           </CardTitle>
           <CardDescription className="text-center">
-            {requireTwoFactor ? 
-              '請輸入Google Authenticator中的驗證碼' : 
-              '請輸入您的帳號密碼登入系統'}
+            {requireTwoFactorSetup ? 
+              '請使用Google Authenticator掃描下方QR碼並輸入驗證碼' : 
+              (requireTwoFactor ? 
+                '請輸入Google Authenticator中的驗證碼' : 
+                '請輸入您的帳號密碼登入系統')}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!requireTwoFactor ? (
+          {requireTwoFactorSetup ? (
+            // 設置二步驗證
+            <div className="space-y-4">
+              <Alert className="bg-amber-50 border-amber-400">
+                <Shield className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">必須啟用二步驗證</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-center font-semibold">第1步：下載 Google Authenticator 應用</h3>
+                  <div className="flex justify-center gap-4">
+                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener" className="text-sm text-blue-600 hover:underline">
+                      Android下載
+                    </a>
+                    <a href="https://apps.apple.com/us/app/google-authenticator/id388497605" target="_blank" rel="noopener" className="text-sm text-blue-600 hover:underline">
+                      iOS下載
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-center font-semibold">第2步：掃描QR碼</h3>
+                  {qrCode && (
+                    <div className="flex justify-center">
+                      <div className="border p-2 bg-white">
+                        <img src={qrCode} alt="二步驗證QR碼" className="w-48 h-48" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {secret && (
+                  <div className="text-center space-y-1">
+                    <p className="text-xs text-slate-500">如無法掃描，請手動輸入以下密鑰：</p>
+                    <div className="bg-slate-100 rounded p-2 font-mono text-xs text-slate-800 tracking-wider">
+                      {secret}
+                    </div>
+                  </div>
+                )}
+                
+                <Form {...setupTwoFactorForm}>
+                  <form onSubmit={setupTwoFactorForm.handleSubmit(onSubmitSetupTwoFactor)} className="space-y-4">
+                    <FormField
+                      control={setupTwoFactorForm.control}
+                      name="code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>第3步：輸入驗證碼</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="請輸入應用中顯示的6位數驗證碼" 
+                              maxLength={6} 
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="flex justify-between space-x-2">
+                      <Button type="button" variant="outline" onClick={handleGoBack} disabled={isLoading}>
+                        返回
+                      </Button>
+                      <Button type="submit" className="flex-1" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            驗證中...
+                          </>
+                        ) : '驗證並完成設置'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </div>
+            </div>
+          ) : !requireTwoFactor ? (
             // 第一步：用戶名和密碼登入
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -198,6 +348,14 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <QrCode className="h-4 w-4 text-blue-600" />
+                  <AlertTitle className="text-blue-800">二步驗證</AlertTitle>
+                  <AlertDescription className="text-blue-700">
+                    請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                  </AlertDescription>
+                </Alert>
+
                 <FormField
                   control={twoFactorForm.control}
                   name="code"
@@ -210,6 +368,7 @@ export default function Login() {
                           maxLength={6} 
                           inputMode="numeric"
                           pattern="[0-9]*"
+                          autoComplete="one-time-code"
                           {...field} 
                         />
                       </FormControl>
