@@ -45,84 +45,82 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// 定義權限類別 (按新的分類重組)
+// 定義權限類別 (嚴格按照指定的分類和項目)
 const permissionCategories = {
   POST_MANAGEMENT: {
     title: "貼文管理",
     permissions: [
-      { id: Permission.CREATE_POST, name: "創建貼文" },
+      { id: Permission.VIEW_POSTS, name: "查看貼文管理" },
+      { id: Permission.CREATE_POST, name: "新增貼文" },
       { id: Permission.EDIT_POST, name: "編輯貼文" },
       { id: Permission.DELETE_POST, name: "刪除貼文" },
       { id: Permission.PUBLISH_POST, name: "發布貼文" },
-      { id: Permission.VIEW_POSTS, name: "查看貼文" },
     ]
   },
   CONTENT_CALENDAR: {
     title: "內容日曆",
     permissions: [
-      // 貼文和粉絲頁管理相關的權限
-      { id: Permission.MANAGE_PAGES, name: "管理粉絲頁" },
-      { id: Permission.CREATE_PAGE, name: "創建粉絲頁" },
-      { id: Permission.EDIT_PAGE, name: "編輯粉絲頁" },
-      { id: Permission.DELETE_PAGE, name: "刪除粉絲頁" },
-      { id: Permission.VIEW_PAGES, name: "查看粉絲頁" },
+      { id: Permission.VIEW_PAGES, name: "查看內容日曆" },
+      { id: Permission.CREATE_POST, name: "新增貼文" },
+      { id: Permission.EDIT_POST, name: "編輯貼文" },
+      { id: Permission.PUBLISH_POST, name: "發布貼文" },
     ]
   },
   ANALYTICS: {
     title: "數據分析",
     permissions: [
-      { id: Permission.VIEW_ANALYTICS, name: "查看分析數據" },
-      { id: Permission.EXPORT_DATA, name: "導出數據" },
+      { id: Permission.VIEW_ANALYTICS, name: "查看數據分析" },
+      { id: Permission.MANAGE_PAGES, name: "連接Facebook" },
+      { id: Permission.EXPORT_DATA, name: "匯出數據" },
+      { id: Permission.VIEW_ANALYTICS, name: "同步數據" }, // 目前使用VIEW_ANALYTICS權限代替
     ]
   },
   MARKETING_MANAGEMENT: {
     title: "行銷管理",
     permissions: [
-      { id: Permission.MANAGE_MARKETING, name: "管理行銷" },
-      { id: Permission.CREATE_MARKETING_TASK, name: "創建行銷任務" },
+      { id: Permission.VIEW_MARKETING_TASKS, name: "查看行銷管理" },
+      { id: Permission.CREATE_MARKETING_TASK, name: "新增行銷任務" },
       { id: Permission.EDIT_MARKETING_TASK, name: "編輯行銷任務" },
       { id: Permission.DELETE_MARKETING_TASK, name: "刪除行銷任務" },
-      { id: Permission.VIEW_MARKETING_TASKS, name: "查看行銷任務" },
     ]
   },
   OPERATION_MANAGEMENT: {
     title: "營運管理",
     permissions: [
-      { id: Permission.MANAGE_OPERATIONS, name: "管理營運" },
-      { id: Permission.CREATE_OPERATION_TASK, name: "創建營運任務" },
+      { id: Permission.VIEW_OPERATION_TASKS, name: "查看營運管理" },
+      { id: Permission.CREATE_OPERATION_TASK, name: "新增營運任務" },
       { id: Permission.EDIT_OPERATION_TASK, name: "編輯營運任務" },
       { id: Permission.DELETE_OPERATION_TASK, name: "刪除營運任務" },
-      { id: Permission.VIEW_OPERATION_TASKS, name: "查看營運任務" },
     ]
   },
   ONELINK_MANAGEMENT: {
     title: "Onelink管理",
     permissions: [
-      { id: Permission.MANAGE_ONELINK, name: "管理Onelink" },
-      { id: Permission.VIEW_ONELINK, name: "查看Onelink" },
+      { id: Permission.VIEW_ONELINK, name: "查看Onelink管理" },
+      { id: Permission.MANAGE_ONELINK, name: "生成單個Onelink URL" },
+      { id: Permission.MANAGE_ONELINK, name: "批量生成URL" },
+      { id: Permission.CREATE_PAGE, name: "新增Onelink參數設定" }, // 目前使用CREATE_PAGE權限代替
+      { id: Permission.EDIT_PAGE, name: "編輯Onelink參數設定" }, // 目前使用EDIT_PAGE權限代替
+      { id: Permission.DELETE_PAGE, name: "刪除Onelink參數設定" }, // 目前使用DELETE_PAGE權限代替
     ]
   },
   RECYCLE_BIN: {
     title: "還原區",
     permissions: [
-      // 還原區相關權限，目前使用既有的貼文和內容管理權限
-      { id: Permission.DELETE_POST, name: "刪除貼文權限" },
-      { id: Permission.EDIT_POST, name: "編輯貼文權限" },
+      { id: Permission.VIEW_POSTS, name: "查看還原區" },
+      { id: Permission.EDIT_POST, name: "還原貼文" },
+      { id: Permission.DELETE_POST, name: "永久刪除" },
     ]
   },
   SETTINGS: {
     title: "設定",
     permissions: [
-      // 包含用戶、群組管理和系統設定
-      { id: Permission.MANAGE_SETTINGS, name: "管理設定" },
-      { id: Permission.VIEW_SETTINGS, name: "查看設定" },
-      { id: Permission.MANAGE_USERS, name: "管理用戶" },
-      { id: Permission.CREATE_USER, name: "創建用戶" },
-      { id: Permission.EDIT_USER, name: "編輯用戶" },
-      { id: Permission.DELETE_USER, name: "刪除用戶" },
-      { id: Permission.VIEW_USERS, name: "查看用戶" },
-      { id: Permission.MANAGE_USER_GROUPS, name: "管理用戶群組" },
-      { id: Permission.VIEW_USER_GROUPS, name: "查看用戶群組" },
+      // 帳戶：此權限每個帳號都有，無須另外提供設定
+      { id: Permission.MANAGE_SETTINGS, name: "連接" },
+      { id: Permission.VIEW_PAGES, name: "粉絲專頁" },
+      { id: Permission.VIEW_USERS, name: "用戶管理" },
+      { id: Permission.VIEW_USER_GROUPS, name: "用戶群組" },
+      // 通知：此權限每個帳號都有，無須另外提供設定
     ]
   }
 };
