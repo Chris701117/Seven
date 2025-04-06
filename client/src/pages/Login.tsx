@@ -49,7 +49,7 @@ export default function Login() {
   const [requireTwoFactorSetup, setRequireTwoFactorSetup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   // 使用示例QR碼和密鑰以便於開發和測試
-  const [qrCode, setQrCode] = useState<string>("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
+  const [qrCode, setQrCode] = useState<string>("https://api.qrserver.com/v1/create-qr-code/?data=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager&size=200x200");
   const [secret, setSecret] = useState<string>("AIDTYEQEGEECI7ZZ");
   const [twoFactorError, setTwoFactorError] = useState<boolean>(false);
   const { toast } = useToast();
@@ -208,7 +208,7 @@ export default function Login() {
     setRequireTwoFactorSetup(false);
     setUserId(null);
     // 重設為默認值而不是 null
-    setQrCode("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
+    setQrCode("https://api.qrserver.com/v1/create-qr-code/?data=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager&size=200x200");
     setSecret("AIDTYEQEGEECI7ZZ");
   };
 
