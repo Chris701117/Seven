@@ -397,44 +397,52 @@ export default function Login() {
               </form>
             </Form>
           ) : (
-            <div>
-              {/* 第一個區塊 */}
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-medium">二步驗證</h2>
-                <p className="text-gray-500">
+            <div className="text-center">
+              {/* 嚴格按照圖片實現 - 第一行標題 */}
+              <div className="mb-4">
+                <h2 className="text-xl font-normal">二步驗證</h2>
+                <p className="text-gray-500 mt-1">
                   請輸入Google Authenticator中的驗證碼
                 </p>
               </div>
               
-              {/* 第二個區塊 */}
-              <div className="text-center mb-4">
-                <h2 className="text-xl font-medium">二步驗證</h2>
-                <p className="text-gray-500">
+              {/* 嚴格按照圖片實現 - 第二行標題 */}
+              <div className="mb-4">
+                <h2 className="text-xl font-normal">二步驗證</h2>
+                <p className="text-gray-500 mt-1">
                   請輸入Google Authenticator中的驗證碼
                 </p>
               </div>
               
-              {/* 紅框區域 - 確保完全按照參考圖片 */}
+              {/* 嚴格按照圖片實現 - 第三行標題（其實仍在紅框區域外部） */}
+              <div className="mb-4">
+                <h2 className="text-xl font-normal">二步驗證</h2>
+                <p className="text-gray-500 mt-1">
+                  請輸入Google Authenticator中的驗證碼
+                </p>
+              </div>
+              
+              {/* 紅框區域 - 完全按照參考圖片 */}
               <div className="border border-red-500 rounded-md p-4 mb-4">
-                {/* 第一個標題區塊 */}
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-medium">二步驗證</h2>
-                  <p className="text-gray-500">
+                {/* 第一行標題 */}
+                <div className="mb-4">
+                  <h2 className="text-xl font-normal">二步驗證</h2>
+                  <p className="text-gray-500 mt-1">
                     請輸入Google Authenticator中的驗證碼
                   </p>
                 </div>
                 
-                {/* 第二個標題區塊 */}
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-medium">二步驗證</h2>
-                  <p className="text-gray-500">
+                {/* 第二行標題 */}
+                <div className="mb-4">
+                  <h2 className="text-xl font-normal">二步驗證</h2>
+                  <p className="text-gray-500 mt-1">
                     請輸入Google Authenticator中的驗證碼
                   </p>
                 </div>
                 
                 {/* 提示文字 */}
-                <div className="text-center mb-6">
-                  <p className="text-gray-500">
+                <div className="mb-6">
+                  <p className="text-gray-500 text-center">
                     請打開Google Authenticator應用並輸入顯示的6位數驗證碼
                   </p>
                 </div>
@@ -460,8 +468,8 @@ export default function Login() {
                 </div>
               </div>
               
-              {/* 在紅框下方顯示「需要驗證」提示 */}
-              <div className="text-right text-sm text-gray-600 mb-2">
+              {/* 需要驗證文字 - 嚴格按照圖片位置 */}
+              <div className="text-right text-gray-600 mb-2">
                 需要驗證
               </div>
               
