@@ -228,15 +228,15 @@ export default function Login() {
         <CardContent>
           {requireTwoFactorSetup ? (
             <div className="space-y-4 max-w-md mx-auto">
-              {/* 標題 - 紅框上方 */}
-              <div className="text-center border-b border-red-500 pb-2 mb-4">
-                <h2 className="text-xl font-semibold">設置二步驗證</h2>
-                <p className="text-gray-500 text-sm">
-                  使用Google Authenticator掃描下方QR碼並輸入驗證碼
+              {/* 標題 - 紅框區域 */}
+              <div className="border border-red-500 rounded-md p-3 mb-4">
+                <h2 className="text-xl font-semibold text-center">設置二步驗證</h2>
+                <p className="text-gray-500 text-sm text-center mt-1">
+                  透過使用Google Authenticator掃描下方QR碼來增強您的帳號安全性
                 </p>
               </div>
 
-              {/* 黃色警告提示 */}
+              {/* 黃色警告提示區塊 */}
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mt-0.5">
@@ -246,7 +246,7 @@ export default function Login() {
                   </div>
                   <div className="ml-2">
                     <p className="text-sm text-amber-800">
-                      必須啟用二步驗證，不啟用的話將無法使用本系統的功能。
+                      必須啟用二步驗證，為確保您帳號安全，未啟用的使用者將無法使用本系統。
                     </p>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ export default function Login() {
                 {qrCode && (
                   <div className="flex justify-center">
                     <div className="border border-gray-200 p-1">
-                      <img src={qrCode} alt="二步驗證QR碼" className="w-40 h-40" />
+                      <img src={qrCode} alt="二步驗證QR碼" className="w-48 h-48" />
                     </div>
                   </div>
                 )}
@@ -309,11 +309,11 @@ export default function Login() {
                         <FormItem>
                           <FormControl>
                             <Input 
-                              placeholder="請輸入6位數驗證碼" 
+                              placeholder="213755" 
                               maxLength={6} 
                               inputMode="numeric"
                               pattern="[0-9]*"
-                              className="text-center text-lg py-3 max-w-xs mx-auto"
+                              className="text-center h-12 text-lg py-3 max-w-xs mx-auto border-gray-300"
                               {...field} 
                             />
                           </FormControl>
@@ -338,10 +338,14 @@ export default function Login() {
                     )}
                     
                     <div className="flex justify-between space-x-2 mt-4">
-                      <Button type="button" variant="outline" className="px-4 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
+                      <Button type="button" variant="outline" className="h-12 px-8 border-gray-300 rounded-md" onClick={handleGoBack} disabled={isLoading}>
                         返回
                       </Button>
-                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
+                      <Button 
+                        type="submit" 
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 h-12 rounded-md" 
+                        disabled={isLoading}
+                      >
                         {isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
