@@ -49,8 +49,8 @@ export default function Login() {
   const [requireTwoFactorSetup, setRequireTwoFactorSetup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   // 使用示例QR碼和密鑰以便於開發和測試
-  const [qrCode, setQrCode] = useState<string | null>("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
-  const [secret, setSecret] = useState<string | null>("AIDTYEQEGEECI7ZZ");
+  const [qrCode, setQrCode] = useState<string>("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
+  const [secret, setSecret] = useState<string>("AIDTYEQEGEECI7ZZ");
   const [twoFactorError, setTwoFactorError] = useState<boolean>(false);
   const { toast } = useToast();
 
@@ -207,8 +207,9 @@ export default function Login() {
     setRequireTwoFactor(false);
     setRequireTwoFactorSetup(false);
     setUserId(null);
-    setQrCode(null);
-    setSecret(null);
+    // 重設為默認值而不是 null
+    setQrCode("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
+    setSecret("AIDTYEQEGEECI7ZZ");
   };
 
   return (
@@ -403,14 +404,6 @@ export default function Login() {
             </Form>
           ) : (
             <div className="space-y-6">
-              {/* 頁面標題 */}
-              <div className="text-center mb-2">
-                <h2 className="text-2xl font-normal">二步驗證</h2>
-                <p className="text-gray-500 mt-1">
-                  請輸入Google Authenticator中的驗證碼
-                </p>
-              </div>
-              
               {/* 黃色警告提示區塊 */}
               <div className="bg-yellow-50 py-4 px-5">
                 <div className="flex">
