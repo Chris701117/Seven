@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -700,25 +701,25 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         e.preventDefault();
       }}>
         <DialogHeader className="p-4 border-b">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              {post ? "編輯貼文" : "建立新貼文"}
-            </DialogTitle>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 p-0 rounded-full"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">關閉</span>
-            </Button>
-          </div>
+          <DialogTitle className="text-xl font-bold">
+            {post ? "編輯貼文" : "建立新貼文"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
             {post ? "在此編輯您的貼文內容。點擊取消或提交按鈕關閉視窗。" : "在此創建您的新貼文。點擊取消或提交按鈕關閉視窗。"}
           </DialogDescription>
         </DialogHeader>
+        <DialogClose asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">關閉</span>
+          </Button>
+        </DialogClose>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 flex flex-col">
