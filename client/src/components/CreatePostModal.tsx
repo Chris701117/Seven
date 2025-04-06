@@ -687,14 +687,24 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] p-0 overflow-auto max-h-[90vh]">
+    <Dialog open={isOpen} onOpenChange={(openState) => {
+      // 只有當用戶點擊取消或提交後，才會關閉對話框
+      // 點擊對話框外部不會自動關閉
+      if (openState === false) {
+        // 不自動關閉
+        return;
+      }
+    }}>
+      <DialogContent className="sm:max-w-[800px] p-0 overflow-auto max-h-[90vh]" onInteractOutside={(e) => {
+        // 防止點擊外部關閉對話框
+        e.preventDefault();
+      }}>
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-xl font-bold text-center">
             {post ? "編輯貼文" : "建立新貼文"}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            {post ? "在此編輯您的貼文內容" : "在此創建您的新貼文"}
+            {post ? "在此編輯您的貼文內容。點擊取消或提交按鈕關閉視窗。" : "在此創建您的新貼文。點擊取消或提交按鈕關閉視窗。"}
           </DialogDescription>
         </DialogHeader>
           

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -200,14 +200,24 @@ export default function OperationTaskModal({ open, onClose, task }: OperationTas
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(openState) => {
+      // 只有當用戶點擊取消或提交後，才會關閉對話框
+      // 點擊對話框外部不會自動關閉
+      if (openState === false) {
+        // 不自動關閉
+        return;
+      }
+    }}>
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => {
+        // 防止點擊外部關閉對話框
+        e.preventDefault();
+      }}>
         <DialogHeader>
           <DialogTitle>{isEditMode ? '編輯營運任務' : '創建營運任務'}</DialogTitle>
           <DialogDescription>
             {isEditMode 
-              ? '更新任務的詳細信息並保存您的更改。' 
-              : '填寫以下表格以創建一個新的營運任務。'}
+              ? '更新任務的詳細信息並保存您的更改。點擊取消或提交按鈕關閉視窗。' 
+              : '填寫以下表格以創建一個新的營運任務。點擊取消或提交按鈕關閉視窗。'}
           </DialogDescription>
         </DialogHeader>
 

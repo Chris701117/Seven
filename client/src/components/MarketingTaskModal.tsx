@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { X, Calendar } from "lucide-react";
 
 // UI components
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -147,14 +147,24 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
   }
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(openState) => {
+      // 只有當用戶點擊取消或提交後，才會關閉對話框
+      // 點擊對話框外部不會自動關閉
+      if (openState === false) {
+        // 不自動關閉
+        return;
+      }
+    }}>
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => {
+        // 防止點擊外部關閉對話框
+        e.preventDefault();
+      }}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "編輯行銷任務" : "新增行銷任務"}</DialogTitle>
           <DialogDescription>
             {isEditing 
-              ? '更新任務的詳細信息並保存您的更改。' 
-              : '填寫以下表格以創建一個新的行銷任務。'}
+              ? '更新任務的詳細信息並保存您的更改。點擊取消或提交按鈕關閉視窗。' 
+              : '填寫以下表格以創建一個新的行銷任務。點擊取消或提交按鈕關閉視窗。'}
           </DialogDescription>
         </DialogHeader>
 
