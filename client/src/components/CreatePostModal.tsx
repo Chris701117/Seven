@@ -700,9 +700,21 @@ const CreatePostModal = ({ isOpen, onClose, post }: CreatePostModalProps) => {
         e.preventDefault();
       }}>
         <DialogHeader className="p-4 border-b">
-          <DialogTitle className="text-xl font-bold text-center">
-            {post ? "編輯貼文" : "建立新貼文"}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold">
+              {post ? "編輯貼文" : "建立新貼文"}
+            </DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 p-0 rounded-full"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">關閉</span>
+            </Button>
+          </div>
           <DialogDescription className="sr-only">
             {post ? "在此編輯您的貼文內容。點擊取消或提交按鈕關閉視窗。" : "在此創建您的新貼文。點擊取消或提交按鈕關閉視窗。"}
           </DialogDescription>

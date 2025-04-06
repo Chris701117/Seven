@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { OperationTask } from '@shared/schema';
@@ -213,7 +213,19 @@ export default function OperationTaskModal({ open, onClose, task }: OperationTas
         e.preventDefault();
       }}>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? '編輯營運任務' : '創建營運任務'}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>{isEditMode ? '編輯營運任務' : '創建營運任務'}</DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 p-0 rounded-full"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">關閉</span>
+            </Button>
+          </div>
           <DialogDescription>
             {isEditMode 
               ? '更新任務的詳細信息並保存您的更改。點擊取消或提交按鈕關閉視窗。' 

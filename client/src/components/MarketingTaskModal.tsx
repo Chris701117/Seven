@@ -160,7 +160,19 @@ export default function MarketingTaskModal({ open, onClose, task }: MarketingTas
         e.preventDefault();
       }}>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "編輯行銷任務" : "新增行銷任務"}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>{isEditing ? "編輯行銷任務" : "新增行銷任務"}</DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 p-0 rounded-full"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">關閉</span>
+            </Button>
+          </div>
           <DialogDescription>
             {isEditing 
               ? '更新任務的詳細信息並保存您的更改。點擊取消或提交按鈕關閉視窗。' 
