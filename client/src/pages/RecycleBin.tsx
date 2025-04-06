@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Post, Page } from '@shared/schema';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -65,6 +65,7 @@ const RecycleBin = () => {
   const { data: pages, isLoading: isPagesLoading } = useAllPages();
   const [searchTerm, setSearchTerm] = useState('');
   const [permanentDeletePostId, setPermanentDeletePostId] = useState<number | null>(null);
+  const [_, setLocation] = useLocation(); // 用於頁面導航
   
   // 從URL獲取頁面ID
   useEffect(() => {
@@ -139,13 +140,17 @@ const RecycleBin = () => {
 
   // 還原貼文
   const restorePostMutation = useMutation({
-    mutationFn: (postId: number) => 
-      apiRequest(`/api/posts/${postId}/restore`, { method: 'POST' }),
-    onSuccess: () => {
+    mutationFn: async (postId: number) => {
+      const response = await apiRequest(`/api/posts/${postId}/restore`, { method: 'POST' });
+      return response; // 返回響應以在onSuccess中獲取
+    },
+    onSuccess: (data) => {
+      // 顯示成功訊息
       toast({
         title: '貼文已還原',
-        description: '貼文已成功還原回貼文列表。',
+        description: '貼文已成功還原回貼文列表。即將返回貼文管理頁面。',
       });
+      
       // 重新獲取所有頁面的已刪除貼文和所有貼文
       queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
       
@@ -159,6 +164,12 @@ const RecycleBin = () => {
       
       // 刷新當前頁面
       refetchPosts();
+      
+      // 短暫延遲後導航到貼文管理頁面
+      setTimeout(() => {
+        console.log('還原成功後重定向到貼文管理頁面');
+        setLocation('/');
+      }, 1500); // 1.5秒後導航，讓用戶有時間看到成功訊息
     },
     onError: (error) => {
       toast({
