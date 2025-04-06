@@ -1850,22 +1850,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Post not found" });
       }
       
-      console.log(`找到貼文，頁面ID=${post.pageId}, 刪除狀態=${post.isDeleted}`);
+      console.log(`找到貼文，頁面ID=${post.pageId}, 刪除狀態=${post.isDeleted}, 當前狀態=${post.status}`);
+      
+      if (!post.isDeleted) {
+        console.log(`貼文未被刪除，無法還原`);
+        return res.status(400).json({ message: "這個貼文尚未被刪除" });
+      }
       
       // 查找用戶的活動頁面，用於將測試頁面的貼文轉移
       const userPages = await storage.getPages(req.session.userId);
-      let targetPageId = null;
+      console.log(`找到用戶頁面數量: ${userPages.length}`);
       
-      if (userPages && userPages.length > 0) {
+      let targetPageId = undefined;
+      
+      if (post.pageId === "page_123456" && userPages && userPages.length > 0) {
         // 優先選擇非測試頁面作為目標頁面
-        const realPage = userPages.find(p => p.pageId !== "page_123456" && p.id !== 9999);
-        if (realPage) {
-          targetPageId = realPage.pageId;
-          console.log(`找到用戶實際頁面 ${targetPageId}，將用於貼文轉移`);
+        const realPages = userPages.filter(p => p.pageId !== "page_123456" && p.id !== 9999);
+        console.log(`找到用戶的實際頁面數量: ${realPages.length}`);
+        
+        if (realPages.length > 0) {
+          targetPageId = realPages[0].pageId;
+          console.log(`自動選擇頁面 ${targetPageId} 作為目標還原頁面`);
         } else {
-          // 如果沒有找到非測試頁面，使用第一個可用頁面
-          targetPageId = userPages[0].pageId;
-          console.log(`未找到非測試頁面，使用第一個可用頁面 ${targetPageId}`);
+          targetPageId = undefined;
+          console.log(`未找到實際頁面，將使用自動選擇`);
         }
       }
       
@@ -1873,33 +1881,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (post.pageId === "page_123456") {
         console.log(`這是測試頁面的貼文，允許還原，目標頁面=${targetPageId || '自動選擇'}`);
         
-        if (!post.isDeleted) {
-          return res.status(400).json({ message: "This post is not deleted" });
+        // 使用增強的restorePost函數還原貼文
+        try {
+          const restoredPost = await storage.restorePost(postId, targetPageId);
+          console.log(`測試頁面貼文還原成功，轉移到頁面ID=${restoredPost.pageId}，狀態=${restoredPost.status}`);
+          return res.json({ 
+            success: true,
+            message: "貼文還原成功", 
+            post: restoredPost 
+          });
+        } catch (restoreError) {
+          console.error(`還原貼文過程中出錯:`, restoreError);
+          return res.status(500).json({ 
+            success: false,
+            message: `還原貼文失敗: ${restoreError.message}`
+          });
         }
-        
-        const restoredPost = await storage.restorePost(postId, targetPageId);
-        console.log(`測試頁面貼文還原成功，轉移到頁面ID=${restoredPost.pageId}`);
-        return res.json({ message: "Post restored successfully", post: restoredPost });
       }
       
       // 如果不是測試頁面，則執行標準授權檢查
       const page = await storage.getPageByPageId(post.pageId);
       if (!page || page.userId !== req.session.userId) {
         console.log(`授權檢查失敗，頁面不存在或用戶無權訪問`);
-        return res.status(403).json({ message: "Unauthorized" });
+        return res.status(403).json({ message: "未授權訪問" });
       }
       
-      if (!post.isDeleted) {
-        console.log(`貼文未被刪除，無法還原`);
-        return res.status(400).json({ message: "This post is not deleted" });
-      }
-      
+      // 使用增強的restorePost函數還原貼文
       const restoredPost = await storage.restorePost(postId);
-      console.log(`貼文ID=${postId}還原成功`);
-      res.json({ message: "Post restored successfully", post: restoredPost });
+      console.log(`貼文ID=${postId}還原成功，最終狀態=${restoredPost.status}`);
+      
+      res.json({ 
+        success: true,
+        message: "貼文還原成功", 
+        post: restoredPost 
+      });
     } catch (error) {
       console.error("還原貼文錯誤:", error);
-      res.status(500).json({ message: "還原貼文時發生錯誤" });
+      res.status(500).json({ 
+        success: false,
+        message: "還原貼文時發生錯誤", 
+        error: error.message 
+      });
     }
   });
   

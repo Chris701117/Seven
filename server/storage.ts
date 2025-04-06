@@ -1114,23 +1114,44 @@ export class MemStorage implements IStorage {
 
   // Post operations
   async getPosts(pageId: string): Promise<Post[]> {
-    return Array.from(this.posts.values())
-      .filter((post) => post.pageId === pageId && !post.isDeleted) // 排除已刪除的貼文
-      .sort((a, b) => {
-        if (a.scheduledTime && b.scheduledTime) {
-          return a.scheduledTime.getTime() - b.scheduledTime.getTime();
-        }
-        if (a.scheduledTime) return -1;
-        if (b.scheduledTime) return 1;
-        
-        if (a.publishedTime && b.publishedTime) {
-          return b.publishedTime.getTime() - a.publishedTime.getTime();
-        }
-        if (a.publishedTime) return -1;
-        if (b.publishedTime) return 1;
-        
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      });
+    console.log(`獲取頁面貼文: 頁面ID=${pageId}`);
+    
+    const allPosts = Array.from(this.posts.values());
+    console.log(`系統中總貼文數: ${allPosts.length}`);
+    
+    const filteredPosts = allPosts.filter((post) => {
+      const matchesPage = post.pageId === pageId;
+      const notDeleted = !post.isDeleted;
+      
+      if (matchesPage && notDeleted) {
+        console.log(`找到符合的貼文 ID=${post.id}, 狀態=${post.status}`);
+        return true;
+      }
+      
+      if (matchesPage && post.isDeleted) {
+        console.log(`找到已刪除的貼文 ID=${post.id}, 頁面=${post.pageId}`);
+      }
+      
+      return false;
+    });
+    
+    console.log(`找到頁面 ${pageId} 的非刪除貼文: ${filteredPosts.length}個`);
+    
+    return filteredPosts.sort((a, b) => {
+      if (a.scheduledTime && b.scheduledTime) {
+        return a.scheduledTime.getTime() - b.scheduledTime.getTime();
+      }
+      if (a.scheduledTime) return -1;
+      if (b.scheduledTime) return 1;
+      
+      if (a.publishedTime && b.publishedTime) {
+        return b.publishedTime.getTime() - a.publishedTime.getTime();
+      }
+      if (a.publishedTime) return -1;
+      if (b.publishedTime) return 1;
+      
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
   }
 
   async getPostById(id: number): Promise<Post | undefined> {
@@ -1246,32 +1267,64 @@ export class MemStorage implements IStorage {
       throw new Error(`Post with id ${id} is not deleted`);
     }
     
+    console.log(`開始還原貼文 ID=${id}, 原頁面=${post.pageId}, 目標頁面=${targetPageId || '未指定'}`);
+    
     // 如果這是測試頁面的貼文，將它關聯到實際頁面
     let pageId = post.pageId;
-    if (pageId === "page_123456" && targetPageId && targetPageId !== "page_123456") {
-      console.log(`將測試頁面貼文轉移到實際頁面 ${targetPageId}`);
-      pageId = targetPageId;
-    } else if (pageId === "page_123456") {
-      // 如果沒有指定目標頁面，使用第一個可用的實際頁面
-      const activePages = Array.from(this.pages.values())
-        .filter(p => p.pageId !== "page_123456" && p.id !== 9999);
-      
-      if (activePages.length > 0) {
-        pageId = activePages[0].pageId;
-        console.log(`自動將測試頁面貼文轉移到第一個可用頁面 ${pageId}`);
+    let needUpdatePostId = false;
+    
+    if (pageId === "page_123456") {
+      if (targetPageId && targetPageId !== "page_123456") {
+        console.log(`將測試頁面貼文轉移到指定的實際頁面 ${targetPageId}`);
+        pageId = targetPageId;
+        needUpdatePostId = true;
+      } else {
+        // 如果沒有指定目標頁面，使用第一個可用的實際頁面
+        const activePages = Array.from(this.pages.values())
+          .filter(p => p.pageId !== "page_123456" && p.id !== 9999);
+        
+        if (activePages.length > 0) {
+          pageId = activePages[0].pageId;
+          console.log(`自動將測試頁面貼文轉移到第一個可用頁面 ${pageId}`);
+          needUpdatePostId = true;
+        } else {
+          console.log(`找不到可用的實際頁面，保持在原測試頁面`);
+        }
       }
     }
+    
+    // 為還原後的貼文生成一個唯一的 postId（如果需要）
+    const postId = needUpdatePostId ? 
+      `restored_${Date.now()}_${Math.floor(Math.random() * 1000)}` : 
+      post.postId;
+    
+    // 將還原後的貼文狀態設置為"published"，以確保它可以在頁面上顯示
+    const status = post.status === "draft" ? "draft" : "published";
     
     const updatedPost = { 
       ...post, 
       pageId: pageId, // 更新頁面ID
-      isDeleted: false,
-      deletedAt: null,
+      postId: postId, // 更新或保留postId
+      status: status, // 設置狀態
+      isDeleted: false, // 取消刪除標記
+      deletedAt: null,  // 清除刪除時間
+      publishedTime: status === "published" ? new Date() : null, // 如果狀態為published，設置發布時間
       updatedAt: new Date()
     };
+    
     this.posts.set(id, updatedPost);
     
-    console.log(`貼文 ${id} 還原成功，關聯到頁面 ${pageId}`);
+    console.log(`貼文 ${id} 還原成功，關聯到頁面 ${pageId}，狀態=${status}，postId=${postId}`);
+    
+    // 打印用於調試
+    console.log(`還原後的貼文詳情:`, {
+      id: updatedPost.id,
+      pageId: updatedPost.pageId,
+      postId: updatedPost.postId,
+      status: updatedPost.status,
+      isDeleted: updatedPost.isDeleted
+    });
+    
     return updatedPost;
   }
 
@@ -1314,20 +1367,38 @@ export class MemStorage implements IStorage {
   }
 
   async getPostsByStatus(pageId: string, status: string): Promise<Post[]> {
-    return Array.from(this.posts.values())
-      .filter((post) => post.pageId === pageId && post.status === status && !post.isDeleted)
-      .sort((a, b) => {
-        if (status === "scheduled" && a.scheduledTime && b.scheduledTime) {
-          // 確保日期是Date對象
-          const timeA = a.scheduledTime instanceof Date ? a.scheduledTime : new Date(a.scheduledTime);
-          const timeB = b.scheduledTime instanceof Date ? b.scheduledTime : new Date(b.scheduledTime);
-          return timeA.getTime() - timeB.getTime();
-        }
-        // 確保createdAt也是Date對象
-        const createdAtA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const createdAtB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return createdAtB.getTime() - createdAtA.getTime();
-      });
+    console.log(`獲取頁面 ${pageId} 的 ${status} 狀態貼文`);
+    
+    const allPosts = Array.from(this.posts.values());
+    console.log(`系統中總貼文數: ${allPosts.length}`);
+    
+    const filteredPosts = allPosts.filter((post) => {
+      const matchesPage = post.pageId === pageId;
+      const matchesStatus = post.status === status;
+      const notDeleted = !post.isDeleted;
+      
+      if (matchesPage && matchesStatus && notDeleted) {
+        console.log(`找到符合的貼文 ID=${post.id}, 頁面=${post.pageId}, 狀態=${post.status}`);
+        return true;
+      }
+      
+      return false;
+    });
+    
+    console.log(`找到頁面 ${pageId} 的 ${status} 狀態貼文: ${filteredPosts.length}個`);
+    
+    return filteredPosts.sort((a, b) => {
+      if (status === "scheduled" && a.scheduledTime && b.scheduledTime) {
+        // 確保日期是Date對象
+        const timeA = a.scheduledTime instanceof Date ? a.scheduledTime : new Date(a.scheduledTime);
+        const timeB = b.scheduledTime instanceof Date ? b.scheduledTime : new Date(b.scheduledTime);
+        return timeA.getTime() - timeB.getTime();
+      }
+      // 確保createdAt也是Date對象
+      const createdAtA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+      const createdAtB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+      return createdAtB.getTime() - createdAtA.getTime();
+    });
   }
 
   async getScheduledPosts(pageId: string): Promise<Post[]> {
