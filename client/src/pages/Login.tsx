@@ -400,65 +400,73 @@ export default function Login() {
               </form>
             </Form>
           ) : (
-            // 第二步：二步驗證 - 新設計風格
+            // 第二步：二步驗證頁面 - 根據參考圖片精確實現
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                <div className="space-y-5 max-w-md mx-auto">
-                  <div className="text-center">
-                    <h2 className="text-xl font-medium mb-1">二步驗證</h2>
-                    <p className="text-gray-500 text-sm">
+                {/* 紅框區域，嚴格按照參考圖片 */}
+                <div className="border-2 border-red-500 rounded-md p-6 mb-6">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-medium">二步驗證</h2>
+                    <p className="text-gray-500 mt-1">
                       請輸入Google Authenticator中的驗證碼
                     </p>
                   </div>
                   
-                  <div className="text-center p-2">
-                    <p className="text-gray-500 text-sm mb-3">
-                      請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-medium">二步驗證</h2>
+                    <p className="text-gray-500 mt-1">
+                      請輸入Google Authenticator中的驗證碼
                     </p>
-                    
-                    <div className="flex justify-center space-x-6 mt-2">
-                      <a 
-                        href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-blue-600 hover:underline"
-                      >
-                        Android下載
-                      </a>
-                      <a 
-                        href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-blue-600 hover:underline"
-                      >
-                        iOS下載
-                      </a>
-                    </div>
                   </div>
                   
-                  <FormField
-                    control={twoFactorForm.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input 
-                            placeholder="請輸入6位數驗證碼" 
-                            maxLength={6} 
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            autoComplete="one-time-code"
-                            className="text-center text-lg py-3 max-w-xs mx-auto"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <div className="flex justify-center mt-2">
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="text-center mb-8">
+                    <p className="text-gray-500">
+                      請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-center space-x-6">
+                    <a 
+                      href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
+                      target="_blank" 
+                      rel="noopener" 
+                      className="text-blue-600 hover:underline"
+                    >
+                      Android下載
+                    </a>
+                    <a 
+                      href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
+                      target="_blank" 
+                      rel="noopener" 
+                      className="text-blue-600 hover:underline"
+                    >
+                      iOS下載
+                    </a>
+                  </div>
                 </div>
+                
+                <FormField
+                  control={twoFactorForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="請輸入6位數驗證碼" 
+                          maxLength={6} 
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          autoComplete="one-time-code"
+                          className="text-center text-lg py-3 max-w-xs mx-auto"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <div className="flex justify-center mt-2">
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 
                 {/* 驗證失敗提示 */}
                 {twoFactorError && (
