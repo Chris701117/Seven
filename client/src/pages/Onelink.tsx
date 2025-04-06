@@ -205,13 +205,21 @@ export default function OnelinkPage() {
   // 處理表單提交
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 處理自定義平台的情況
+    const submittedData = {...formData};
+    if (submittedData.platform === 'custom' && submittedData.customName) {
+      // 如果選擇了自定義平台並且有輸入名稱，則使用輸入的名稱作為平台值
+      submittedData.platform = submittedData.customName;
+    }
+    
     if (editingField) {
       updateMutation.mutate({
         id: editingField.id,
-        data: formData
+        data: submittedData
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(submittedData);
     }
   };
 
@@ -229,13 +237,30 @@ export default function OnelinkPage() {
   // 處理編輯按鈕點擊
   const handleEdit = (field: OnelinkField) => {
     setEditingField(field);
-    setFormData({
-      platform: field.platform,
-      campaignCode: field.campaignCode,
-      materialId: field.materialId,
-      groupId: field.groupId || '',
-      customName: field.customName || ''
-    });
+    
+    // 檢查此平台是否為自定義平台
+    const isCustomPlatform = !defaultPlatforms.includes(field.platform);
+    
+    // 如果是自定義平台，需要特殊處理
+    if (isCustomPlatform) {
+      setFormData({
+        platform: 'custom', // 設置為自定義平台選項
+        campaignCode: field.campaignCode,
+        materialId: field.materialId,
+        groupId: field.groupId || '',
+        customName: field.platform // 將平台名稱保存到 customName 以便顯示在輸入框中
+      });
+    } else {
+      // 如果是標準平台，正常處理
+      setFormData({
+        platform: field.platform,
+        campaignCode: field.campaignCode,
+        materialId: field.materialId,
+        groupId: field.groupId || '',
+        customName: field.customName || ''
+      });
+    }
+    
     setIsModalOpen(true);
   };
 
@@ -814,14 +839,12 @@ export default function OnelinkPage() {
                   {formData.platform === 'custom' && (
                     <Input
                       id="customPlatform"
-                      name="platform"
+                      name="customName"  // 改用 customName 字段
                       placeholder="輸入自定義平台名稱"
-                      value={formData.platform === 'custom' ? '' : formData.platform}
+                      value={formData.customName || ''}  // 使用 customName 字段
                       onChange={(e) => {
-                        // 當輸入自定義平台名稱時，直接更新 formData
-                        if (e.target.value !== 'custom') {
-                          setFormData(prev => ({ ...prev, platform: e.target.value }));
-                        }
+                        // 當輸入自定義平台名稱時，更新 customName 字段
+                        setFormData(prev => ({ ...prev, customName: e.target.value }));
                       }}
                       className="mt-2"
                       required
