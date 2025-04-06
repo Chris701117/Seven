@@ -387,19 +387,27 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                {/* 外部紅色邊框，完全符合參考圖片 */}
-                <div className="border-2 border-red-500 rounded-md p-4 mb-4">
+                {/* 外部紅色邊框區塊 */}
+                <div className="border-2 border-red-500 rounded-md p-5">
                   <h3 className="text-center font-medium text-xl">二步驗證</h3>
-                  <p className="text-center text-sm mt-1">
+                  <p className="text-center text-gray-500 text-sm mt-1">
                     請輸入Google Authenticator中的驗證碼
                   </p>
+                
+                  {/* 內部紅色邊框區塊 */}
+                  <div className="border-2 border-red-500 rounded-md p-4 mt-4">
+                    <h3 className="text-center font-medium">二步驗證</h3>
+                    <p className="text-center text-gray-500 text-sm mt-1">
+                      請輸入Google Authenticator中的驗證碼
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="text-center text-base mb-2">
+                <div className="text-center font-medium pt-2">
                   輸入驗證碼
                 </div>
                 
-                <p className="text-center text-muted-foreground text-sm mb-4">
+                <p className="text-center text-gray-500 text-sm">
                   請打開Google Authenticator應用並輸入顯示的6位數驗證碼
                 </p>
                 
@@ -415,7 +423,7 @@ export default function Login() {
                           inputMode="numeric"
                           pattern="[0-9]*"
                           autoComplete="one-time-code"
-                          className="text-center text-lg py-5 border-gray-300"
+                          className="text-center text-lg py-3 border-gray-300 rounded-md"
                           {...field} 
                         />
                       </FormControl>
@@ -440,10 +448,10 @@ export default function Login() {
                 )}
                 
                 <div className="flex justify-between space-x-2 mt-6">
-                  <Button type="button" variant="outline" className="px-8 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
+                  <Button type="button" variant="outline" className="px-8 py-2 border-gray-300 rounded-md" onClick={handleGoBack} disabled={isLoading}>
                     返回
                   </Button>
-                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
+                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-md" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
