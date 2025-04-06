@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -16,8 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
-import { Loader2, QrCode, KeyRound, Shield, XCircle, CircleAlert } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, XCircle } from 'lucide-react';
 
 // 定義登入表單的結構
 const formSchema = z.object({
@@ -83,7 +82,6 @@ export default function Login() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // 使用新的參數形式調用apiRequest，直接獲取JSON響應
       const data = await apiRequest('POST', '/api/auth/login', values);
       
       // 如果需要設置二步驗證
@@ -94,10 +92,10 @@ export default function Login() {
         setSecret(data.secret);
         toast({
           title: '需要設置二步驗證',
-          description: '首次登入需要設置Google Authenticator，請掃描QR碼',
+          description: '首次登入需要設置Google Authenticator',
         });
       }
-      // 如果需要二步驗證驗證
+      // 如果需要二步驗證
       else if (data.requireTwoFactor) {
         setRequireTwoFactor(true);
         setUserId(data.userId);
@@ -135,7 +133,6 @@ export default function Login() {
     setIsLoading(true);
     setTwoFactorError(false);
     try {
-      // 使用apiRequest直接獲取JSON響應
       await apiRequest('POST', '/api/auth/verify-2fa', {
         userId,
         code: values.code
@@ -173,7 +170,6 @@ export default function Login() {
     setIsLoading(true);
     setTwoFactorError(false);
     try {
-      // 使用首次登入的二步驗證設置 API，直接獲取JSON響應
       await apiRequest('POST', '/api/auth/setup-2fa', {
         userId,
         code: values.code
@@ -231,24 +227,24 @@ export default function Login() {
         </CardHeader>
         <CardContent>
           {requireTwoFactorSetup ? (
-            // 設置二步驗證 - 新設計，根據參考圖片
-            <div className="space-y-6 max-w-md mx-auto">
-              <div className="text-center">
-                <h2 className="text-xl font-medium mb-1">設置二步驗證</h2>
+            <div className="space-y-4 max-w-md mx-auto">
+              {/* 標題 - 紅框上方 */}
+              <div className="text-center border-b border-red-500 pb-2 mb-4">
+                <h2 className="text-xl font-semibold">設置二步驗證</h2>
                 <p className="text-gray-500 text-sm">
-                  請使用Google Authenticator掃描下方QR碼並輸入六位驗證碼
+                  使用Google Authenticator掃描下方QR碼並輸入驗證碼
                 </p>
               </div>
 
-              {/* 警告提示 */}
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+              {/* 黃色警告提示 */}
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0 mt-0.5">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <div className="ml-3">
+                  <div className="ml-2">
                     <p className="text-sm text-amber-800">
                       必須啟用二步驗證，不啟用的話將無法使用本系統的功能。
                     </p>
@@ -256,15 +252,15 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* 第1步 */}
-              <div className="text-center">
-                <p className="font-medium text-gray-700">第1步：下載 Google Authenticator 應用</p>
-                <div className="flex justify-center space-x-6 mt-2">
+              {/* 第1步 - 紅框區域 */}
+              <div className="border border-red-500 rounded-md p-3 mb-4">
+                <p className="font-medium text-gray-800 text-center mb-2">第1步：下載 Google Authenticator 應用</p>
+                <div className="flex justify-center space-x-6">
                   <a 
                     href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
                     target="_blank" 
                     rel="noopener" 
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-500 hover:underline text-sm"
                   >
                     Android下載
                   </a>
@@ -272,39 +268,40 @@ export default function Login() {
                     href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
                     target="_blank" 
                     rel="noopener" 
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-500 hover:underline text-sm"
                   >
                     iOS下載
                   </a>
                 </div>
               </div>
 
-              {/* 第2步 */}
-              <div className="text-center">
-                <p className="font-medium text-gray-700 mb-4">第2步：掃描QR碼</p>
+              {/* 第2步 - 紅框區域 */}
+              <div className="border border-red-500 rounded-md p-3 mb-4">
+                <p className="font-medium text-gray-800 text-center mb-3">第2步：掃描QR碼</p>
                 {qrCode && (
                   <div className="flex justify-center">
-                    <div className="bg-white border border-gray-200 rounded-md p-2 inline-block">
+                    <div className="border border-gray-200 p-1">
                       <img src={qrCode} alt="二步驗證QR碼" className="w-40 h-40" />
                     </div>
                   </div>
                 )}
-                
-                {secret && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500">如無法掃描，請手動輸入以下密鑰：</p>
-                    <div className="font-mono text-sm mt-1 p-2 bg-gray-100 rounded-md inline-block">
-                      {secret}
-                    </div>
-                  </div>
-                )}
               </div>
+              
+              {/* 密鑰顯示 - 紅框區域 */}
+              {secret && (
+                <div className="border border-red-500 rounded-md p-3 mb-4">
+                  <p className="text-gray-500 text-sm text-center mb-1">如無法掃描，請手動輸入以下密鑰：</p>
+                  <div className="bg-gray-100 p-2 text-center font-mono text-sm">
+                    {secret}
+                  </div>
+                </div>
+              )}
 
-              <Form {...setupTwoFactorForm}>
-                <form onSubmit={setupTwoFactorForm.handleSubmit(onSubmitSetupTwoFactor)} className="space-y-4">
-                  {/* 第3步 */}
-                  <div className="text-center mt-4">
-                    <p className="font-medium text-gray-700 mb-2">第3步：輸入驗證碼</p>
+              {/* 第3步 - 紅框區域 */}
+              <div className="border border-red-500 rounded-md p-3 mb-4">
+                <p className="font-medium text-gray-800 text-center mb-2">第3步：輸入驗證碼</p>
+                <Form {...setupTwoFactorForm}>
+                  <form onSubmit={setupTwoFactorForm.handleSubmit(onSubmitSetupTwoFactor)}>
                     <FormField
                       control={setupTwoFactorForm.control}
                       name="code"
@@ -326,36 +323,36 @@ export default function Login() {
                         </FormItem>
                       )}
                     />
-                  </div>
-                  
-                  {/* 驗證失敗提示 */}
-                  {twoFactorError && (
-                    <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <XCircle className="h-5 w-5 text-red-600" />
-                        <p className="font-medium text-red-800">設置二步驗證失敗</p>
+                    
+                    {/* 驗證失敗提示 */}
+                    {twoFactorError && (
+                      <div className="p-4 mt-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-5 w-5 text-red-600" />
+                          <p className="font-medium text-red-800">設置二步驗證失敗</p>
+                        </div>
+                        <p className="text-red-700 text-sm mt-1 ml-7">
+                          驗證碼不正確，請重新嘗試
+                        </p>
                       </div>
-                      <p className="text-red-700 text-sm mt-1 ml-7">
-                        驗證碼不正確，請重新嘗試
-                      </p>
+                    )}
+                    
+                    <div className="flex justify-between space-x-2 mt-4">
+                      <Button type="button" variant="outline" className="px-4 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
+                        返回
+                      </Button>
+                      <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            驗證中...
+                          </>
+                        ) : '驗證並完成設置'}
+                      </Button>
                     </div>
-                  )}
-                  
-                  <div className="flex justify-between space-x-2 mt-6">
-                    <Button type="button" variant="outline" className="px-8 py-2 border-gray-300" onClick={handleGoBack} disabled={isLoading}>
-                      返回
-                    </Button>
-                    <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          驗證中...
-                        </>
-                      ) : '驗證並完成設置'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+                  </form>
+                </Form>
+              </div>
             </div>
           ) : !requireTwoFactor ? (
             // 第一步：用戶名和密碼登入
@@ -400,102 +397,112 @@ export default function Login() {
               </form>
             </Form>
           ) : (
-            // 第二步：二步驗證頁面 - 根據參考圖片精確實現
-            <Form {...twoFactorForm}>
-              <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                {/* 紅框區域，嚴格按照參考圖片 */}
-                <div className="border-2 border-red-500 rounded-md p-6 mb-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-medium">二步驗證</h2>
-                    <p className="text-gray-500 mt-1">
-                      請輸入Google Authenticator中的驗證碼
-                    </p>
-                  </div>
-                  
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-medium">二步驗證</h2>
-                    <p className="text-gray-500 mt-1">
-                      請輸入Google Authenticator中的驗證碼
-                    </p>
-                  </div>
-                  
-                  <div className="text-center mb-8">
-                    <p className="text-gray-500">
-                      請打開Google Authenticator應用並輸入顯示的6位數驗證碼
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-center space-x-6">
-                    <a 
-                      href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
-                      target="_blank" 
-                      rel="noopener" 
-                      className="text-blue-600 hover:underline"
-                    >
-                      Android下載
-                    </a>
-                    <a 
-                      href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
-                      target="_blank" 
-                      rel="noopener" 
-                      className="text-blue-600 hover:underline"
-                    >
-                      iOS下載
-                    </a>
-                  </div>
+            <div>
+              {/* 卡片頂部標題 (卡片外部) */}
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-semibold">二步驗證</h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  請輸入Google Authenticator中的驗證碼
+                </p>
+              </div>
+              
+              {/* 紅框區域，完全按照參考圖片 */}
+              <div className="border border-red-500 rounded-md p-4">
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-semibold">二步驗證</h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    請輸入Google Authenticator中的驗證碼
+                  </p>
                 </div>
                 
-                <FormField
-                  control={twoFactorForm.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input 
-                          placeholder="請輸入6位數驗證碼" 
-                          maxLength={6} 
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          autoComplete="one-time-code"
-                          className="text-center text-lg py-3 max-w-xs mx-auto"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <div className="flex justify-center mt-2">
-                        <FormMessage />
+                <div className="text-center mb-4">
+                  <h2 className="text-xl font-semibold">二步驗證</h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    請輸入Google Authenticator中的驗證碼
+                  </p>
+                </div>
+                
+                <div className="text-center mb-6">
+                  <p className="text-gray-500 text-sm">
+                    請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                  </p>
+                </div>
+                
+                <div className="flex justify-center space-x-6">
+                  <a 
+                    href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
+                    target="_blank" 
+                    rel="noopener" 
+                    className="text-blue-500 hover:underline text-sm"
+                  >
+                    Android下載
+                  </a>
+                  <a 
+                    href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
+                    target="_blank" 
+                    rel="noopener" 
+                    className="text-blue-500 hover:underline text-sm"
+                  >
+                    iOS下載
+                  </a>
+                </div>
+              </div>
+              
+              {/* 輸入框與按鈕 */}
+              <Form {...twoFactorForm}>
+                <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4 mt-4">
+                  <FormField
+                    control={twoFactorForm.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input 
+                            placeholder="請輸入6位數驗證碼" 
+                            maxLength={6} 
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            autoComplete="one-time-code"
+                            className="text-center text-lg py-3 max-w-xs mx-auto"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <div className="flex justify-center mt-2">
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* 驗證失敗提示 */}
+                  {twoFactorError && (
+                    <div className="p-4 mb-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <p className="font-medium text-red-800">驗證失敗</p>
                       </div>
-                    </FormItem>
-                  )}
-                />
-                
-                {/* 驗證失敗提示 */}
-                {twoFactorError && (
-                  <div className="p-4 mb-4 bg-red-50 border-l-4 border-red-500 rounded-md">
-                    <div className="flex items-center gap-2">
-                      <XCircle className="h-5 w-5 text-red-600" />
-                      <p className="font-medium text-red-800">驗證失敗</p>
+                      <p className="text-red-700 text-sm mt-1 ml-7">
+                        驗證碼不正確，請重新嘗試
+                      </p>
                     </div>
-                    <p className="text-red-700 text-sm mt-1 ml-7">
-                      驗證碼不正確，請重新嘗試
-                    </p>
+                  )}
+                  
+                  <div className="flex justify-between space-x-2 mt-6">
+                    <Button type="button" variant="outline" className="px-8 py-2 border-gray-300 rounded-md" onClick={handleGoBack} disabled={isLoading}>
+                      返回
+                    </Button>
+                    <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-md" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          驗證中...
+                        </>
+                      ) : '驗證'}
+                    </Button>
                   </div>
-                )}
-                
-                <div className="flex justify-between space-x-2 mt-6">
-                  <Button type="button" variant="outline" className="px-8 py-2 border-gray-300 rounded-md" onClick={handleGoBack} disabled={isLoading}>
-                    返回
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded-md" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        驗證中...
-                      </>
-                    ) : '驗證'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            </div>
           )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
