@@ -2331,12 +2331,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }, 30000); // 每30秒檢查一次，以便在開發測試中更快看到效果
     
-    // Setup WebSocket server
+    // Setup WebSocket server - 使用明確的路徑以避免與Vite HMR衝突
     const wss = new WebSocketServer({ 
       server: httpServer,
-      path: '/ws',
+      path: '/api/ws', // 更改為更具體的路徑
       perMessageDeflate: false // Disable per-message deflate to avoid issues
     });
+    console.log("WebSocket 伺服器已初始化");
     
     wss.on("connection", (ws: ExtendedWebSocket) => {
       console.log("WebSocket 客戶端已連接");

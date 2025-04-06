@@ -26,8 +26,9 @@ export const useWebSocket = (userId: number | null) => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
       
-      // Create WebSocket connection
-      const ws = new WebSocket(`${protocol}//${host}/ws`);
+      // Create WebSocket connection - 使用更新後的路徑
+      const ws = new WebSocket(`${protocol}//${host}/api/ws`);
+      console.log('正在嘗試連接WebSocket:', `${protocol}//${host}/api/ws`);
       wsRef.current = ws;
       setStatus('connecting');
       
