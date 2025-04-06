@@ -1313,9 +1313,12 @@ export class MemStorage implements IStorage {
       post.postId;
     
     // 保持原始狀態，除非狀態是未定義或null
-    // 如果之前的狀態是已刪除，則設置為草稿
-    const status = post.status === "deleted" ? "draft" : 
-                  (post.status || "draft");
+    // 始終將狀態設置為草稿，確保在適當的貼文列表中顯示
+    let status = "draft";
+    if (post.status && post.status !== "deleted") {
+      status = post.status;
+    }
+    console.log(`設置還原後貼文狀態為: ${status}`);
     
     // 創建完整的還原後貼文對象，確保所有必要字段都有值
     const updatedPost = { 
@@ -1342,6 +1345,12 @@ export class MemStorage implements IStorage {
     // 寫入更新後的貼文
     this.posts.set(id, updatedPost);
     
+    // 打印所有貼文的狀態，幫助調試
+    console.log("所有貼文狀態 (ID, 頁面ID, 狀態, 是否刪除):");
+    Array.from(this.posts.values()).forEach(p => {
+      console.log(`${p.id}, ${p.pageId}, ${p.status}, ${p.isDeleted}`);
+    });
+    
     // 驗證更新是否成功，再次獲取貼文
     const verifiedPost = await this.getPostById(id);
     if (!verifiedPost || verifiedPost.isDeleted) {
@@ -1354,6 +1363,15 @@ export class MemStorage implements IStorage {
     const stillDeleted = deletedPosts.some(p => p.id === id);
     if (stillDeleted) {
       console.warn(`警告：貼文ID=${id}仍然出現在已刪除列表中，可能存在緩存問題`);
+    }
+    
+    // 確認貼文在適當的狀態列表中
+    const postsWithSameStatus = await this.getPostsByStatus(pageId, status);
+    const isInCorrectList = postsWithSameStatus.some(p => p.id === id);
+    if (!isInCorrectList) {
+      console.warn(`警告：還原後的貼文 ID=${id} 未在 ${status} 狀態列表中找到`);
+    } else {
+      console.log(`確認：還原後的貼文 ID=${id} 在 ${status} 狀態列表中顯示正常`);
     }
     
     console.log(`貼文 ID=${id} 還原成功，詳細信息:`, {

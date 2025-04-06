@@ -171,47 +171,94 @@ const RecycleBin = () => {
       // 從響應中獲取還原後的貼文數據
       const restoredPost = data.post;
       
-      // 顯示成功訊息，包含更多詳細信息
+      console.log('從服務器收到還原後的貼文詳情:', restoredPost);
+      
+      // 顯示更詳細的成功訊息
       toast({
         title: '貼文已還原',
         description: `貼文已成功還原到「${restoredPost.pageId}」頁面。狀態: ${restoredPost.status}`,
       });
       
-      // 使用更徹底的緩存無效化策略
-      // 首先清除所有頁面查詢
+      // 更加徹底的緩存無效化策略
+      
+      // 1. 首先清除全局查詢
+      console.log('清除全局頁面查詢緩存');
       queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
       
-      // 然後清除所有頁面的貼文查詢，包括 /api/pages/:pageId/posts 這樣的格式
-      console.log('無效化頁面貼文查詢...');
+      // 2. 清除所有可能包含貼文的查詢緩存
+      console.log('清除所有貼文相關查詢緩存...');
       queryClient.invalidateQueries({ 
         predicate: (query) => {
-          const queryKey = Array.isArray(query.queryKey) ? query.queryKey[0] : query.queryKey;
-          return typeof queryKey === 'string' && queryKey.includes('/api/pages/') && queryKey.includes('/posts');
+          // 轉換查詢鍵為字符串以便更容易檢查
+          const queryKeyStr = JSON.stringify(query.queryKey);
+          return queryKeyStr.includes('posts') || 
+                 queryKeyStr.includes('deleted-posts');
         }
       });
       
-      // 特別清除還原後的貼文所在頁面的查詢
+      // 3. 按頁面和狀態特別清除緩存
       if (restoredPost && restoredPost.pageId) {
-        console.log(`特別無效化頁面 ${restoredPost.pageId} 的查詢`);
-        queryClient.invalidateQueries({ queryKey: [`/api/pages/${restoredPost.pageId}/posts`] });
+        const pageId = restoredPost.pageId;
+        const status = restoredPost.status;
         
-        // 還要確保清除該頁面的已刪除貼文查詢
-        queryClient.invalidateQueries({ queryKey: [`/api/pages/${restoredPost.pageId}/deleted-posts`] });
+        console.log(`特別清除頁面 ${pageId} 的所有貼文查詢`);
+        
+        // 清除該頁面的所有貼文查詢
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/pages/${pageId}/posts`] 
+        });
+        
+        // 清除該頁面特定狀態的貼文查詢
+        console.log(`特別清除頁面 ${pageId} 的 ${status} 狀態貼文查詢`);
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/pages/${pageId}/posts`], 
+          refetchType: 'all' 
+        });
+        
+        // 按狀態刷新
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/pages/${pageId}/posts/status/${status}`] 
+        });
+        
+        // 清除該頁面的已刪除貼文查詢
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/pages/${pageId}/deleted-posts`] 
+        });
       }
       
-      // 也清除測試頁面的查詢
-      console.log('無效化測試頁面的查詢');
-      queryClient.invalidateQueries({ queryKey: ['/api/pages', 'page_123456', 'posts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/pages', 'page_123456', 'deleted-posts'] });
+      // 4. 特別處理測試頁面
+      console.log('特別清除測試頁面的查詢緩存');
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/pages/page_123456/posts`] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/pages/page_123456/deleted-posts`] 
+      });
       
-      // 刷新當前頁面的已刪除貼文列表
+      // 5. 暴力清除所有查詢 - 確保沒有遺漏
+      console.log('進行最終的全面緩存清除');
+      queryClient.refetchQueries({ 
+        type: 'all', 
+        stale: true 
+      });
+      
+      // 立即刷新當前頁面的已刪除貼文列表
+      console.log('刷新當前頁面的已刪除貼文列表');
       refetchPosts();
       
-      // 短暫延遲後導航到貼文管理頁面，顯示還原後的貼文
+      // 延遲較長時間後導航，確保所有緩存都已更新
       setTimeout(() => {
         console.log('還原成功後重定向到貼文管理頁面');
-        setLocation('/');
-      }, 2000); // 增加延遲到2秒，給緩存清除和重新獲取更多時間
+        
+        // 根據還原後的貼文狀態決定應該導航到哪個頁面
+        if (restoredPost.status === 'draft') {
+          setLocation('/');  // 草稿貼文在主頁上
+        } else if (restoredPost.status === 'scheduled') {
+          setLocation('/schedule');  // 排程貼文在排程頁面
+        } else {
+          setLocation('/');  // 默認情況下還是回到主頁
+        }
+      }, 3000); // 增加延遲到3秒，給緩存清除和重新獲取更多時間
     },
     onError: (error) => {
       console.error('還原貼文變更失敗:', error);
