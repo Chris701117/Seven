@@ -401,45 +401,58 @@ export default function Login() {
               </form>
             </Form>
           ) : (
-            <div className="space-y-4">
-              {/* 頁面標題 */}
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-semibold">二步驗證</h2>
-                <p className="text-gray-500 mt-2">
+            <div className="space-y-6">
+              {/* 紅框區域 - 頁面標題 */}
+              <div className="border border-red-500 rounded-md p-3 text-center">
+                <h2 className="text-2xl font-normal">二步驗證</h2>
+                <p className="text-gray-500 mt-1">
+                  請輸入Google Authenticator中的驗證碼
+                </p>
+              </div>
+              
+              {/* 重複的標題部分 - 無邊框 */}
+              <div className="text-center">
+                <h2 className="text-2xl font-normal">二步驗證</h2>
+                <p className="text-gray-500 mt-1">
                   請輸入Google Authenticator中的驗證碼
                 </p>
               </div>
               
               {/* 黃色警告提示區塊 */}
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+              <div className="bg-yellow-50 py-4 px-5">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-yellow-400" />
+                    <AlertCircle className="h-6 w-6 text-yellow-400" />
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-yellow-700">
+                    <p className="text-yellow-700">
                       為了您的帳戶安全，必須啟用二步驗證才能登入系統
                     </p>
                   </div>
                 </div>
               </div>
               
+              {/* 紅框區域 - 空白，只用於分隔 */}
+              <div className="border border-red-500 rounded-md p-2">
+                {/* 這是空白紅框，根據參考圖片設計 */}
+              </div>
+              
               {/* 分步驟指引 */}
-              <div className="space-y-4 mb-6">
+              <div className="space-y-5">
                 {/* 步驟1 */}
                 <div className="border border-gray-200 rounded-md p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-6 w-6 flex items-center justify-center mr-2">1</div>
-                    <h3 className="font-medium">下載 Google Authenticator 應用</h3>
+                  <div className="flex items-center mb-3">
+                    <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-7 w-7 flex items-center justify-center mr-3">1</div>
+                    <h3 className="font-medium text-lg">下載 Google Authenticator 應用</h3>
                   </div>
-                  <div className="ml-8 flex justify-start space-x-4">
+                  <div className="ml-10 flex space-x-6">
                     <a 
                       href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
                       target="_blank" 
                       rel="noopener" 
                       className="text-blue-500 hover:underline flex items-center"
                     >
-                      <Download className="h-4 w-4 mr-1" />
+                      <Download className="h-5 w-5 mr-1" />
                       Android
                     </a>
                     <a 
@@ -448,24 +461,42 @@ export default function Login() {
                       rel="noopener" 
                       className="text-blue-500 hover:underline flex items-center"
                     >
-                      <Download className="h-4 w-4 mr-1" />
+                      <Download className="h-5 w-5 mr-1" />
                       iOS
                     </a>
                   </div>
                 </div>
                 
-                {/* 步驟2 */}
+                {/* 步驟2 - 新增掃描QR碼步驟 */}
                 <div className="border border-gray-200 rounded-md p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-6 w-6 flex items-center justify-center mr-2">2</div>
-                    <h3 className="font-medium">輸入驗證碼</h3>
+                  <div className="flex items-center mb-3">
+                    <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-7 w-7 flex items-center justify-center mr-3">2</div>
+                    <h3 className="font-medium text-lg">掃描QR碼或輸入密鑰</h3>
                   </div>
-                  <p className="ml-8 text-sm text-gray-600 mb-3">
+                  <div className="ml-10">
+                    <p className="text-gray-600 mb-3">
+                      此步驟僅首次登入時需要設置，如果您已經設置過二步驗證，請直接輸入驗證碼
+                    </p>
+                    {secret && (
+                      <div className="bg-gray-100 p-2 text-center font-mono text-sm mb-2">
+                        {secret}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* 步驟3 - 輸入驗證碼 */}
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="flex items-center mb-3">
+                    <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-7 w-7 flex items-center justify-center mr-3">3</div>
+                    <h3 className="font-medium text-lg">輸入驗證碼</h3>
+                  </div>
+                  <p className="ml-10 text-gray-600 mb-3">
                     打開Google Authenticator應用，輸入顯示的6位數驗證碼
                   </p>
                   
                   {/* 驗證碼輸入框 */}
-                  <div className="ml-8">
+                  <div className="ml-10">
                     <Form {...twoFactorForm}>
                       <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)}>
                         <div className="space-y-4">
@@ -480,7 +511,7 @@ export default function Login() {
                                     maxLength={6} 
                                     inputMode="numeric"
                                     pattern="[0-9]*"
-                                    className="text-center py-2 w-full max-w-xs"
+                                    className="text-center py-3 text-lg w-full max-w-xs"
                                     {...field} 
                                   />
                                 </FormControl>
@@ -503,10 +534,11 @@ export default function Login() {
                           )}
                           
                           {/* 按鈕區 */}
-                          <div className="flex space-x-2 mt-4">
+                          <div className="flex justify-between mt-5">
                             <Button 
                               type="button" 
                               variant="outline" 
+                              className="px-5"
                               onClick={handleGoBack} 
                               disabled={isLoading}
                             >
@@ -514,7 +546,7 @@ export default function Login() {
                             </Button>
                             <Button 
                               type="submit" 
-                              className="bg-blue-600 hover:bg-blue-700" 
+                              className="px-5 bg-blue-600 hover:bg-blue-700" 
                               disabled={isLoading}
                             >
                               {isLoading ? (
