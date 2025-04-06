@@ -233,64 +233,91 @@ export default function Login() {
           {requireTwoFactorSetup ? (
             // 設置二步驗證
             <div className="space-y-4">
-              {/* 紅框區域 */}
-              <div className="border-2 border-red-500 rounded-md p-4">
-                {/* 重要提示 */}
-                <div className="p-3 mb-4 bg-amber-50 border border-amber-200 rounded-md">
-                  <p className="text-sm text-amber-800">
-                    必須啟用二步驗證，不啟用的話將無法使用本系統的功能。
+              {/* 紅框區域，重新設計以符合參考圖片風格 */}
+              <div className="border-2 border-red-500 rounded-md overflow-hidden">
+                {/* 標題部分 */}
+                <div className="text-center p-4">
+                  <h3 className="text-center font-medium text-xl">二步驗證</h3>
+                  <p className="text-center text-gray-500 text-sm mt-1">
+                    請使用Google Authenticator生成驗證碼
                   </p>
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <p className="font-medium mb-2">第1步：下載 Google Authenticator 應用</p>
-                    <div className="flex gap-4">
-                      <a 
-                        href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        Android下載
-                      </a>
-                      <a 
-                        href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
-                        target="_blank" 
-                        rel="noopener" 
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        iOS下載
-                      </a>
-                    </div>
+                <hr className="border-t border-gray-200" />
+                
+                {/* 重要提示 */}
+                <div className="p-4">
+                  <div className="p-3 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                    <p className="text-sm text-amber-800">
+                      必須啟用二步驗證，不啟用的話將無法使用本系統的功能。
+                    </p>
                   </div>
                   
-                  <div>
-                    <p className="font-medium mb-2">第2步：掃描QR碼</p>
-                    {qrCode && (
-                      <div className="flex justify-center">
-                        <div className="bg-white p-2">
-                          <img src={qrCode} alt="二步驗證QR碼" className="w-32 h-32" />
-                        </div>
+                  <div className="space-y-6">
+                    <div>
+                      <p className="font-medium mb-2 text-center">第1步：下載 Google Authenticator 應用</p>
+                      <div className="flex justify-center gap-8 mt-3">
+                        <a 
+                          href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
+                          target="_blank" 
+                          rel="noopener" 
+                          className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 15.5L12 22L18.5 15.5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 2V22" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          <span>Android下載</span>
+                        </a>
+                        
+                        <a 
+                          href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
+                          target="_blank" 
+                          rel="noopener" 
+                          className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 12H3" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                            <path d="M21 12H17" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          <span>iOS下載</span>
+                        </a>
                       </div>
-                    )}
+                    </div>
                     
-                    {secret && (
-                      <div className="mt-2 text-center">
-                        <p className="text-xs text-gray-500">如無法掃描，請手動輸入以下密鑰：</p>
-                        <div className="font-mono text-xs mt-1">
-                          {secret}
+                    <hr className="border-t border-gray-200" />
+                    
+                    <div>
+                      <p className="font-medium mb-3 text-center">第2步：掃描QR碼</p>
+                      {qrCode && (
+                        <div className="flex justify-center">
+                          <div className="bg-white p-2 border border-gray-200">
+                            <img src={qrCode} alt="二步驗證QR碼" className="w-40 h-40" />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      
+                      {secret && (
+                        <div className="mt-3 text-center">
+                          <p className="text-xs text-gray-500">如無法掃描，請手動輸入以下密鑰：</p>
+                          <div className="font-mono text-xs mt-1 p-2 bg-gray-50 rounded-md inline-block">
+                            {secret}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
               
               <Form {...setupTwoFactorForm}>
                 <form onSubmit={setupTwoFactorForm.handleSubmit(onSubmitSetupTwoFactor)} className="space-y-4">
-                  <div>
-                    <p className="font-medium mb-2">第3步：輸入驗證碼</p>
+                  <div className="space-y-2">
+                    <p className="font-medium mb-2 text-center">第3步：輸入驗證碼</p>
+                    <p className="text-gray-500 text-sm mb-2 text-center">
+                      請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                    </p>
+                    
                     <FormField
                       control={setupTwoFactorForm.control}
                       name="code"
@@ -298,7 +325,7 @@ export default function Login() {
                         <FormItem>
                           <FormControl>
                             <Input 
-                              placeholder="請輸入應用中顯示的6位數驗證碼" 
+                              placeholder="請輸入6位數驗證碼" 
                               maxLength={6} 
                               inputMode="numeric"
                               pattern="[0-9]*"
@@ -306,7 +333,9 @@ export default function Login() {
                               {...field} 
                             />
                           </FormControl>
-                          <FormMessage />
+                          <div className="flex justify-center mt-2">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -387,54 +416,69 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                <div className="text-center mb-4">
-                  <h3 className="text-center font-medium text-xl">二步驗證</h3>
-                  <p className="text-center text-gray-500 text-sm mt-1">
-                    請輸入Google Authenticator中的驗證碼
-                  </p>
-                </div>
-                
-                <div className="border border-gray-200 rounded-md p-4 mb-4">
-                  <h3 className="text-center font-medium">二步驗證</h3>
-                  <p className="text-center text-gray-500 text-sm mt-1">
-                    請使用Google Authenticator生成驗證碼
-                  </p>
-                </div>
-                
-                <div className="text-center font-medium">
-                  輸入驗證碼
-                </div>
-                
-                <p className="text-center text-gray-500 text-sm">
-                  請打開Google Authenticator應用並輸入顯示的6位數驗證碼
-                </p>
-                
-                <div className="flex justify-center gap-8 mt-1 mb-1">
-                  <a 
-                    href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
-                    target="_blank" 
-                    rel="noopener" 
-                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22L12 2" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M19 15L12 22L5 15" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Android下載</span>
-                  </a>
+                {/* 紅框設計，完全符合參考圖片 */}
+                <div className="border-2 border-red-500 rounded-md overflow-hidden">
+                  <div className="text-center p-4">
+                    <h3 className="text-center font-medium text-xl">二步驗證</h3>
+                    <p className="text-center text-gray-500 text-sm mt-1">
+                      請輸入Google Authenticator中的驗證碼
+                    </p>
+                  </div>
                   
-                  <a 
-                    href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
-                    target="_blank" 
-                    rel="noopener" 
-                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M15 12H3" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M21 12H17" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    <span>iOS下載</span>
-                  </a>
+                  <hr className="border-t border-gray-200" />
+                  
+                  <div className="text-center p-4">
+                    <h3 className="text-center font-medium">二步驗證</h3>
+                    <p className="text-center text-gray-500 text-sm mt-1">
+                      請輸入Google Authenticator中的驗證碼
+                    </p>
+                  </div>
+                  
+                  <hr className="border-t border-gray-200" />
+                  
+                  <div className="border border-gray-200 rounded-md m-4">
+                    <div className="text-center py-4">
+                      <h3 className="text-center font-medium">二步驗證</h3>
+                      <p className="text-center text-gray-500 text-sm mt-1">
+                        請使用Google Authenticator生成驗證碼
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-2 pb-4">
+                    <p className="font-medium mb-2">輸入驗證碼</p>
+                    <p className="text-gray-500 text-sm mb-3">
+                      請打開Google Authenticator應用並輸入顯示的6位數驗證碼
+                    </p>
+                    
+                    <div className="flex justify-center gap-8 mt-3 mb-3">
+                      <a 
+                        href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" 
+                        target="_blank" 
+                        rel="noopener" 
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5.5 15.5L12 22L18.5 15.5" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 2V22" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <span>Android下載</span>
+                      </a>
+                      
+                      <a 
+                        href="https://apps.apple.com/us/app/google-authenticator/id388497605" 
+                        target="_blank" 
+                        rel="noopener" 
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M15 12H3" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                          <path d="M21 12H17" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <span>iOS下載</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
                 
                 <FormField
