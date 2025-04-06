@@ -48,8 +48,9 @@ export default function Login() {
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
   const [requireTwoFactorSetup, setRequireTwoFactorSetup] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [secret, setSecret] = useState<string | null>(null);
+  // 使用示例QR碼和密鑰以便於開發和測試
+  const [qrCode, setQrCode] = useState<string | null>("https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FDemoAccount%3Fsecret%3DAIDTYEQEGEECI7ZZ%26issuer%3DFacebookPageManager");
+  const [secret, setSecret] = useState<string | null>("AIDTYEQEGEECI7ZZ");
   const [twoFactorError, setTwoFactorError] = useState<boolean>(false);
   const { toast } = useToast();
 
@@ -402,16 +403,8 @@ export default function Login() {
             </Form>
           ) : (
             <div className="space-y-6">
-              {/* 紅框區域 - 頁面標題 */}
-              <div className="border border-red-500 rounded-md p-3 text-center">
-                <h2 className="text-2xl font-normal">二步驗證</h2>
-                <p className="text-gray-500 mt-1">
-                  請輸入Google Authenticator中的驗證碼
-                </p>
-              </div>
-              
-              {/* 重複的標題部分 - 無邊框 */}
-              <div className="text-center">
+              {/* 頁面標題 */}
+              <div className="text-center mb-2">
                 <h2 className="text-2xl font-normal">二步驗證</h2>
                 <p className="text-gray-500 mt-1">
                   請輸入Google Authenticator中的驗證碼
@@ -430,11 +423,6 @@ export default function Login() {
                     </p>
                   </div>
                 </div>
-              </div>
-              
-              {/* 紅框區域 - 空白，只用於分隔 */}
-              <div className="border border-red-500 rounded-md p-2">
-                {/* 這是空白紅框，根據參考圖片設計 */}
               </div>
               
               {/* 分步驟指引 */}
@@ -467,21 +455,24 @@ export default function Login() {
                   </div>
                 </div>
                 
-                {/* 步驟2 - 新增掃描QR碼步驟 */}
+                {/* 步驟2 - 掃描QR碼 */}
                 <div className="border border-gray-200 rounded-md p-4">
                   <div className="flex items-center mb-3">
                     <div className="bg-blue-100 text-blue-800 font-bold rounded-full h-7 w-7 flex items-center justify-center mr-3">2</div>
-                    <h3 className="font-medium text-lg">掃描QR碼或輸入密鑰</h3>
+                    <h3 className="font-medium text-lg">掃描QR碼</h3>
                   </div>
                   <div className="ml-10">
-                    <p className="text-gray-600 mb-3">
-                      此步驟僅首次登入時需要設置，如果您已經設置過二步驗證，請直接輸入驗證碼
-                    </p>
-                    {secret && (
-                      <div className="bg-gray-100 p-2 text-center font-mono text-sm mb-2">
-                        {secret}
+                    <div className="flex flex-col items-center mb-3">
+                      <div className="border border-gray-200 p-1 mb-3">
+                        <img src={qrCode} alt="二步驗證QR碼" className="w-48 h-48" />
                       </div>
-                    )}
+                      <div className="w-full">
+                        <p className="text-gray-600 text-center text-sm mb-1">如無法掃描，請手動輸入以下密鑰：</p>
+                        <div className="bg-gray-100 p-2 text-center font-mono text-sm">
+                          {secret}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
