@@ -45,28 +45,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// 定義權限類別
+// 定義權限類別 (按新的分類重組)
 const permissionCategories = {
-  USER_MANAGEMENT: {
-    title: "用戶管理",
-    permissions: [
-      { id: Permission.MANAGE_USERS, name: "管理用戶" },
-      { id: Permission.CREATE_USER, name: "創建用戶" },
-      { id: Permission.EDIT_USER, name: "編輯用戶" },
-      { id: Permission.DELETE_USER, name: "刪除用戶" },
-      { id: Permission.VIEW_USERS, name: "查看用戶" },
-    ]
-  },
-  PAGE_MANAGEMENT: {
-    title: "粉絲頁管理",
-    permissions: [
-      { id: Permission.MANAGE_PAGES, name: "管理粉絲頁" },
-      { id: Permission.CREATE_PAGE, name: "創建粉絲頁" },
-      { id: Permission.EDIT_PAGE, name: "編輯粉絲頁" },
-      { id: Permission.DELETE_PAGE, name: "刪除粉絲頁" },
-      { id: Permission.VIEW_PAGES, name: "查看粉絲頁" },
-    ]
-  },
   POST_MANAGEMENT: {
     title: "貼文管理",
     permissions: [
@@ -75,6 +55,24 @@ const permissionCategories = {
       { id: Permission.DELETE_POST, name: "刪除貼文" },
       { id: Permission.PUBLISH_POST, name: "發布貼文" },
       { id: Permission.VIEW_POSTS, name: "查看貼文" },
+    ]
+  },
+  CONTENT_CALENDAR: {
+    title: "內容日曆",
+    permissions: [
+      // 貼文和粉絲頁管理相關的權限
+      { id: Permission.MANAGE_PAGES, name: "管理粉絲頁" },
+      { id: Permission.CREATE_PAGE, name: "創建粉絲頁" },
+      { id: Permission.EDIT_PAGE, name: "編輯粉絲頁" },
+      { id: Permission.DELETE_PAGE, name: "刪除粉絲頁" },
+      { id: Permission.VIEW_PAGES, name: "查看粉絲頁" },
+    ]
+  },
+  ANALYTICS: {
+    title: "數據分析",
+    permissions: [
+      { id: Permission.VIEW_ANALYTICS, name: "查看分析數據" },
+      { id: Permission.EXPORT_DATA, name: "導出數據" },
     ]
   },
   MARKETING_MANAGEMENT: {
@@ -97,30 +95,32 @@ const permissionCategories = {
       { id: Permission.VIEW_OPERATION_TASKS, name: "查看營運任務" },
     ]
   },
-  ANALYTICS: {
-    title: "數據分析",
-    permissions: [
-      { id: Permission.VIEW_ANALYTICS, name: "查看分析數據" },
-      { id: Permission.EXPORT_DATA, name: "導出數據" },
-    ]
-  },
-  ONELINK: {
+  ONELINK_MANAGEMENT: {
     title: "Onelink管理",
     permissions: [
       { id: Permission.MANAGE_ONELINK, name: "管理Onelink" },
       { id: Permission.VIEW_ONELINK, name: "查看Onelink" },
     ]
   },
-  SETTINGS: {
-    title: "設定管理",
+  RECYCLE_BIN: {
+    title: "還原區",
     permissions: [
-      { id: Permission.MANAGE_SETTINGS, name: "管理設定" },
-      { id: Permission.VIEW_SETTINGS, name: "查看設定" },
+      // 還原區相關權限，目前使用既有的貼文和內容管理權限
+      { id: Permission.DELETE_POST, name: "刪除貼文權限" },
+      { id: Permission.EDIT_POST, name: "編輯貼文權限" },
     ]
   },
-  USER_GROUP_MANAGEMENT: {
-    title: "用戶群組管理",
+  SETTINGS: {
+    title: "設定",
     permissions: [
+      // 包含用戶、群組管理和系統設定
+      { id: Permission.MANAGE_SETTINGS, name: "管理設定" },
+      { id: Permission.VIEW_SETTINGS, name: "查看設定" },
+      { id: Permission.MANAGE_USERS, name: "管理用戶" },
+      { id: Permission.CREATE_USER, name: "創建用戶" },
+      { id: Permission.EDIT_USER, name: "編輯用戶" },
+      { id: Permission.DELETE_USER, name: "刪除用戶" },
+      { id: Permission.VIEW_USERS, name: "查看用戶" },
       { id: Permission.MANAGE_USER_GROUPS, name: "管理用戶群組" },
       { id: Permission.VIEW_USER_GROUPS, name: "查看用戶群組" },
     ]
@@ -231,12 +231,10 @@ const UserGroupManagement = () => {
   
   // 更新群組的mutation
   const updateGroupMutation = useMutation({
-    mutationFn: async (data: { id: number; name: string; description: string; permissions: Permission[] }) => {
+    mutationFn: async (data: { id: number; permissions: Permission[] }) => {
       console.log('正在更新群組:', data);
-      // 將description為空字符串轉換為null
+      // 只更新權限，不修改名稱和描述
       const processedData = {
-        name: data.name,
-        description: data.description || null,
         permissions: data.permissions
       };
       
