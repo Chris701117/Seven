@@ -141,37 +141,80 @@ const RecycleBin = () => {
   // 還原貼文
   const restorePostMutation = useMutation({
     mutationFn: async (postId: number) => {
-      const response = await apiRequest(`/api/posts/${postId}/restore`, { method: 'POST' });
-      return response; // 返回響應以在onSuccess中獲取
+      console.log(`嘗試還原貼文 ID=${postId}`);
+      // 包含更多詳細日誌，並使用原始的fetch API來跟踪響應
+      try {
+        const response = await fetch(`/api/posts/${postId}/restore`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`還原貼文失敗: HTTP ${response.status}`, errorText);
+          throw new Error(`還原貼文請求失敗: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('還原貼文成功響應:', data);
+        return data;
+      } catch (error) {
+        console.error('還原貼文過程中發生錯誤:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
-      // 顯示成功訊息
+      console.log('貼文還原成功，獲取的數據:', data);
+      
+      // 從響應中獲取還原後的貼文數據
+      const restoredPost = data.post;
+      
+      // 顯示成功訊息，包含更多詳細信息
       toast({
         title: '貼文已還原',
-        description: '貼文已成功還原回貼文列表。即將返回貼文管理頁面。',
+        description: `貼文已成功還原到「${restoredPost.pageId}」頁面。狀態: ${restoredPost.status}`,
       });
       
-      // 重新獲取所有頁面的已刪除貼文和所有貼文
+      // 使用更徹底的緩存無效化策略
+      // 首先清除所有頁面查詢
       queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
       
-      // 重新獲取特定頁面數據
-      if (pages) {
-        pages.forEach(page => {
-          queryClient.invalidateQueries({ queryKey: ['/api/pages', page.pageId, 'deleted-posts'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/pages', page.pageId, 'posts'] });
-        });
+      // 然後清除所有頁面的貼文查詢，包括 /api/pages/:pageId/posts 這樣的格式
+      console.log('無效化頁面貼文查詢...');
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = Array.isArray(query.queryKey) ? query.queryKey[0] : query.queryKey;
+          return typeof queryKey === 'string' && queryKey.includes('/api/pages/') && queryKey.includes('/posts');
+        }
+      });
+      
+      // 特別清除還原後的貼文所在頁面的查詢
+      if (restoredPost && restoredPost.pageId) {
+        console.log(`特別無效化頁面 ${restoredPost.pageId} 的查詢`);
+        queryClient.invalidateQueries({ queryKey: [`/api/pages/${restoredPost.pageId}/posts`] });
+        
+        // 還要確保清除該頁面的已刪除貼文查詢
+        queryClient.invalidateQueries({ queryKey: [`/api/pages/${restoredPost.pageId}/deleted-posts`] });
       }
       
-      // 刷新當前頁面
+      // 也清除測試頁面的查詢
+      console.log('無效化測試頁面的查詢');
+      queryClient.invalidateQueries({ queryKey: ['/api/pages', 'page_123456', 'posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pages', 'page_123456', 'deleted-posts'] });
+      
+      // 刷新當前頁面的已刪除貼文列表
       refetchPosts();
       
-      // 短暫延遲後導航到貼文管理頁面
+      // 短暫延遲後導航到貼文管理頁面，顯示還原後的貼文
       setTimeout(() => {
         console.log('還原成功後重定向到貼文管理頁面');
         setLocation('/');
-      }, 1500); // 1.5秒後導航，讓用戶有時間看到成功訊息
+      }, 2000); // 增加延遲到2秒，給緩存清除和重新獲取更多時間
     },
     onError: (error) => {
+      console.error('還原貼文變更失敗:', error);
       toast({
         title: '還原失敗',
         description: '貼文還原過程中發生錯誤，請稍後再試。',

@@ -72,30 +72,61 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
   }, []);
 
   // 獲取貼文數據
-  const { data: posts, isLoading, refetch } = useQuery<Post[]>({
+  const { data: posts, isLoading, refetch } = useQuery({
     queryKey: [`/api/pages/${pageId}/posts`],
     queryFn: async () => {
-      if (!pageId) return [];
+      if (!pageId) return [] as Post[];
       
       console.log("獲取全部貼文:", pageId);
       try {
-        const response = await apiRequest("GET", `/api/pages/${pageId}/posts?all=true`);
-        console.log("[獲取到的貼文數量]", response?.length || 0);
+        // 使用直接的 fetch 請求而不是簡化的 apiRequest 以便添加日誌
+        const response = await fetch(`/api/pages/${pageId}/posts?all=true`);
         
-        // 檢查是否包含草稿貼文
-        const draftCount = response?.filter((p: Post) => p.status === 'draft')?.length || 0;
-        console.log("[其中草稿貼文數量]", draftCount);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`獲取貼文失敗: HTTP ${response.status}`, errorText);
+          throw new Error(`獲取貼文請求失敗: ${errorText}`);
+        }
         
-        return response || [];
+        const data = await response.json() as Post[];
+        console.log("[獲取到的貼文數量]", data?.length || 0);
+        
+        // 確保 data 始終是數組
+        if (!Array.isArray(data)) {
+          console.warn("API 未返回數組格式的數據，轉換為空數組");
+          return [] as Post[];
+        }
+        
+        // 詳細日誌，按狀態分類
+        const statusCounts: Record<string, number> = (data as Post[]).reduce((acc: Record<string, number>, post: Post) => {
+          const status = post.status || 'unknown';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+        console.log("[貼文狀態統計]", statusCounts);
+        
+        // 檢查數據中每個貼文的關鍵字段，确保数据完整
+        (data as Post[]).forEach((post: Post, index: number) => {
+          if (!post.id || !post.pageId || !post.status) {
+            console.warn(`[警告] 貼文 #${index} 數據不完整:`, post);
+          }
+        });
+        
+        return data as Post[];
       } catch (error) {
         console.error("獲取全部貼文錯誤:", error);
-        return [];
+        return [] as Post[];
       }
     },
     enabled: !!pageId,
     // 更改重試和刷新策略，確保我們能獲取最新資料
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
     retry: 2,
+    // TanStack Query v5 使用 gcTime 而非 cacheTime
+    gcTime: 30000, // 30秒垃圾回收時間
+    staleTime: 10000, // 10秒後数据过期，可以重新获取
   });
   
   // 處理日期篩選
