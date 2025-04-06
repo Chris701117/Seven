@@ -1450,12 +1450,20 @@ export class MemStorage implements IStorage {
         // 確保日期是Date對象
         const timeA = a.scheduledTime instanceof Date ? a.scheduledTime : new Date(a.scheduledTime);
         const timeB = b.scheduledTime instanceof Date ? b.scheduledTime : new Date(b.scheduledTime);
+        // 排程貼文按時間升序排列（最近的排程排前面）
         return timeA.getTime() - timeB.getTime();
       }
+      
+      // 對於其他狀態的貼文（已發布，草稿等）
       // 確保createdAt也是Date對象
-      const createdAtA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-      const createdAtB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-      return createdAtB.getTime() - createdAtA.getTime();
+      const dateA = a.publishedTime || a.createdAt;
+      const dateB = b.publishedTime || b.createdAt;
+      
+      const dateObjA = dateA instanceof Date ? dateA : new Date(dateA);
+      const dateObjB = dateB instanceof Date ? dateB : new Date(dateB);
+      
+      // 使用降序排列（最新的排在前面）
+      return dateObjB.getTime() - dateObjA.getTime();
     });
   }
 
