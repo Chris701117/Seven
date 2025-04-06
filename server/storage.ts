@@ -220,6 +220,7 @@ export class MemStorage implements IStorage {
   private async initialize() {
     // 按順序初始化所有數據
     await this.initSampleData();
+    this.initSampleDeletedPosts(); // 添加刪除的測試貼文
     this.initSampleMarketingTasks();
     this.initSampleOperationTasks();
     this.initSampleOnelinkFields();
@@ -227,6 +228,124 @@ export class MemStorage implements IStorage {
     this.initSampleUserGroups();
     
     console.log('示例數據初始化完成');
+  }
+  
+  // 初始化刪除的測試貼文
+  private initSampleDeletedPosts() {
+    console.log('初始化刪除的測試貼文...');
+    
+    // 創建特別的測試頁面 (page_123456)
+    const testPageId = "page_123456";
+    const testPage: Page = {
+      id: 9999,
+      pageId: testPageId,
+      pageName: "測試頁面",
+      name: "測試頁面",
+      userId: 1, // 假設用戶ID為1
+      picture: null,
+      pageImage: null,
+      accessToken: "EAAXXXtesttoken", // 測試令牌
+      devMode: true
+    };
+    this.pages.set(9999, testPage);
+    
+    // 創建已刪除的測試貼文
+    const deletedPostId = this.postId++;
+    const deletedPost1: Post = {
+      id: deletedPostId,
+      postId: "deleted_post_123",
+      pageId: testPageId,
+      content: "這是一個已刪除的測試貼文，用於測試還原區功能。此貼文應該出現在還原區中，可以被還原或永久刪除。#測試 #還原區",
+      status: "published",
+      category: "announcement",
+      scheduledTime: null,
+      endTime: null,
+      imageUrl: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2",
+      videoUrl: null,
+      linkUrl: null,
+      linkTitle: null,
+      linkDescription: null,
+      linkImageUrl: null,
+      platformContent: {
+        fb: "這是一個已刪除的測試貼文，用於測試還原區功能。",
+        ig: "這是一個已刪除的測試貼文，用於測試還原區功能。 #測試 #還原區",
+        tiktok: "",
+        threads: "",
+        x: ""
+      },
+      platformStatus: {
+        fb: true,
+        ig: true,
+        tiktok: false,
+        threads: false,
+        x: false
+      },
+      fbPostId: "fb_deleted_test",
+      mediaUrls: ["https://images.unsplash.com/photo-1515378791036-0648a3ef77b2"],
+      mediaType: "image",
+      reminderSent: false,
+      reminderTime: null,
+      isCompleted: true,
+      completedTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+      isDeleted: true, // 標記為已刪除
+      deletedAt: new Date(), // 現在刪除
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
+      publishedTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+      updatedAt: new Date(),
+      author: "測試帳號",
+      publishedBy: "測試帳號"
+    };
+    this.posts.set(deletedPostId, deletedPost1);
+    
+    // 再創建一個已刪除的測試貼文
+    const deletedPostId2 = this.postId++;
+    const deletedPost2: Post = {
+      id: deletedPostId2,
+      postId: "deleted_post_456",
+      pageId: testPageId,
+      content: "這是另一個已刪除的測試貼文，與第一個不同，用於測試還原區可以顯示多個已刪除的貼文。#測試 #還原區 #多個貼文",
+      status: "draft",
+      category: "event",
+      scheduledTime: null,
+      endTime: null,
+      imageUrl: null,
+      videoUrl: null,
+      linkUrl: "https://example.com/event",
+      linkTitle: "測試活動頁面",
+      linkDescription: "這是一個用於測試的活動頁面鏈接",
+      linkImageUrl: null,
+      platformContent: {
+        fb: "這是另一個已刪除的測試貼文，與第一個不同。",
+        ig: "",
+        tiktok: "",
+        threads: "",
+        x: ""
+      },
+      platformStatus: {
+        fb: false,
+        ig: false,
+        tiktok: false,
+        threads: false,
+        x: false
+      },
+      fbPostId: null,
+      mediaUrls: [],
+      mediaType: null,
+      reminderSent: false,
+      reminderTime: null,
+      isCompleted: false,
+      completedTime: null,
+      isDeleted: true, // 標記為已刪除
+      deletedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+      publishedTime: null,
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      author: "測試帳號",
+      publishedBy: null
+    };
+    this.posts.set(deletedPostId2, deletedPost2);
+    
+    console.log(`已創建 ${testPageId} 測試頁面並添加 2 個已刪除的測試貼文`);
   }
 
   private async initSampleData() {
