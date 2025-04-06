@@ -1258,16 +1258,28 @@ export class MemStorage implements IStorage {
   }
 
   async restorePost(id: number, targetPageId?: string): Promise<Post> {
+    console.log(`開始執行還原貼文邏輯，參數: ID=${id}, 目標頁面=${targetPageId || '未指定'}`);
+    
+    // 嚴格類型檢查和格式化
+    if (typeof id !== 'number' || isNaN(id)) {
+      console.error(`無效的貼文ID: ${id}`);
+      throw new Error(`無效的貼文ID: ${id}`);
+    }
+    
+    // 獲取貼文詳細信息
     const post = await this.getPostById(id);
     if (!post) {
-      throw new Error(`Post with id ${id} not found`);
+      console.error(`找不到ID為${id}的貼文`);
+      throw new Error(`找不到ID為${id}的貼文`);
     }
     
+    // 檢查貼文是否已被刪除
     if (!post.isDeleted) {
-      throw new Error(`Post with id ${id} is not deleted`);
+      console.error(`貼文ID=${id}未被刪除，無法還原`);
+      throw new Error(`貼文ID=${id}未被刪除，無法還原`);
     }
     
-    console.log(`開始還原貼文 ID=${id}, 原頁面=${post.pageId}, 目標頁面=${targetPageId || '未指定'}`);
+    console.log(`找到待還原貼文: ID=${id}, 頁面=${post.pageId}, 狀態=${post.status}, 刪除時間=${post.deletedAt}`);
     
     // 如果這是測試頁面的貼文，將它關聯到實際頁面
     let pageId = post.pageId;
@@ -1282,6 +1294,8 @@ export class MemStorage implements IStorage {
         // 如果沒有指定目標頁面，使用第一個可用的實際頁面
         const activePages = Array.from(this.pages.values())
           .filter(p => p.pageId !== "page_123456" && p.id !== 9999);
+        
+        console.log(`找到${activePages.length}個實際頁面`);
         
         if (activePages.length > 0) {
           pageId = activePages[0].pageId;
@@ -1298,31 +1312,57 @@ export class MemStorage implements IStorage {
       `restored_${Date.now()}_${Math.floor(Math.random() * 1000)}` : 
       post.postId;
     
-    // 將還原後的貼文狀態設置為"published"，以確保它可以在頁面上顯示
-    const status = post.status === "draft" ? "draft" : "published";
+    // 保持原始狀態，除非狀態是未定義或null
+    // 如果之前的狀態是已刪除，則設置為草稿
+    const status = post.status === "deleted" ? "draft" : 
+                  (post.status || "draft");
     
+    // 創建完整的還原後貼文對象，確保所有必要字段都有值
     const updatedPost = { 
-      ...post, 
-      pageId: pageId, // 更新頁面ID
-      postId: postId, // 更新或保留postId
-      status: status, // 設置狀態
-      isDeleted: false, // 取消刪除標記
-      deletedAt: null,  // 清除刪除時間
-      publishedTime: status === "published" ? new Date() : null, // 如果狀態為published，設置發布時間
-      updatedAt: new Date()
+      ...post,               // 先複製所有原始字段 
+      pageId,                // 更新頁面ID
+      postId,                // 更新或保留postId
+      status,                // 設置或保留狀態
+      isDeleted: false,      // 取消刪除標記
+      deletedAt: null,       // 清除刪除時間
+      updatedAt: new Date()  // 更新修改時間
     };
     
+    // 檢查對象的完整性
+    if (!updatedPost.content) {
+      console.warn(`還原的貼文缺少內容字段，設置為空字符串`);
+      updatedPost.content = "";
+    }
+    
+    if (!updatedPost.author) {
+      console.warn(`還原的貼文缺少作者字段，設置為系統還原`);
+      updatedPost.author = "系統還原";
+    }
+    
+    // 寫入更新後的貼文
     this.posts.set(id, updatedPost);
     
-    console.log(`貼文 ${id} 還原成功，關聯到頁面 ${pageId}，狀態=${status}，postId=${postId}`);
+    // 驗證更新是否成功，再次獲取貼文
+    const verifiedPost = await this.getPostById(id);
+    if (!verifiedPost || verifiedPost.isDeleted) {
+      console.error(`貼文還原後驗證失敗，可能未正確保存`);
+      throw new Error(`貼文還原後驗證失敗，請稍後再試`);
+    }
     
-    // 打印用於調試
-    console.log(`還原後的貼文詳情:`, {
+    // 確認貼文不在已刪除列表中
+    const deletedPosts = await this.getDeletedPosts(pageId);
+    const stillDeleted = deletedPosts.some(p => p.id === id);
+    if (stillDeleted) {
+      console.warn(`警告：貼文ID=${id}仍然出現在已刪除列表中，可能存在緩存問題`);
+    }
+    
+    console.log(`貼文 ID=${id} 還原成功，詳細信息:`, {
       id: updatedPost.id,
       pageId: updatedPost.pageId,
       postId: updatedPost.postId,
       status: updatedPost.status,
-      isDeleted: updatedPost.isDeleted
+      isDeleted: updatedPost.isDeleted,
+      updatedAt: updatedPost.updatedAt
     });
     
     return updatedPost;
