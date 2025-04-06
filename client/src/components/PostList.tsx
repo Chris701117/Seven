@@ -246,31 +246,32 @@ const PostList = ({ pageId, filter, isCompactView = false }: PostListProps) => {
     // 排序 - 確保草稿也能正確排序
     const sorted = [...filtered].sort((a, b) => {
       // 針對不同狀態的貼文使用適當的日期字段
-      // 返回日期字段作為字符串
-      const getDateForSort = (post: Post): string => {
-        if (post.status === 'published' && post.publishedTime) {
-          return post.publishedTime.toString();
+      // 優先使用意義最符合的日期字段
+      const getDateForSort = (post: Post): Date => {
+        // 對於已發布或發布失敗的貼文，優先使用發布時間
+        if ((post.status === 'published' || post.status === 'publish_failed') && post.publishedTime) {
+          return new Date(post.publishedTime);
         }
-        if (post.status === 'publish_failed' && post.publishedTime) {
-          return post.publishedTime.toString();
-        }
+        
+        // 對於排程中的貼文，使用排程時間
         if (post.status === 'scheduled' && post.scheduledTime) {
-          return post.scheduledTime.toString();
+          return new Date(post.scheduledTime);
         }
-        return post.createdAt?.toString() || ''; // 草稿和其他狀態
+        
+        // 其他情況（包括草稿）使用創建時間
+        const createdDate = post.createdAt ? new Date(post.createdAt) : new Date(0);
+        return createdDate;
       };
       
-      const dateA = getDateForSort(a);
-      const dateB = getDateForSort(b);
-      
-      // 確保日期值有效且安全地解析
-      const dateObjA = dateA ? new Date(dateA) : new Date(0);
-      const dateObjB = dateB ? new Date(dateB) : new Date(0);
+      // 獲取排序用的日期對象
+      const dateObjA = getDateForSort(a);
+      const dateObjB = getDateForSort(b);
       
       // 檢查是否為有效日期對象，避免時間戳為NaN
       const timeA = !isNaN(dateObjA.getTime()) ? dateObjA.getTime() : 0;
       const timeB = !isNaN(dateObjB.getTime()) ? dateObjB.getTime() : 0;
       
+      // 根據排序選項應用對應的排序邏輯
       if (sortOrder === 'newest') {
         return timeB - timeA; // 最新排序 (降序)
       } else {
