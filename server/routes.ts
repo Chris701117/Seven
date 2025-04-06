@@ -1852,16 +1852,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`找到貼文，頁面ID=${post.pageId}, 刪除狀態=${post.isDeleted}`);
       
+      // 查找用戶的活動頁面，用於將測試頁面的貼文轉移
+      const userPages = await storage.getPages(req.session.userId);
+      let targetPageId = null;
+      
+      if (userPages && userPages.length > 0) {
+        // 優先選擇非測試頁面作為目標頁面
+        const realPage = userPages.find(p => p.pageId !== "page_123456" && p.id !== 9999);
+        if (realPage) {
+          targetPageId = realPage.pageId;
+          console.log(`找到用戶實際頁面 ${targetPageId}，將用於貼文轉移`);
+        } else {
+          // 如果沒有找到非測試頁面，使用第一個可用頁面
+          targetPageId = userPages[0].pageId;
+          console.log(`未找到非測試頁面，使用第一個可用頁面 ${targetPageId}`);
+        }
+      }
+      
       // 檢查這是否為測試頁面的貼文
       if (post.pageId === "page_123456") {
-        console.log(`這是測試頁面的貼文，允許還原`);
+        console.log(`這是測試頁面的貼文，允許還原，目標頁面=${targetPageId || '自動選擇'}`);
         
         if (!post.isDeleted) {
           return res.status(400).json({ message: "This post is not deleted" });
         }
         
-        const restoredPost = await storage.restorePost(postId);
-        console.log(`測試頁面貼文還原成功`);
+        const restoredPost = await storage.restorePost(postId, targetPageId);
+        console.log(`測試頁面貼文還原成功，轉移到頁面ID=${restoredPost.pageId}`);
         return res.json({ message: "Post restored successfully", post: restoredPost });
       }
       

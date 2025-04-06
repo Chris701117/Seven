@@ -1236,7 +1236,7 @@ export class MemStorage implements IStorage {
     return true;
   }
 
-  async restorePost(id: number): Promise<Post> {
+  async restorePost(id: number, targetPageId?: string): Promise<Post> {
     const post = await this.getPostById(id);
     if (!post) {
       throw new Error(`Post with id ${id} not found`);
@@ -1246,13 +1246,32 @@ export class MemStorage implements IStorage {
       throw new Error(`Post with id ${id} is not deleted`);
     }
     
+    // 如果這是測試頁面的貼文，將它關聯到實際頁面
+    let pageId = post.pageId;
+    if (pageId === "page_123456" && targetPageId && targetPageId !== "page_123456") {
+      console.log(`將測試頁面貼文轉移到實際頁面 ${targetPageId}`);
+      pageId = targetPageId;
+    } else if (pageId === "page_123456") {
+      // 如果沒有指定目標頁面，使用第一個可用的實際頁面
+      const activePages = Array.from(this.pages.values())
+        .filter(p => p.pageId !== "page_123456" && p.id !== 9999);
+      
+      if (activePages.length > 0) {
+        pageId = activePages[0].pageId;
+        console.log(`自動將測試頁面貼文轉移到第一個可用頁面 ${pageId}`);
+      }
+    }
+    
     const updatedPost = { 
       ...post, 
+      pageId: pageId, // 更新頁面ID
       isDeleted: false,
       deletedAt: null,
       updatedAt: new Date()
     };
     this.posts.set(id, updatedPost);
+    
+    console.log(`貼文 ${id} 還原成功，關聯到頁面 ${pageId}`);
     return updatedPost;
   }
 
