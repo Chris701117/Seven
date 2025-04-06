@@ -233,23 +233,30 @@ export default function Login() {
           {requireTwoFactorSetup ? (
             // 設置二步驗證
             <div className="space-y-4">
-              {/* 簡潔風格提醒 */}
-              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-amber-600" />
-                  <p className="font-medium text-amber-800">必須啟用二步驗證</p>
-                </div>
-                <p className="text-amber-700 text-sm mt-2">
-                  為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
+              <div className="text-center mb-2">
+                <h3 className="text-xl font-medium">設置二步驗證</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  請使用Google Authenticator掃描下方QR碼並輸入驗證碼
                 </p>
               </div>
               
-
+              {/* 簡潔風格提醒 */}
+              <div className="p-4 mb-4 bg-amber-50 border border-amber-200 rounded-md">
+                <div className="flex items-start gap-2">
+                  <Shield className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-800">必須啟用二步驗證</p>
+                    <p className="text-amber-700 text-sm mt-1">
+                      為保障帳戶安全，本系統要求所有用戶啟用二步驗證。請完成以下步驟。
+                    </p>
+                  </div>
+                </div>
+              </div>
               
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-center font-semibold">第1步：下載 Google Authenticator 應用</h3>
-                  <div className="flex justify-center gap-4">
+              <div className="space-y-5">
+                <div>
+                  <p className="font-medium mb-2">第1步：下載 Google Authenticator 應用</p>
+                  <div className="flex gap-4">
                     <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener" className="text-sm text-blue-600 hover:underline">
                       Android下載
                     </a>
@@ -259,12 +266,12 @@ export default function Login() {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <h3 className="text-center font-semibold">第2步：掃描QR碼</h3>
+                <div>
+                  <p className="font-medium mb-2">第2步：掃描QR碼</p>
                   {qrCode && (
                     <div className="flex justify-center">
                       <div className="border p-2 bg-white">
-                        <img src={qrCode} alt="二步驗證QR碼" className="w-48 h-48" />
+                        <img src={qrCode} alt="二步驗證QR碼" className="w-40 h-40" />
                       </div>
                     </div>
                   )}
@@ -281,26 +288,28 @@ export default function Login() {
                 
                 <Form {...setupTwoFactorForm}>
                   <form onSubmit={setupTwoFactorForm.handleSubmit(onSubmitSetupTwoFactor)} className="space-y-4">
-                    <FormField
-                      control={setupTwoFactorForm.control}
-                      name="code"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>第3步：輸入驗證碼</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="請輸入應用中顯示的6位數驗證碼" 
-                              maxLength={6} 
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              className="text-center text-lg py-5"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div>
+                      <p className="font-medium mb-2">第3步：輸入驗證碼</p>
+                      <FormField
+                        control={setupTwoFactorForm.control}
+                        name="code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input 
+                                placeholder="請輸入應用中顯示的6位數驗證碼" 
+                                maxLength={6} 
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                className="text-center text-lg py-5"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     {/* 驗證失敗提示 */}
                     {twoFactorError && (
@@ -378,8 +387,8 @@ export default function Login() {
             // 第二步：二步驗證
             <Form {...twoFactorForm}>
               <form onSubmit={twoFactorForm.handleSubmit(onSubmitTwoFactor)} className="space-y-4">
-                {/* 標題區塊 - 紅色邊框設計 */}
-                <div className="border-2 border-red-500 rounded-md p-4 mb-2">
+                {/* 外部紅色邊框，完全符合參考圖片 */}
+                <div className="border-2 border-red-500 rounded-md p-4 mb-4">
                   <h3 className="text-center font-medium text-xl">二步驗證</h3>
                   <p className="text-center text-sm mt-1">
                     請輸入Google Authenticator中的驗證碼
@@ -393,22 +402,6 @@ export default function Login() {
                 <p className="text-center text-muted-foreground text-sm mb-4">
                   請打開Google Authenticator應用並輸入顯示的6位數驗證碼
                 </p>
-                
-                {/* 測試環境說明 - 黃色背景提示卡片 */}
-                <div className="p-4 mb-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md">
-                  <div className="flex items-start gap-2">
-                    <Shield className="h-5 w-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-yellow-800">測試環境提示</p>
-                      <p className="text-yellow-700 text-sm mt-1">
-                        請使用Google Authenticator掃描設置頁面提供的固定QR碼並輸入顯示的驗證碼
-                      </p>
-                      <p className="text-yellow-700 font-medium text-sm mt-1">
-                        測試環境密鑰：JBSWY3DPEHPK3PXP
-                      </p>
-                    </div>
-                  </div>
-                </div>
                 
                 <FormField
                   control={twoFactorForm.control}
