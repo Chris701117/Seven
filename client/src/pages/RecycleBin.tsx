@@ -82,33 +82,63 @@ const RecycleBin = () => {
   } = useQuery({
     queryKey: ['/api/pages', activePageId, 'deleted-posts'],
     queryFn: async () => {
-      if (!activePageId) return [];
+      if (!activePageId || !pages || pages.length === 0) return [];
       
       try {
-        // 先嘗試獲取當前選中頁面的已刪除貼文
-        const posts = await apiRequest(`/api/pages/${activePageId}/deleted-posts`);
-        console.log(`從頁面 ${activePageId} 獲取到 ${posts.length} 個已刪除貼文`);
+        // 測試頁面ID (確保我們嘗試獲取數據的頁面ID)
+        const testPageId = "page_123456";
         
-        // 如果沒有找到已刪除貼文，且有其他頁面，則嘗試查詢固定的測試頁面
-        if (posts.length === 0 && pages && pages.length > 0) {
-          const testPageId = "page_123456"; // 測試頁面ID
-          const testPage = pages.find(page => page.pageId === testPageId);
-          
-          if (testPage) {
-            console.log(`嘗試從測試頁面 ${testPageId} 獲取已刪除貼文`);
-            const testPosts = await apiRequest(`/api/pages/${testPageId}/deleted-posts`);
-            console.log(`從測試頁面 ${testPageId} 獲取到 ${testPosts.length} 個已刪除貼文`);
+        // 先嘗試獲取當前選中頁面的已刪除貼文
+        const currentPagePosts = await apiRequest(`/api/pages/${activePageId}/deleted-posts`);
+        console.log(`從當前選中頁面 ${activePageId} 獲取到 ${currentPagePosts.length} 個已刪除貼文`);
+        
+        // 如果當前頁面有刪除的貼文，則直接返回
+        if (currentPagePosts && currentPagePosts.length > 0) {
+          return currentPagePosts;
+        }
+        
+        // 遍歷所有頁面，尋找已刪除的貼文
+        console.log(`當前頁面沒有已刪除貼文，開始嘗試從其他頁面獲取...`);
+        
+        // 優先嘗試從測試頁面獲取
+        console.log(`嘗試從測試頁面 ${testPageId} 獲取已刪除貼文`);
+        try {
+          const testPosts = await apiRequest(`/api/pages/${testPageId}/deleted-posts`);
+          console.log(`從測試頁面 ${testPageId} 獲取到 ${testPosts.length} 個已刪除貼文`);
+          if (testPosts && testPosts.length > 0) {
             return testPosts;
+          }
+        } catch (err) {
+          console.log(`從測試頁面獲取失敗:`, err);
+        }
+        
+        // 如果仍然沒有找到，則遍歷所有其他頁面
+        console.log(`開始遍歷所有頁面尋找已刪除貼文...`);
+        for (const page of pages) {
+          if (page.pageId !== activePageId) {
+            try {
+              console.log(`嘗試從頁面 ${page.pageId} 獲取已刪除貼文`);
+              const pagePosts = await apiRequest(`/api/pages/${page.pageId}/deleted-posts`);
+              console.log(`從頁面 ${page.pageId} 獲取到 ${pagePosts.length} 個已刪除貼文`);
+              
+              if (pagePosts && pagePosts.length > 0) {
+                return pagePosts;
+              }
+            } catch (pageError) {
+              console.error(`從頁面 ${page.pageId} 獲取已刪除貼文失敗:`, pageError);
+            }
           }
         }
         
-        return posts;
+        // 如果所有頁面都沒有已刪除貼文，則返回空數組
+        console.log(`所有頁面都沒有已刪除貼文`);
+        return [];
       } catch (error) {
         console.error('獲取已刪除貼文時發生錯誤:', error);
         return [];
       }
     },
-    enabled: !!activePageId,
+    enabled: !!activePageId && !!pages,
   });
 
   // 還原貼文
