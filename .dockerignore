@@ -1,0 +1,14 @@
+attached_assets
+node_modules
+Dockerfile
+.dockerignore
+.git
+.gitignore
+logs
+*.log
+*.zip
+*.tar.gz
+coverage
+dist
+.cache
+.config
