@@ -2434,20 +2434,45 @@ export class MemStorage implements IStorage {
     
     // 確保權限數據正確處理
     let permissions = group.permissions;
-    if (groupData.permissions) {
+    if (groupData.permissions !== undefined) {
       console.log('正在更新權限，新權限:', groupData.permissions);
-      permissions = groupData.permissions;
+      
+      // 確保權限是數組格式
+      if (Array.isArray(groupData.permissions)) {
+        permissions = groupData.permissions;
+        console.log(`成功更新權限，共設置 ${permissions.length} 個權限`);
+      } else {
+        console.error('權限數據格式錯誤，應為數組:', groupData.permissions);
+        throw new Error('權限數據格式無效');
+      }
+    } else {
+      console.log('未提供權限數據，保留原有權限');
     }
     
+    // 創建更新後的群組對象
     const updatedGroup = {
       ...group,
-      ...groupData,
-      permissions,
+      name: groupData.name !== undefined ? groupData.name : group.name,
+      description: groupData.description !== undefined ? groupData.description : group.description,
+      permissions: permissions,  // 使用處理後的權限
       updatedAt: new Date()
     };
     
     console.log('完整的更新群組數據:', JSON.stringify(updatedGroup, null, 2));
+    
+    // 保存到存儲中
     this.userGroups.set(id, updatedGroup);
+    
+    // 確認保存結果
+    const savedGroup = this.userGroups.get(id);
+    console.log('保存後的群組數據:', JSON.stringify(savedGroup, null, 2));
+    
+    if (JSON.stringify(savedGroup?.permissions) !== JSON.stringify(updatedGroup.permissions)) {
+      console.error('警告：保存的權限與更新的權限不一致');
+      console.error('預期權限:', JSON.stringify(updatedGroup.permissions));
+      console.error('實際保存權限:', JSON.stringify(savedGroup?.permissions));
+    }
+    
     return updatedGroup;
   }
   
