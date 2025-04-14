@@ -3597,6 +3597,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 創建新用戶（僅管理員可使用）
+  app.post("/api/users", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以創建用戶
+      if (currentUser.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      // 驗證用戶數據
+      const userData = await insertUserSchema.parse(req.body);
+      
+      // 檢查用戶名是否已存在
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(409).json({ message: "用戶名已被使用" });
+      }
+      
+      // 確保管理員通過API創建的用戶有正確的角色，默認為USER
+      if (!userData.role) {
+        userData.role = "USER";
+      }
+      
+      console.log("管理員創建新用戶:", {
+        username: userData.username,
+        role: userData.role,
+        email: userData.email,
+        groupId: userData.groupId
+      });
+      
+      // 創建用戶
+      const newUser = await storage.createUser(userData);
+      
+      // 如果指定了群組ID，將用戶添加到該群組
+      if (userData.groupId && typeof userData.groupId === 'number') {
+        try {
+          await storage.addUserToGroup(newUser.id, userData.groupId);
+          console.log(`用戶已添加到群組 ${userData.groupId}`);
+        } catch (groupError) {
+          console.error("添加用戶到群組錯誤:", groupError);
+          // 不中斷創建流程，僅記錄錯誤
+        }
+      }
+      
+      // 生成二步驗證密鑰和QR碼（但不啟用）
+      const secret = USE_FIXED_2FA_SECRET ? FIXED_2FA_SECRET : authenticator.generateSecret();
+      await storage.setTwoFactorSecret(newUser.id, secret);
+      
+      // 移除敏感信息
+      const { password, ...userWithoutPassword } = newUser;
+      
+      res.status(201).json({
+        message: "用戶創建成功",
+        user: {
+          ...userWithoutPassword,
+          isTwoFactorEnabled: false,
+          isAdmin: userWithoutPassword.role === "ADMIN"
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "無效的用戶數據", 
+          errors: error.errors 
+        });
+      }
+      
+      console.error("創建用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "創建用戶時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+
   // 獲取所有用戶列表（僅管理員可訪問）
   app.get("/api/users", async (req, res) => {
     if (!req.session.userId) {
@@ -3635,6 +3719,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("獲取用戶列表錯誤:", error);
       res.status(500).json({ 
         message: "獲取用戶列表時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  // 更新用戶信息
+  app.put("/api/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查當前用戶權限
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 只有管理員可以更新其他用戶，普通用戶只能更新自己
+      if (currentUser.role !== "ADMIN" && currentUser.id !== targetUserId) {
+        return res.status(403).json({ message: "權限不足，您只能更新自己的信息" });
+      }
+
+      // 獲取目標用戶
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 驗證更新數據 - 只允許更新部分欄位
+      const allowedFields = ['displayName', 'email', 'groupId', 'isActive'];
+      
+      // 管理員可以更新角色
+      if (currentUser.role === "ADMIN") {
+        allowedFields.push('role');
+      }
+      
+      // 過濾出允許的欄位
+      const updateData: Partial<User> = {};
+      for (const field of allowedFields) {
+        if (field in req.body) {
+          updateData[field] = req.body[field];
+        }
+      }
+      
+      console.log(`更新用戶 ${targetUserId} 的信息:`, updateData);
+      
+      // 執行更新
+      const updatedUser = await storage.updateUser(targetUserId, updateData);
+      
+      // 移除敏感信息
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: "用戶信息已更新",
+        user: {
+          ...userWithoutPassword,
+          isTwoFactorEnabled: !!userWithoutPassword.isTwoFactorEnabled,
+          isAdmin: userWithoutPassword.role === "ADMIN"
+        }
+      });
+    } catch (error) {
+      console.error("更新用戶信息錯誤:", error);
+      res.status(500).json({ 
+        message: "更新用戶信息時發生錯誤",
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
+    }
+  });
+  
+  // 刪除用戶
+  app.delete("/api/users/:userId", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "未認證" });
+    }
+
+    try {
+      // 檢查用戶權限
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "用戶不存在" });
+      }
+
+      // 只有管理員可以刪除用戶
+      if (currentUser.role !== "ADMIN") {
+        return res.status(403).json({ message: "權限不足，需要管理員權限" });
+      }
+
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "無效的用戶ID" });
+      }
+
+      // 不能刪除自己的帳號
+      if (currentUser.id === targetUserId) {
+        return res.status(400).json({ message: "不能刪除自己的帳號" });
+      }
+
+      // 檢查目標用戶是否存在
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "找不到目標用戶" });
+      }
+
+      // 刪除用戶
+      await storage.deleteUser(targetUserId);
+      
+      res.json({ message: "用戶已成功刪除" });
+    } catch (error) {
+      console.error("刪除用戶錯誤:", error);
+      res.status(500).json({ 
+        message: "刪除用戶時發生錯誤",
         error: error instanceof Error ? error.message : "未知錯誤" 
       });
     }
