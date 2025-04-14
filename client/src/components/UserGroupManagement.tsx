@@ -273,30 +273,32 @@ const UserGroupManagement = () => {
       }
     },
     onSuccess: (data) => {
+      console.log('更新群組成功，返回數據:', data);
+      
+      // 立即關閉對話框並重置表單狀態
+      resetFormState();
+      setEditGroupDialogOpen(false);
+      
+      // 先顯示成功提示
       toast({
         title: "群組已更新",
         description: `用戶群組已成功更新權限`,
       });
       
-      console.log('更新群組成功，返回數據:', data);
-      
       // 先取消所有緩存
       queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
       
-      // 等待短暫延遲後強制刷新
+      // 等待優先取消緩存後再強制刷新數據
       setTimeout(() => {
-        // 強制刷新群組列表
+        // 首先強制刷新群組列表
         queryClient.refetchQueries({ queryKey: ['/api/user-groups'] });
         
-        // 強制刷新當前群組詳情
+        // 延遲後再強制刷新當前群組詳情，確保數據已更新
         if (selectedGroupId) {
           console.log('強制刷新群組詳情:', selectedGroupId);
           queryClient.refetchQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
         }
-      }, 100);
-      
-      resetFormState();
-      setEditGroupDialogOpen(false);
+      }, 300);
     },
     onError: (error) => {
       toast({
