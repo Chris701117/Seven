@@ -256,7 +256,17 @@ const UserGroupManagement = () => {
           throw new Error(responseText || `伺服器錯誤: ${response.status}`);
         }
         
-        return responseText ? JSON.parse(responseText) : null;
+        try {
+          return responseText ? JSON.parse(responseText) : null;
+        } catch (jsonError) {
+          console.error('解析伺服器響應JSON錯誤:', jsonError);
+          // 返回一個最小的有效對象，以便onSuccess處理程序可以繼續
+          return { 
+            id: data.id,
+            name: "未知群組",
+            permissions: data.permissions
+          };
+        }
       } catch (error) {
         console.error('更新群組請求錯誤:', error);
         throw error;
@@ -265,12 +275,31 @@ const UserGroupManagement = () => {
     onSuccess: (data) => {
       toast({
         title: "群組已更新",
-        description: `用戶群組 "${data.name}" 已成功更新`,
+        description: `用戶群組已成功更新權限`,
       });
+      
+      // 強制刷新所有相關查詢
       queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
+      
+      // 強制刷新當前群組詳情
+      if (selectedGroupId) {
+        console.log('強制刷新群組詳情:', selectedGroupId);
+        queryClient.invalidateQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
+        
+        // 如果需要，強制刷新特定群組詳情
+        queryClient.refetchQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
+      }
+      
       resetFormState();
       setEditGroupDialogOpen(false);
+      
+      // 強制更新本地緩存的權限數據
+      if (selectedGroup) {
+        queryClient.setQueryData(['/api/user-groups', selectedGroupId], {
+          ...selectedGroup,
+          permissions: data.permissions
+        });
+      }
     },
     onError: (error) => {
       toast({

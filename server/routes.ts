@@ -435,14 +435,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 檢查是否為 TOTP (Google Authenticator)
       else if (user.twoFactorSecret) {
         try {
-          // 驗證 TOTP 代碼
+          // 驗證 TOTP 代碼 - 必須針對該用戶 ID 的密鑰進行驗證
           isValid = authenticator.verify({ 
             token: code, 
+            // 確保使用該用戶的密鑰而不是全局密鑰
             secret: user.twoFactorSecret 
           });
-          console.log('TOTP 驗證結果:', isValid);
+          console.log('TOTP 驗證結果:', isValid, '用戶:', user.id, '密鑰:', user.twoFactorSecret.substring(0, 5) + '...');
         } catch (verifyError) {
           console.error('TOTP 驗證錯誤:', verifyError);
+          isValid = false;
         }
       }
       
