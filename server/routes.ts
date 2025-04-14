@@ -3571,11 +3571,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`警告：更新群組 ${groupId} 權限為空列表`);
       }
       
+      // 構建更新數據對象 - 只允許更新permissions字段，保留其他現有數據
+      const updateData = {
+        ...existingGroup,
+        permissions: groupData.permissions || []
+      };
+      
+      console.log('構建的完整更新數據:', JSON.stringify(updateData, null, 2));
+      
       // 執行更新
       try {
-        const updatedGroup = await storage.updateUserGroup(groupId, groupData);
+        // 首先，直接將權限數據保存到數據庫
+        const updated = await storage.updateUserGroupPermissions(groupId, groupData.permissions || []);
+        
+        if (!updated) {
+          throw new Error("權限更新失敗，數據庫返回空結果");
+        }
+        
+        // 然後，重新獲取更新後的群組數據以確保前端獲得正確信息
+        const updatedGroup = await storage.getUserGroupById(groupId);
+        
+        if (!updatedGroup) {
+          throw new Error("更新後無法獲取群組數據");
+        }
+        
         console.log('群組更新成功，結果:', JSON.stringify(updatedGroup, null, 2));
-        res.json(updatedGroup);
+        console.log('權限數量:', updatedGroup.permissions ? updatedGroup.permissions.length : 0);
+        
+        // 設置響應頭，確保返回 JSON
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.status(200).json(updatedGroup);
       } catch (updateError) {
         console.error('群組更新失敗:', updateError);
         throw updateError;
