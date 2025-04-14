@@ -3529,9 +3529,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 更新群組數據
       const groupData = req.body;
-      const updatedGroup = await storage.updateUserGroup(groupId, groupData);
       
-      res.json(updatedGroup);
+      console.log('接收到的群組權限更新數據:', JSON.stringify(groupData, null, 2));
+      
+      // 檢查權限列表是否為有效數組
+      if (groupData.permissions && !Array.isArray(groupData.permissions)) {
+        return res.status(400).json({ message: "權限格式無效，應為權限ID數組" });
+      }
+      
+      if (groupData.permissions && groupData.permissions.length > 0) {
+        console.log(`更新群組 ${groupId} 權限，共 ${groupData.permissions.length} 個權限`);
+      } else {
+        console.log(`警告：更新群組 ${groupId} 權限為空列表`);
+      }
+      
+      // 執行更新
+      try {
+        const updatedGroup = await storage.updateUserGroup(groupId, groupData);
+        console.log('群組更新成功，結果:', JSON.stringify(updatedGroup, null, 2));
+        res.json(updatedGroup);
+      } catch (updateError) {
+        console.error('群組更新失敗:', updateError);
+        throw updateError;
+      }
     } catch (error) {
       console.error("更新用戶群組錯誤:", error);
       res.status(500).json({ 
