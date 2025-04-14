@@ -355,11 +355,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('TOTP驗證發生錯誤:', verifyError);
       }
       
-      // 嚴格驗證：必須使用正確的驗證碼
+      // 嚴格驗證：必須使用正確的驗證碼，防止任意驗證碼繞過
       if (!isValid) {
         console.log('設置二步驗證失敗: 驗證碼無效');
-        return res.status(401).json({ message: "驗證碼無效" });
+        // 增加記錄失敗次數，防止暴力破解
+        const failCount = req.session.twoFactorSetupFails || 0;
+        req.session.twoFactorSetupFails = failCount + 1;
+        if (req.session.twoFactorSetupFails > 5) {
+          console.log('二步驗證嘗試次數過多，暫時鎖定');
+          return res.status(429).json({ message: "驗證嘗試次數過多，請稍後再試" });
+        }
+        return res.status(401).json({ message: "驗證碼無效，請確認您輸入了正確的6位數驗證碼" });
       }
+      // 重置失敗計數
+      req.session.twoFactorSetupFails = 0;
       
       // 驗證成功，啟用二步驗證
       console.log('驗證通過，正在啟用二步驗證');
@@ -448,11 +457,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 嚴格驗證：必須使用正確的驗證碼
+      // 嚴格驗證：必須使用正確的驗證碼，防止任意驗證碼繞過
       if (!isValid) {
         console.log('2FA驗證失敗: 驗證碼無效');
-        return res.status(401).json({ message: "驗證碼無效或已過期" });
+        // 增加記錄失敗次數，防止暴力破解
+        const failCount = req.session.twoFactorVerifyFails || 0;
+        req.session.twoFactorVerifyFails = failCount + 1;
+        
+        if (req.session.twoFactorVerifyFails > 5) {
+          console.log('二步驗證嘗試次數過多，暫時鎖定');
+          return res.status(429).json({ message: "驗證嘗試次數過多，請稍後再試" });
+        }
+        
+        return res.status(401).json({ message: "驗證碼無效或已過期，請確認您輸入了正確的6位數驗證碼" });
       }
+      
+      // 重置失敗計數
+      req.session.twoFactorVerifyFails = 0;
       
       console.log('2FA驗證成功，設置用戶會話');
       // 驗證成功，設置會話
@@ -557,11 +578,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('TOTP verify-2fa-setup 驗證錯誤:', verifyError);
       }
       
-      // 嚴格驗證：必須使用正確的驗證碼
-      
+      // 嚴格驗證：必須使用正確的驗證碼，防止任意驗證碼繞過
       if (!isValid) {
-        return res.status(401).json({ message: "驗證碼無效" });
+        console.log('2FA設置驗證失敗: 驗證碼無效');
+        // 增加記錄失敗次數，防止暴力破解
+        const failCount = req.session.twoFactorSetupVerifyFails || 0;
+        req.session.twoFactorSetupVerifyFails = failCount + 1;
+        
+        if (req.session.twoFactorSetupVerifyFails > 5) {
+          console.log('二步驗證設置嘗試次數過多，暫時鎖定');
+          return res.status(429).json({ message: "驗證嘗試次數過多，請稍後再試" });
+        }
+        
+        return res.status(401).json({ message: "驗證碼無效，請確認您輸入了正確的6位數驗證碼" });
       }
+      
+      // 重置失敗計數
+      req.session.twoFactorSetupVerifyFails = 0;
       
       // 驗證成功，啟用二步驗證
       const updatedUser = await storage.enableTwoFactor(user.id);
