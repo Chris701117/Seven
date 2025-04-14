@@ -138,6 +138,7 @@ export interface IStorage {
   getUserGroupById(id: number): Promise<UserGroup | undefined>;
   createUserGroup(group: InsertUserGroup): Promise<UserGroup>;
   updateUserGroup(id: number, group: Partial<UserGroup>): Promise<UserGroup>;
+  updateUserGroupPermissions(id: number, permissions: Permission[]): Promise<UserGroup>;
   deleteUserGroup(id: number): Promise<boolean>;
   
   // 用戶-群組關係操作
