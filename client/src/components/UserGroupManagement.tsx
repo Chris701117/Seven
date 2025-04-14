@@ -238,22 +238,29 @@ const UserGroupManagement = () => {
       
       console.log('處理後的數據:', processedData);
       
-      const response = await fetch(`/api/user-groups/${data.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(processedData),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('更新群組失敗:', errorText);
-        throw new Error(errorText || `伺服器錯誤: ${response.status}`);
+      try {
+        const response = await fetch(`/api/user-groups/${data.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(processedData),
+          credentials: 'include'
+        });
+        
+        const responseText = await response.text();
+        console.log('伺服器響應:', responseText);
+        
+        if (!response.ok) {
+          console.error('更新群組失敗:', responseText);
+          throw new Error(responseText || `伺服器錯誤: ${response.status}`);
+        }
+        
+        return responseText ? JSON.parse(responseText) : null;
+      } catch (error) {
+        console.error('更新群組請求錯誤:', error);
+        throw error;
       }
-      
-      return await response.json();
     },
     onSuccess: (data) => {
       toast({

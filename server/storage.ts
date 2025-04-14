@@ -2425,16 +2425,28 @@ export class MemStorage implements IStorage {
   }
   
   async updateUserGroup(id: number, groupData: Partial<UserGroup>): Promise<UserGroup> {
+    console.log(`嘗試更新群組 ${id}，數據:`, JSON.stringify(groupData, null, 2));
+    
     const group = await this.getUserGroupById(id);
     if (!group) {
       throw new Error(`用戶群組 ID ${id} 不存在`);
     }
     
+    // 確保權限數據正確處理
+    let permissions = group.permissions;
+    if (groupData.permissions) {
+      console.log('正在更新權限，新權限:', groupData.permissions);
+      permissions = groupData.permissions;
+    }
+    
     const updatedGroup = {
       ...group,
       ...groupData,
+      permissions,
       updatedAt: new Date()
     };
+    
+    console.log('完整的更新群組數據:', JSON.stringify(updatedGroup, null, 2));
     this.userGroups.set(id, updatedGroup);
     return updatedGroup;
   }
