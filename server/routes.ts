@@ -323,6 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('用戶信息:', user ? `找到用戶 ID: ${user.id}` : '用戶不存在');
       
       if (!user) {
+        console.log('設置二步驗證失敗: 用戶不存在');
         return res.status(404).json({ message: "用戶不存在" });
       }
       
@@ -333,26 +334,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!user.twoFactorSecret) {
+        console.log('設置二步驗證失敗: 未初始化二步驗證密鑰');
         return res.status(400).json({ message: "請先初始化二步驗證" });
       }
       
       if (user.isTwoFactorEnabled) {
+        console.log('設置二步驗證失敗: 二步驗證已啟用');
         return res.status(400).json({ message: "二步驗證已經啟用" });
       }
       
       // 驗證 TOTP 代碼
-      const isValid = authenticator.verify({ 
-        token: code, 
-        secret: user.twoFactorSecret 
-      });
+      let isValid = false;
+      try {
+        isValid = authenticator.verify({ 
+          token: code, 
+          secret: user.twoFactorSecret 
+        });
+        console.log('TOTP驗證結果:', isValid);
+      } catch (verifyError) {
+        console.error('TOTP驗證發生錯誤:', verifyError);
+      }
       
       // 嚴格驗證：必須使用正確的驗證碼
-      
       if (!isValid) {
+        console.log('設置二步驗證失敗: 驗證碼無效');
         return res.status(401).json({ message: "驗證碼無效" });
       }
       
       // 驗證成功，啟用二步驗證
+      console.log('驗證通過，正在啟用二步驗證');
       const updatedUser = await storage.enableTwoFactor(user.id);
       
       // 設置用戶會話
@@ -362,6 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUser(userId, { lastLoginAt: new Date() });
       
       const { password, ...userWithoutPassword } = updatedUser;
+      console.log('二步驗證設置成功');
       res.json({ 
         success: true, 
         message: "二步驗證設置成功並已登入",
@@ -387,16 +398,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId, code } = await verifySchema.parse(req.body);
       const user = await storage.getUser(userId);
       
+      console.log('2FA驗證請求 - 用戶:', userId, '驗證碼:', code);
+      
       if (!user) {
+        console.log('2FA驗證失敗: 用戶不存在');
         return res.status(404).json({ message: "用戶不存在" });
       }
       
-      if (!user.isTwoFactorEnabled || !user.twoFactorSecret) {
-        return res.status(400).json({ message: "此用戶未啟用二步驗證" });
+      // 檢查用戶是否已經設置二步驗證密鑰
+      if (!user.twoFactorSecret) {
+        console.log('2FA驗證失敗: 用戶未設置二步驗證密鑰');
+        return res.status(400).json({ message: "請先設置二步驗證" });
       }
+      
+      // 檢查用戶是否已經啟用二步驗證 - 注意，即使沒有啟用，也需要驗證
+      console.log('用戶二步驗證狀態:', {
+        userId: user.id,
+        username: user.username,
+        isTwoFactorEnabled: user.isTwoFactorEnabled,
+        hasTwoFactorSecret: !!user.twoFactorSecret
+      });
       
       // 檢查是否有儲存的驗證碼
       const authCode = await storage.getAuthCodeByUserIdAndCode(userId, code);
+      console.log('儲存的一次性驗證碼:', authCode ? '找到' : '未找到');
       
       let isValid = false;
       
@@ -407,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.markAuthCodeAsUsed(authCode.id);
         console.log('使用一次性驗證碼成功');
       } 
-      // 如果沒有儲存的驗證碼或驗證失敗，則檢查是否為 TOTP (Google Authenticator)
+      // 檢查是否為 TOTP (Google Authenticator)
       else if (user.twoFactorSecret) {
         try {
           // 驗證 TOTP 代碼
@@ -422,11 +447,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 嚴格驗證：必須使用正確的驗證碼
-      
       if (!isValid) {
+        console.log('2FA驗證失敗: 驗證碼無效');
         return res.status(401).json({ message: "驗證碼無效或已過期" });
       }
       
+      console.log('2FA驗證成功，設置用戶會話');
       // 驗證成功，設置會話
       req.session.userId = userId;
       
