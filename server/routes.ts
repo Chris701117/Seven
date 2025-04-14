@@ -241,16 +241,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "用戶名已被使用" });
       }
       
+      console.log("註冊新用戶:", {
+        username: userData.username,
+        role: userData.role,
+        email: userData.email
+      });
+      
       // 創建用戶（直接使用明文密碼）
       const user = await storage.createUser(userData);
       
-      req.session.userId = user.id;
-      res.status(201).json({ message: "註冊成功", userId: user.id });
+      // 自動生成二步驗證密鑰
+      const secret = USE_FIXED_2FA_SECRET ? FIXED_2FA_SECRET : authenticator.generateSecret();
+      const otpauth = authenticator.keyuri(user.username, "社群媒體管理系統", secret);
+      
+      // 生成 QR Code
+      const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
+      
+      // 設置二步驗證密鑰（但尚未啟用）
+      await storage.setTwoFactorSecret(user.id, secret);
+      
+      // 用戶已創建但需要設置二步驗證，不自動登入
+      res.status(201).json({ 
+        message: "註冊成功，請設置二步驗證", 
+        userId: user.id,
+        requireTwoFactor: true,
+        qrCode: qrCodeDataUrl,
+        secret: secret // 僅在初始化時發送一次
+      });
     } catch (error) {
+      console.error("註冊錯誤:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
-      res.status(500).json({ message: "伺服器錯誤" });
+      res.status(500).json({ 
+        message: "伺服器錯誤", 
+        error: error instanceof Error ? error.message : "未知錯誤" 
+      });
     }
   });
 
@@ -3572,8 +3598,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 獲取所有用戶列表
       const users = await storage.getAllUsers();
       
+      console.log(`獲取到 ${users.length} 個用戶`);
+      
       // 移除敏感信息
-      const sanitizedUsers = users.map(({ password, ...user }) => user);
+      const sanitizedUsers = users.map(({ password, ...user }) => {
+        return {
+          ...user,
+          // 確保正確顯示2FA狀態
+          isTwoFactorEnabled: !!user.isTwoFactorEnabled,
+          isAdmin: user.role === "ADMIN"
+        };
+      });
       
       res.json(sanitizedUsers);
     } catch (error) {
