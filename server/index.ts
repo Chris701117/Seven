@@ -100,10 +100,11 @@ app.get('/api/config/facebook', (req, res) => {
     }
 
     // Use port 5000 for Replit workflows or fallback to environment variable
-    const port = 5000; // Replit workflows expect port 5000
+    const port = process.env.PORT || 5000;
     server.listen(port, "0.0.0.0", () => {
-      log(`Server running on port ${port}`);
-      log(`Access the application at: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+      log(`伺服器已啟動在 port ${port}`);
+      const replUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+      log(`您可以通過以下網址訪問應用: ${replUrl}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
