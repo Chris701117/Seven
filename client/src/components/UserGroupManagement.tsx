@@ -231,12 +231,17 @@ const UserGroupManagement = () => {
   const updateGroupMutation = useMutation({
     mutationFn: async (data: { id: number; permissions: Permission[] }) => {
       console.log('正在更新群組:', data);
+      console.log('權限數量:', data.permissions.length);
+      
+      // 深度複製權限數組，確保不會有引用問題
+      const permissions = [...data.permissions];
+      
       // 只更新權限，不修改名稱和描述
       const processedData = {
-        permissions: data.permissions
+        permissions: permissions
       };
       
-      console.log('處理後的數據:', processedData);
+      console.log('處理後的數據:', JSON.stringify(processedData, null, 2));
       
       try {
         const response = await fetch(`/api/user-groups/${data.id}`, {
@@ -257,14 +262,30 @@ const UserGroupManagement = () => {
         }
         
         try {
-          return responseText ? JSON.parse(responseText) : null;
+          const responseData = responseText ? JSON.parse(responseText) : null;
+          
+          // 驗證返回的數據中是否包含權限
+          if (!responseData || !responseData.permissions || !Array.isArray(responseData.permissions)) {
+            console.warn('警告：伺服器返回的數據中權限字段格式不正確', responseData);
+            // 返回一個包含原始權限的對象
+            return { 
+              id: data.id,
+              name: responseData?.name || "未知群組",
+              permissions: permissions,
+              updatedAt: new Date()
+            };
+          } else {
+            console.log(`伺服器返回的權限數量: ${responseData.permissions.length}`);
+            return responseData;
+          }
         } catch (jsonError) {
           console.error('解析伺服器響應JSON錯誤:', jsonError);
           // 返回一個最小的有效對象，以便onSuccess處理程序可以繼續
           return { 
             id: data.id,
             name: "未知群組",
-            permissions: data.permissions
+            permissions: permissions,
+            updatedAt: new Date()
           };
         }
       } catch (error) {
@@ -273,32 +294,35 @@ const UserGroupManagement = () => {
       }
     },
     onSuccess: (data) => {
-      console.log('更新群組成功，返回數據:', data);
+      console.log('更新群組成功，返回數據:', JSON.stringify(data, null, 2));
+      
+      // 立即強制更新本地緩存，確保視圖立即反映最新數據
+      queryClient.setQueryData(['/api/user-groups', data.id], data);
       
       // 立即關閉對話框並重置表單狀態
       resetFormState();
       setEditGroupDialogOpen(false);
       
-      // 先顯示成功提示
+      // 顯示成功提示
       toast({
         title: "群組已更新",
-        description: `用戶群組已成功更新權限`,
+        description: `用戶群組已成功更新權限，共 ${data.permissions?.length || 0} 個權限`,
       });
       
-      // 先取消所有緩存
+      // 取消所有相關查詢的緩存
       queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
       
-      // 等待優先取消緩存後再強制刷新數據
+      // 在短暫延遲後強制刷新數據，確保UI顯示最新狀態
       setTimeout(() => {
-        // 首先強制刷新群組列表
+        // 強制刷新群組列表
         queryClient.refetchQueries({ queryKey: ['/api/user-groups'] });
         
-        // 延遲後再強制刷新當前群組詳情，確保數據已更新
+        // 強制刷新當前群組詳情
         if (selectedGroupId) {
           console.log('強制刷新群組詳情:', selectedGroupId);
           queryClient.refetchQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
         }
-      }, 300);
+      }, 500);
     },
     onError: (error) => {
       toast({

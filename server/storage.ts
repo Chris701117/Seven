@@ -2433,17 +2433,33 @@ export class MemStorage implements IStorage {
       throw new Error(`用戶群組 ID ${id} 不存在`);
     }
     
+    // 確保權限是一個實際的數組
+    if (!Array.isArray(permissions)) {
+      console.error("收到的權限不是數組:", permissions);
+      permissions = [];
+    }
+    
+    // 打印權限內容進行調試
+    console.log("保存的權限詳情:", JSON.stringify(permissions, null, 2));
+    
     // 專門處理權限更新
     const updatedGroup = {
       ...group,
-      permissions,
+      permissions: [...permissions], // 創建新數組，避免引用問題
       updatedAt: new Date()
     };
     
     // 直接更新數據庫
     this.userGroups.set(id, updatedGroup);
     
-    console.log(`成功更新群組 ${id} 的權限，更新後權限數量: ${permissions.length}`);
+    // 驗證更新是否成功
+    const savedGroup = this.userGroups.get(id);
+    console.log(`成功更新群組 ${id} 的權限，更新後權限數量: ${savedGroup?.permissions?.length || 0}`);
+    
+    if (!savedGroup?.permissions || savedGroup.permissions.length === 0) {
+      console.warn(`警告：權限可能未正確保存，savedGroup=`, JSON.stringify(savedGroup, null, 2));
+    }
+    
     return updatedGroup;
   }
   
