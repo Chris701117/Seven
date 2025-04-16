@@ -3588,55 +3588,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "找不到該用戶群組" });
       }
 
+      // 記錄請求體原始數據
+      console.log('接收到的原始請求體:', req.body);
+      console.log('請求體類型:', typeof req.body);
+      
       // 更新群組數據
       const groupData = req.body;
       
       console.log('接收到的群組權限更新數據:', JSON.stringify(groupData, null, 2));
       
-      // 檢查權限列表是否為有效數組
-      if (groupData.permissions && !Array.isArray(groupData.permissions)) {
+      // 嚴格檢查權限格式
+      if (!groupData.permissions) {
+        return res.status(400).json({ message: "請提供permissions字段" });
+      }
+      
+      if (!Array.isArray(groupData.permissions)) {
         return res.status(400).json({ message: "權限格式無效，應為權限ID數組" });
       }
       
-      if (groupData.permissions && groupData.permissions.length > 0) {
-        console.log(`更新群組 ${groupId} 權限，共 ${groupData.permissions.length} 個權限`);
-      } else {
+      // 深度複製權限數組，避免任何引用問題
+      const permissionsCopy = [...groupData.permissions];
+      
+      console.log(`更新群組 ${groupId} 權限，共 ${permissionsCopy.length} 個權限`);
+      console.log('權限詳情:', JSON.stringify(permissionsCopy, null, 2));
+      
+      if (permissionsCopy.length === 0) {
         console.log(`警告：更新群組 ${groupId} 權限為空列表`);
       }
       
-      // 構建更新數據對象 - 只允許更新permissions字段，保留其他現有數據
-      const updateData = {
-        ...existingGroup,
-        permissions: groupData.permissions || []
-      };
-      
-      console.log('構建的完整更新數據:', JSON.stringify(updateData, null, 2));
-      
       // 執行更新
       try {
-        // 首先，直接將權限數據保存到數據庫
-        const updated = await storage.updateUserGroupPermissions(groupId, groupData.permissions || []);
+        // 直接將權限數據保存到數據庫
+        const updated = await storage.updateUserGroupPermissions(groupId, permissionsCopy);
         
         if (!updated) {
-          throw new Error("權限更新失敗，數據庫返回空結果");
+          console.error("權限更新失敗，數據庫返回空結果");
+          return res.status(500).json({ 
+            message: "權限更新失敗，請檢查伺服器日誌",
+            error: "數據庫返回空結果" 
+          });
         }
         
-        // 然後，重新獲取更新後的群組數據以確保前端獲得正確信息
-        const updatedGroup = await storage.getUserGroupById(groupId);
-        
-        if (!updatedGroup) {
-          throw new Error("更新後無法獲取群組數據");
+        // 驗證更新是否成功
+        if (!updated.permissions || updated.permissions.length !== permissionsCopy.length) {
+          console.error(`權限數據不一致：原有 ${permissionsCopy.length} 個，保存後有 ${updated.permissions?.length || 0} 個`);
+          
+          if (permissionsCopy.length > 0 && (!updated.permissions || updated.permissions.length === 0)) {
+            return res.status(500).json({ 
+              message: "權限更新不完整，數據丟失",
+              error: "數據丟失" 
+            });
+          }
         }
         
-        console.log('群組更新成功，結果:', JSON.stringify(updatedGroup, null, 2));
-        console.log('權限數量:', updatedGroup.permissions ? updatedGroup.permissions.length : 0);
+        console.log('群組更新成功，結果:', JSON.stringify(updated, null, 2));
+        console.log('權限數量:', updated.permissions ? updated.permissions.length : 0);
         
         // 設置響應頭，確保返回 JSON
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
-        res.status(200).json(updatedGroup);
+        res.status(200).json(updated);
       } catch (updateError) {
         console.error('群組更新失敗:', updateError);
-        throw updateError;
+        return res.status(500).json({ 
+          message: "更新群組時發生錯誤",
+          error: updateError instanceof Error ? updateError.message : "未知錯誤" 
+        });
       }
     } catch (error) {
       console.error("更新用戶群組錯誤:", error);
