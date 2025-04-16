@@ -485,10 +485,15 @@ const UserGroupManagement = () => {
       permissions: selectedPermissions
     });
     
+    // 確保權限是數組而不是null或undefined
+    const permissionsToSave = Array.isArray(selectedPermissions) ? selectedPermissions : [];
+    
+    console.log(`準備保存 ${permissionsToSave.length} 個權限`);
+    
     // 只更新權限，不修改名稱和描述
     updateGroupMutation.mutate({
       id: selectedGroupId,
-      permissions: selectedPermissions
+      permissions: permissionsToSave
     });
   };
   

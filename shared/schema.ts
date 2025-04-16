@@ -402,7 +402,8 @@ export const userGroups = pgTable("user_groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(), // 群組名稱
   description: text("description"), // 群組描述
-  permissions: jsonb("permissions").default([]).notNull(), // 權限列表 (Permission陣列)
+  // 確保permissions欄位有明確的默認值和正確的序列化/反序列化處理
+  permissions: jsonb("permissions").$type<Permission[]>().default([]).notNull(), // 權限列表 (Permission陣列)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });

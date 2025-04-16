@@ -2426,41 +2426,66 @@ export class MemStorage implements IStorage {
   }
   
   async updateUserGroupPermissions(id: number, permissions: Permission[]): Promise<UserGroup> {
-    console.log(`嘗試更新群組 ${id} 的權限，權限數量: ${permissions.length}`);
+    console.log(`嘗試更新群組 ${id} 的權限，權限數量: ${permissions?.length || 0}`);
+    console.log(`權限數據類型: ${typeof permissions}, 是否數組: ${Array.isArray(permissions)}`);
     
     const group = await this.getUserGroupById(id);
     if (!group) {
       throw new Error(`用戶群組 ID ${id} 不存在`);
     }
     
-    // 確保權限是一個實際的數組
-    if (!Array.isArray(permissions)) {
-      console.error("收到的權限不是數組:", permissions);
-      permissions = [];
+    // 確保權限是一個實際的數組，任何情況下都進行深度複製
+    let permissionsCopy: Permission[] = [];
+    if (Array.isArray(permissions)) {
+      try {
+        // 強制使用深度複製以避免引用問題
+        permissionsCopy = JSON.parse(JSON.stringify(permissions));
+        console.log(`深度複製權限數組成功，複製後數量: ${permissionsCopy.length}`);
+      } catch (error) {
+        console.error(`深度複製權限數組失敗:`, error);
+        // 如果JSON序列化失敗，則使用淺拷貝
+        permissionsCopy = permissions.slice();
+      }
+    } else {
+      console.error("嚴重錯誤：收到的權限不是數組:", permissions);
     }
     
     // 打印權限內容進行調試
-    console.log("保存的權限詳情:", JSON.stringify(permissions, null, 2));
+    console.log("準備保存的權限詳情:", JSON.stringify(permissionsCopy, null, 2));
     
-    // 專門處理權限更新
+    // 專門處理權限更新，確保所有屬性都是新的對象/值
     const updatedGroup = {
-      ...group,
-      permissions: [...permissions], // 創建新數組，避免引用問題
+      ...JSON.parse(JSON.stringify(group)), // 深度複製當前組
+      permissions: permissionsCopy,
       updatedAt: new Date()
     };
+    
+    // 驗證生成的更新對象
+    console.log(`更新前組權限數量: ${group.permissions?.length || 0}`);
+    console.log(`生成的更新對象權限數量: ${updatedGroup.permissions?.length || 0}`);
     
     // 直接更新數據庫
     this.userGroups.set(id, updatedGroup);
     
-    // 驗證更新是否成功
+    // 立即驗證更新是否成功
     const savedGroup = this.userGroups.get(id);
-    console.log(`成功更新群組 ${id} 的權限，更新後權限數量: ${savedGroup?.permissions?.length || 0}`);
-    
-    if (!savedGroup?.permissions || savedGroup.permissions.length === 0) {
-      console.warn(`警告：權限可能未正確保存，savedGroup=`, JSON.stringify(savedGroup, null, 2));
+    if (!savedGroup) {
+      console.error(`嚴重錯誤：更新後無法在存儲中找到群組 ${id}`);
+      throw new Error(`更新失敗：無法找到更新後的群組`);
     }
     
-    return updatedGroup;
+    console.log(`成功更新群組 ${id} 的權限，更新後權限數量: ${savedGroup.permissions?.length || 0}`);
+    console.log(`已保存的權限: ${JSON.stringify(savedGroup.permissions, null, 2)}`);
+    
+    if (!savedGroup.permissions || savedGroup.permissions.length === 0) {
+      console.warn(`警告：權限可能未正確保存，savedGroup=`, JSON.stringify(savedGroup, null, 2));
+      if (permissionsCopy.length > 0) {
+        console.error(`嚴重錯誤：原有 ${permissionsCopy.length} 個權限，但保存後為空`);
+        throw new Error(`權限保存失敗：數據丟失`);
+      }
+    }
+    
+    return savedGroup; // 返回實際保存的對象，而不是我們構建的對象
   }
   
   async updateUserGroup(id: number, groupData: Partial<UserGroup>): Promise<UserGroup> {
