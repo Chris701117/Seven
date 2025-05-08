@@ -2404,11 +2404,33 @@ export class MemStorage implements IStorage {
   
   // 用戶群組操作方法
   async getUserGroups(): Promise<UserGroup[]> {
-    return Array.from(this.userGroups.values());
+    // 確保返回的每個群組對象都有正確的permissions屬性
+    return Array.from(this.userGroups.values()).map(group => {
+      // 如果permissions不是數組，則確保轉換為數組
+      if (!Array.isArray(group.permissions)) {
+        console.log(`修正群組 ${group.id} 的權限類型: ${typeof group.permissions} -> 空數組[]`);
+        return {
+          ...group,
+          permissions: [] as Permission[] // 確保明確轉換為Permission[]類型
+        };
+      }
+      return group;
+    });
   }
   
   async getUserGroupById(id: number): Promise<UserGroup | undefined> {
-    return this.userGroups.get(id);
+    const group = this.userGroups.get(id);
+    if (group) {
+      // 確保返回的群組對象有正確的permissions屬性
+      if (!Array.isArray(group.permissions)) {
+        console.log(`修正群組 ${id} 的權限類型: ${typeof group.permissions} -> 空數組[]`);
+        return {
+          ...group,
+          permissions: [] as Permission[] // 確保明確轉換為Permission[]類型
+        };
+      }
+    }
+    return group;
   }
   
   async createUserGroup(group: InsertUserGroup): Promise<UserGroup> {
@@ -2417,7 +2439,8 @@ export class MemStorage implements IStorage {
       id,
       name: group.name,
       description: group.description || null,
-      permissions: group.permissions || {},
+      // 確保permissions始終是數組類型
+      permissions: Array.isArray(group.permissions) ? [...group.permissions] : [] as Permission[],
       createdAt: new Date(),
       updatedAt: null
     };
