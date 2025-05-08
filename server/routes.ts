@@ -3463,8 +3463,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "權限不足，需要管理員權限" });
       }
 
+      // 獲取所有群組
       const groups = await storage.getUserGroups();
-      res.json(groups);
+      
+      // 對權限數據進行驗證和轉換，確保所有群組的權限都是數組格式
+      const safeGroups = groups.map(group => {
+        let permissions: Permission[] = [];
+        
+        // 權限數據格式檢查和轉換
+        if (Array.isArray(group.permissions)) {
+          permissions = [...group.permissions]; // 確保是深度複製
+        } else if (group.permissions) {
+          try {
+            permissions = JSON.parse(JSON.stringify(group.permissions));
+          } catch (e) {
+            console.error(`無法解析群組 ${group.id} 的權限數據:`, e);
+          }
+        }
+        
+        // 返回安全的群組對象，權限始終為數組
+        return {
+          ...group,
+          permissions: Array.isArray(permissions) ? permissions : []
+        };
+      });
+      
+      // 記錄返回的數據，用於調試
+      console.log(`向前端返回 ${safeGroups.length} 個群組`);
+      safeGroups.forEach(group => {
+        console.log(`群組 ${group.id}: ${group.name}, 權限數量: ${group.permissions.length}`);
+      });
+      
+      res.json(safeGroups);
     } catch (error) {
       console.error("獲取用戶群組錯誤:", error);
       res.status(500).json({ 
@@ -3502,11 +3532,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "找不到該用戶群組" });
       }
 
+      // 驗證權限數據格式，確保前端獲取到正確的數組形式
+      let permissions: Permission[] = [];
+      if (Array.isArray(group.permissions)) {
+        permissions = [...group.permissions]; // 深度複製
+      } else if (group.permissions) {
+        console.warn(`群組 ${groupId} 權限數據格式不正確:`, typeof group.permissions);
+        try {
+          permissions = JSON.parse(JSON.stringify(group.permissions));
+        } catch (e) {
+          console.error(`無法解析群組 ${groupId} 的權限數據:`, e);
+        }
+      }
+      
+      // 確保返回明確的權限格式
+      const safeGroup = {
+        ...group,
+        permissions: Array.isArray(permissions) ? permissions : []
+      };
+      
       // 獲取群組成員
       const users = await storage.getUsersInGroup(groupId);
       
+      // 記錄返回的權限數據，用於調試
+      console.log(`向前端返回群組詳情，ID: ${groupId}，權限數量: ${safeGroup.permissions.length}`);
+      
       res.json({
-        ...group,
+        ...safeGroup,
         users: users.map(({ password, ...user }) => user) // 去除密碼字段
       });
     } catch (error) {
