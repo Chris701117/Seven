@@ -2406,15 +2406,43 @@ export class MemStorage implements IStorage {
   async getUserGroups(): Promise<UserGroup[]> {
     // 確保返回的每個群組對象都有正確的permissions屬性
     return Array.from(this.userGroups.values()).map(group => {
-      // 如果permissions不是數組，則確保轉換為數組
-      if (!Array.isArray(group.permissions)) {
+      let permissions: Permission[] = [];
+      
+      // 權限類型檢查和轉換
+      if (Array.isArray(group.permissions)) {
+        // 深度複製權限數組以避免引用問題
+        try {
+          permissions = JSON.parse(JSON.stringify(group.permissions));
+        } catch (error) {
+          console.error(`複製群組 ${group.id} 權限失敗:`, error);
+          permissions = [...group.permissions]; // 退回到淺拷貝
+        }
+      } else if (group.permissions) {
         console.log(`修正群組 ${group.id} 的權限類型: ${typeof group.permissions} -> 空數組[]`);
-        return {
-          ...group,
-          permissions: [] as Permission[] // 確保明確轉換為Permission[]類型
-        };
+        try {
+          // 嘗試從非數組的權限對象中提取數據
+          if (typeof group.permissions === 'object') {
+            const permObj = group.permissions as any;
+            if (Array.isArray(permObj.permissions)) {
+              permissions = [...permObj.permissions];
+              console.log(`成功從對象中提取權限數組，共 ${permissions.length} 個權限`);
+            }
+          }
+        } catch (e) {
+          console.error(`處理群組 ${group.id} 的權限數據時出錯:`, e);
+        }
       }
-      return group;
+      
+      // 返回帶有安全權限數據的群組
+      const safeGroup = {
+        ...JSON.parse(JSON.stringify(group)), // 深度複製以避免修改原始數據
+        permissions: permissions
+      };
+      
+      // 記錄每個群組的權限數量
+      console.log(`群組 ${group.id} (${group.name}) 包含 ${permissions.length} 個權限`);
+      
+      return safeGroup;
     });
   }
   
@@ -2424,11 +2452,23 @@ export class MemStorage implements IStorage {
       // 確保返回的群組對象有正確的permissions屬性
       if (!Array.isArray(group.permissions)) {
         console.log(`修正群組 ${id} 的權限類型: ${typeof group.permissions} -> 空數組[]`);
-        return {
-          ...group,
+        // 深度複製群組對象以避免修改原始數據
+        const safeGroup = {
+          ...JSON.parse(JSON.stringify(group)), // 完全新的對象
           permissions: [] as Permission[] // 確保明確轉換為Permission[]類型
         };
+        
+        // 記錄處理後的數據
+        console.log(`處理過的群組數據:`, JSON.stringify(safeGroup, null, 2));
+        
+        return safeGroup;
       }
+      
+      // 即使權限是數組，也做一次深度複製再返回
+      return {
+        ...JSON.parse(JSON.stringify(group)),
+        permissions: Array.isArray(group.permissions) ? [...group.permissions] : []
+      };
     }
     return group;
   }
