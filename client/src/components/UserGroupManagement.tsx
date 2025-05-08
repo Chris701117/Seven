@@ -598,7 +598,14 @@ const UserGroupManagement = () => {
   const resetFormState = () => {
     setGroupName("");
     setGroupDescription("");
-    setSelectedPermissions([]);
+    // 注意：只有在明確需要時才重置選定的權限
+    // 例如對話框關閉時，但不是在加載新數據時
+    if (!editGroupDialogOpen) {
+      console.log('清空權限選擇狀態');
+      setSelectedPermissions([]);
+    } else {
+      console.log('保留當前權限選擇狀態');
+    }
     setSelectedUserId(null);
   };
   
@@ -640,33 +647,52 @@ const UserGroupManagement = () => {
     
     console.log(`準備保存 ${permissionsToSave.length} 個權限`);
     
+    // 保存原始選擇的權限，以防服務器響應有問題
+    const originalPermissions = [...permissionsToSave];
+    
+    // 立即更新本地緩存，以確保視圖立即更新
+    if (selectedGroup) {
+      const updatedGroup = {
+        ...selectedGroup,
+        permissions: originalPermissions
+      };
+      
+      // 先更新本地緩存，確保UI顯示
+      queryClient.setQueryData(['/api/user-groups', selectedGroupId], updatedGroup);
+    }
+    
     // 只更新權限，不修改名稱和描述
     updateGroupMutation.mutate({
       id: selectedGroupId,
       permissions: permissionsToSave
     }, {
-      // 更新成功後添加立即執行重新獲取的邏輯
+      // 避免默認的onSuccess覆蓋當前的實現
       onSuccess: (data) => {
-        console.log('立即刷新所有群組數據');
+        console.log('更新群組成功，返回數據:', JSON.stringify(data, null, 2));
         
-        // 短暫延遲確保後端完成數據處理
+        // 立即關閉對話框，但不要重置權限數據
+        setEditGroupDialogOpen(false);
+        
+        // 使用延遲操作確保數據完全更新到後端
         setTimeout(() => {
-          // 先刷新群組列表
+          // 先刷新所有群組列表
           queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
-          queryClient.refetchQueries({ queryKey: ['/api/user-groups'] });
           
-          // 刷新當前選中的群組
+          // 然後專門刷新當前選中的群組
           if (selectedGroupId) {
             console.log('立即刷新選中的群組:', selectedGroupId);
             queryClient.invalidateQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
-            queryClient.refetchQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
             
-            // 如果有需要，強制重新選擇當前群組以刷新視圖
-            const currentGroupId = selectedGroupId;
-            setSelectedGroupId(null);
-            setTimeout(() => setSelectedGroupId(currentGroupId), 50);
+            // 觸發強制重新獲取
+            refetchGroupDetails();
           }
-        }, 200);
+          
+          // 顯示成功提示
+          toast({
+            title: "群組已更新",
+            description: `用戶群組已成功更新權限，共 ${data.permissions?.length || originalPermissions.length} 個權限`,
+          });
+        }, 300);
       }
     });
   };
