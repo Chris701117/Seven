@@ -157,10 +157,24 @@ const UserGroupManagement = () => {
   });
   
   // 獲取當前選中的群組詳情
-  const { data: selectedGroup, isLoading: isLoadingGroupDetails } = useQuery<UserGroup & { users: User[] }>({
+  const { data: selectedGroup, isLoading: isLoadingGroupDetails, refetch: refetchGroupDetails } = useQuery<UserGroup & { users: User[] }>({
     queryKey: ['/api/user-groups', selectedGroupId],
     enabled: selectedGroupId !== null,
+    staleTime: 0, // 每次組件重新渲染時都重新獲取資料
+    cacheTime: 0, // 不使用緩存
+    refetchOnWindowFocus: true, // 窗口聚焦時重新獲取數據
+    onSuccess: (data) => {
+      console.log('成功獲取群組詳情:', data);
+      console.log('權限類型:', typeof data.permissions);
+      console.log('權限數據:', JSON.stringify(data.permissions));
+      if (!Array.isArray(data.permissions)) {
+        console.warn('警告: 獲取到的權限不是數組:', data.permissions);
+      } else {
+        console.log(`獲取到 ${data.permissions.length} 個權限`);
+      }
+    },
     onError: (error) => {
+      console.error('獲取群組詳情失敗:', error);
       toast({
         title: "獲取群組詳情失敗",
         description: "無法獲取用戶群組詳情，請稍後再試",
@@ -486,48 +500,70 @@ const UserGroupManagement = () => {
     }
   });
   
-  // 初始化編輯表單數據
+  // 直接重新獲取群組數據當對話框打開時
   useEffect(() => {
-    if (selectedGroup && editGroupDialogOpen) {
-      setGroupName(selectedGroup.name);
-      setGroupDescription(selectedGroup.description || "");
-      
-      // 改進權限數據的處理
-      if (selectedGroup.permissions) {
-        console.log('獲取到的群組權限數據類型:', typeof selectedGroup.permissions);
-        
-        if (Array.isArray(selectedGroup.permissions)) {
-          console.log(`獲取到群組 ${selectedGroup.id} 的 ${selectedGroup.permissions.length} 個權限`);
-          // 直接使用深度複製確保不共享引用
-          setSelectedPermissions(JSON.parse(JSON.stringify(selectedGroup.permissions)));
-        } else {
-          console.warn(`群組 ${selectedGroup.id} 的權限不是數組:`, selectedGroup.permissions);
-          try {
-            // 嘗試將非數組權限轉換為數組
-            if (typeof selectedGroup.permissions === 'object' && selectedGroup.permissions !== null) {
-              const permObj = selectedGroup.permissions as any;
-              if (permObj.permissions && Array.isArray(permObj.permissions)) {
-                console.log(`從嵌套對象中提取權限數組，數量: ${permObj.permissions.length}`);
-                setSelectedPermissions(permObj.permissions);
-              } else {
-                console.error('嵌套權限不是數組，設置為空數組');
+    if (selectedGroupId && editGroupDialogOpen) {
+      console.log('編輯對話框打開，強制重新獲取群組數據:', selectedGroupId);
+      // 強制重新獲取群組數據
+      refetchGroupDetails().then((result) => {
+        if (result.data) {
+          console.log('重新獲取數據成功:', result.data);
+          setGroupName(result.data.name);
+          setGroupDescription(result.data.description || "");
+          
+          // 改進權限數據的處理
+          if (result.data.permissions) {
+            console.log('重新獲取的權限數據類型:', typeof result.data.permissions);
+            
+            if (Array.isArray(result.data.permissions)) {
+              console.log(`重新獲取到群組 ${result.data.id} 的 ${result.data.permissions.length} 個權限`);
+              // 直接使用深度複製確保不共享引用
+              const permissionsCopy = JSON.parse(JSON.stringify(result.data.permissions));
+              console.log('複製的權限數據:', permissionsCopy);
+              setSelectedPermissions(permissionsCopy);
+            } else {
+              console.warn(`群組 ${result.data.id} 的權限不是數組:`, result.data.permissions);
+              try {
+                // 嘗試將非數組權限轉換為數組
+                if (typeof result.data.permissions === 'object' && result.data.permissions !== null) {
+                  const permObj = result.data.permissions as any;
+                  if (permObj.permissions && Array.isArray(permObj.permissions)) {
+                    console.log(`從嵌套對象中提取權限數組，數量: ${permObj.permissions.length}`);
+                    setSelectedPermissions(permObj.permissions);
+                  } else {
+                    console.error('嵌套權限不是數組，設置為空數組');
+                    setSelectedPermissions([]);
+                  }
+                } else {
+                  console.error('權限不是對象，設置為空數組');
+                  setSelectedPermissions([]);
+                }
+              } catch (e) {
+                console.error('處理權限數據時出錯:', e);
                 setSelectedPermissions([]);
               }
-            } else {
-              console.error('權限不是對象，設置為空數組');
-              setSelectedPermissions([]);
             }
-          } catch (e) {
-            console.error('處理權限數據時出錯:', e);
+          } else {
+            console.warn('群組無權限數據，設置為空數組');
             setSelectedPermissions([]);
           }
+        } else {
+          console.error('重新獲取群組數據失敗');
+          // 回退到使用當前selectedGroup數據
+          if (selectedGroup) {
+            setGroupName(selectedGroup.name);
+            setGroupDescription(selectedGroup.description || "");
+            
+            if (Array.isArray(selectedGroup.permissions)) {
+              setSelectedPermissions(JSON.parse(JSON.stringify(selectedGroup.permissions)));
+            } else {
+              setSelectedPermissions([]);
+            }
+          }
         }
-      } else {
-        console.warn('群組無權限數據，設置為空數組');
-        setSelectedPermissions([]);
-      }
+      });
     }
-  }, [selectedGroup, editGroupDialogOpen]);
+  }, [selectedGroupId, editGroupDialogOpen, refetchGroupDetails]);
   
   // 重置表單狀態
   const resetFormState = () => {
@@ -579,6 +615,30 @@ const UserGroupManagement = () => {
     updateGroupMutation.mutate({
       id: selectedGroupId,
       permissions: permissionsToSave
+    }, {
+      // 更新成功後添加立即執行重新獲取的邏輯
+      onSuccess: (data) => {
+        console.log('立即刷新所有群組數據');
+        
+        // 短暫延遲確保後端完成數據處理
+        setTimeout(() => {
+          // 先刷新群組列表
+          queryClient.invalidateQueries({ queryKey: ['/api/user-groups'] });
+          queryClient.refetchQueries({ queryKey: ['/api/user-groups'] });
+          
+          // 刷新當前選中的群組
+          if (selectedGroupId) {
+            console.log('立即刷新選中的群組:', selectedGroupId);
+            queryClient.invalidateQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
+            queryClient.refetchQueries({ queryKey: ['/api/user-groups', selectedGroupId] });
+            
+            // 如果有需要，強制重新選擇當前群組以刷新視圖
+            const currentGroupId = selectedGroupId;
+            setSelectedGroupId(null);
+            setTimeout(() => setSelectedGroupId(currentGroupId), 50);
+          }
+        }, 200);
+      }
     });
   };
   
