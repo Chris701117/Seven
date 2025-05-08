@@ -234,7 +234,16 @@ const UserGroupManagement = () => {
       console.log('權限數量:', data.permissions.length);
       
       // 深度複製權限數組，確保不會有引用問題
-      const permissions = [...data.permissions];
+      const permissions = JSON.parse(JSON.stringify(data.permissions));
+      
+      // 輸出權限詳情用於調試
+      console.log('權限詳情:', permissions.map((p: Permission) => `${p}`).join(', '));
+      
+      // 檢查是否有任何權限值不是數值
+      const nonNumericPermissions = permissions.filter((p: Permission) => typeof p !== 'number');
+      if (nonNumericPermissions.length > 0) {
+        console.warn('警告：發現非數值類型的權限:', nonNumericPermissions);
+      }
       
       // 只更新權限，不修改名稱和描述
       const processedData = {
@@ -244,17 +253,33 @@ const UserGroupManagement = () => {
       console.log('處理後的數據:', JSON.stringify(processedData, null, 2));
       
       try {
+        // 添加更多調試信息
+        console.log(`發送PUT請求到 /api/user-groups/${data.id}`);
+        
         const response = await fetch(`/api/user-groups/${data.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify(processedData),
           credentials: 'include'
         });
         
+        console.log('收到伺服器響應:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        
+        // 檢查響應Content-Type
+        const contentType = response.headers.get('content-type');
+        console.log('響應Content-Type:', contentType);
+        
+        // 讀取響應文本
         const responseText = await response.text();
-        console.log('伺服器響應:', responseText);
+        console.log('響應文本長度:', responseText.length);
+        console.log('響應文本前100個字符:', responseText.substring(0, 100));
         
         if (!response.ok) {
           console.error('更新群組失敗:', responseText);
@@ -262,11 +287,13 @@ const UserGroupManagement = () => {
         }
         
         try {
+          // 嘗試解析JSON響應
           const responseData = responseText ? JSON.parse(responseText) : null;
+          console.log('解析後的響應數據:', responseData);
           
           // 驗證返回的數據中是否包含權限
-          if (!responseData || !responseData.permissions || !Array.isArray(responseData.permissions)) {
-            console.warn('警告：伺服器返回的數據中權限字段格式不正確', responseData);
+          if (!responseData || !responseData.permissions) {
+            console.warn('警告：伺服器返回的數據中缺少權限字段', responseData);
             // 返回一個包含原始權限的對象
             return { 
               id: data.id,
@@ -274,12 +301,36 @@ const UserGroupManagement = () => {
               permissions: permissions,
               updatedAt: new Date()
             };
+          } else if (!Array.isArray(responseData.permissions)) {
+            console.warn('警告：伺服器返回的權限不是數組類型', typeof responseData.permissions);
+            
+            // 嘗試將非數組權限轉換為數組
+            let fixedPermissions = permissions; // 默認使用客戶端原始權限
+            
+            try {
+              if (typeof responseData.permissions === 'object') {
+                // 嘗試從對象中提取權限數組
+                if (responseData.permissions.permissions && Array.isArray(responseData.permissions.permissions)) {
+                  fixedPermissions = responseData.permissions.permissions;
+                  console.log('從嵌套對象中提取出權限數組:', fixedPermissions);
+                }
+              }
+            } catch (e) {
+              console.error('提取權限數組時出錯:', e);
+            }
+            
+            return { 
+              ...responseData,
+              permissions: fixedPermissions,
+            };
           } else {
             console.log(`伺服器返回的權限數量: ${responseData.permissions.length}`);
             return responseData;
           }
         } catch (jsonError) {
           console.error('解析伺服器響應JSON錯誤:', jsonError);
+          console.error('原始響應文本:', responseText);
+          
           // 返回一個最小的有效對象，以便onSuccess處理程序可以繼續
           return { 
             id: data.id,
@@ -440,7 +491,41 @@ const UserGroupManagement = () => {
     if (selectedGroup && editGroupDialogOpen) {
       setGroupName(selectedGroup.name);
       setGroupDescription(selectedGroup.description || "");
-      setSelectedPermissions(selectedGroup.permissions as Permission[] || []);
+      
+      // 改進權限數據的處理
+      if (selectedGroup.permissions) {
+        console.log('獲取到的群組權限數據類型:', typeof selectedGroup.permissions);
+        
+        if (Array.isArray(selectedGroup.permissions)) {
+          console.log(`獲取到群組 ${selectedGroup.id} 的 ${selectedGroup.permissions.length} 個權限`);
+          // 直接使用深度複製確保不共享引用
+          setSelectedPermissions(JSON.parse(JSON.stringify(selectedGroup.permissions)));
+        } else {
+          console.warn(`群組 ${selectedGroup.id} 的權限不是數組:`, selectedGroup.permissions);
+          try {
+            // 嘗試將非數組權限轉換為數組
+            if (typeof selectedGroup.permissions === 'object' && selectedGroup.permissions !== null) {
+              const permObj = selectedGroup.permissions as any;
+              if (permObj.permissions && Array.isArray(permObj.permissions)) {
+                console.log(`從嵌套對象中提取權限數組，數量: ${permObj.permissions.length}`);
+                setSelectedPermissions(permObj.permissions);
+              } else {
+                console.error('嵌套權限不是數組，設置為空數組');
+                setSelectedPermissions([]);
+              }
+            } else {
+              console.error('權限不是對象，設置為空數組');
+              setSelectedPermissions([]);
+            }
+          } catch (e) {
+            console.error('處理權限數據時出錯:', e);
+            setSelectedPermissions([]);
+          }
+        }
+      } else {
+        console.warn('群組無權限數據，設置為空數組');
+        setSelectedPermissions([]);
+      }
     }
   }, [selectedGroup, editGroupDialogOpen]);
   
