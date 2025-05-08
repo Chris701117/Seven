@@ -157,20 +157,49 @@ const UserGroupManagement = () => {
   });
   
   // 獲取當前選中的群組詳情
-  const { data: selectedGroup, isLoading: isLoadingGroupDetails, refetch: refetchGroupDetails } = useQuery<UserGroup & { users: User[] }>({
+  const { 
+    data: selectedGroup, 
+    isLoading: isLoadingGroupDetails, 
+    refetch: refetchGroupDetails 
+  } = useQuery<UserGroup & { users: User[] }>({
     queryKey: ['/api/user-groups', selectedGroupId],
     enabled: selectedGroupId !== null,
-    staleTime: 0, // 每次組件重新渲染時都重新獲取資料
-    cacheTime: 0, // 不使用緩存
+    staleTime: 0, // 不使用緩存，始終獲取最新數據
     refetchOnWindowFocus: true, // 窗口聚焦時重新獲取數據
     onSuccess: (data) => {
       console.log('成功獲取群組詳情:', data);
       console.log('權限類型:', typeof data.permissions);
       console.log('權限數據:', JSON.stringify(data.permissions));
+      
+      // 始終確保權限為數組類型
       if (!Array.isArray(data.permissions)) {
         console.warn('警告: 獲取到的權限不是數組:', data.permissions);
+        // 嘗試轉換不同格式的權限數據
+        if (typeof data.permissions === 'object' && data.permissions !== null) {
+          if ('permissions' in data.permissions) {
+            const convertedPermissions = (data.permissions as any).permissions;
+            if (Array.isArray(convertedPermissions)) {
+              console.log('已轉換嵌套權限對象到數組格式');
+              // 這裡不直接修改 data，而是在後續處理時考慮這種情況
+            }
+          }
+        }
       } else {
         console.log(`獲取到 ${data.permissions.length} 個權限`);
+      }
+            
+      // 當打開編輯對話框時，將權限設置到表單狀態
+      if (editGroupDialogOpen) {
+        const permissions = Array.isArray(data.permissions) 
+          ? [...data.permissions] 
+          : (typeof data.permissions === 'object' && data.permissions !== null && 'permissions' in data.permissions) 
+            ? [...(data.permissions as any).permissions] 
+            : [];
+        
+        console.log('設置表單權限:', permissions);
+        setSelectedPermissions(permissions);
+        setGroupName(data.name);
+        setGroupDescription(data.description || '');
       }
     },
     onError: (error) => {
@@ -885,7 +914,21 @@ const UserGroupManagement = () => {
               
               {selectedGroup && (
                 <div className="flex items-center space-x-2">
-                  <Dialog open={editGroupDialogOpen} onOpenChange={setEditGroupDialogOpen}>
+                  <Dialog 
+                    open={editGroupDialogOpen} 
+                    onOpenChange={(open) => {
+                      // 打開對話框前先確保數據是最新的
+                      if (open && selectedGroupId) {
+                        console.log('打開編輯對話框，強制重新獲取最新群組數據');
+                        refetchGroupDetails().then(() => {
+                          // 確保在數據加載完成後再顯示對話框
+                          setEditGroupDialogOpen(open);
+                        });
+                      } else {
+                        setEditGroupDialogOpen(open);
+                      }
+                    }}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm">
                         <Pencil className="h-4 w-4 mr-2" />
