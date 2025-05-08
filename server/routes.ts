@@ -3645,7 +3645,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('請求體類型:', typeof req.body);
       
       // 更新群組數據
-      const groupData = req.body;
+      let groupData = req.body;
+      
+      // 檢查是否使用了保留字段 "_permissions"（這是一種常見的兼容性問題）
+      if (groupData._permissions && !groupData.permissions) {
+        console.log('檢測到使用了 _permissions 字段，正在複製到 permissions');
+        groupData.permissions = groupData._permissions;
+        delete groupData._permissions;
+      }
+      
+      // 確保 permissions 字段是數組
+      if (groupData.permissions && !Array.isArray(groupData.permissions)) {
+        console.warn('警告: permissions 不是數組類型:', typeof groupData.permissions);
+        
+        // 如果是對象並且有 permissions 屬性（嵌套情況），提取它
+        if (typeof groupData.permissions === 'object' && groupData.permissions !== null) {
+          const nestedPermissions = groupData.permissions.permissions;
+          if (Array.isArray(nestedPermissions)) {
+            console.log('從嵌套對象中提取權限數組');
+            groupData.permissions = nestedPermissions;
+          } else {
+            console.error('無法從嵌套對象中提取權限數組，使用空數組');
+            groupData.permissions = [];
+          }
+        } else {
+          console.error('permissions 不是有效對象，使用空數組');
+          groupData.permissions = [];
+        }
+      }
       
       console.log('接收到的群組權限更新數據:', JSON.stringify(groupData, null, 2));
       
