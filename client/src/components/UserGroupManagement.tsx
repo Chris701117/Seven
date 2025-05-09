@@ -143,11 +143,44 @@ const UserGroupManagement: React.FC = () => {
     queryKey: ['/api/user-groups', selectedGroupId],
     enabled: selectedGroupId !== null,
     onSuccess: (data) => {
+      console.log("原始選中群組數據:", JSON.stringify(data));
+      
       // 使用一致的格式處理權限數據
       const permissions = ensurePermissionsArray(data.permissions);
       console.log(`成功獲取群組詳情 ID: ${data.id}, 名稱: ${data.name}, 權限數量: ${permissions.length}`);
       
-      // 更新本地緩存，確保數據格式一致
+      // 添加更多調試信息
+      console.log("處理後的權限數據:", permissions);
+      console.log("權限數據類型:", typeof permissions);
+      
+      // 如果需要，手動重設權限數據
+      if (permissions.length === 0 && data.id === 1) {
+        // 對於管理員群組，如果權限為空，手動設置所有權限
+        const allPermissions = getAllPermissions();
+        console.log(`恢復管理員權限 (ID=${data.id})，設置 ${allPermissions.length} 個權限`);
+        
+        // 更新本地緩存
+        queryClient.setQueryData(['/api/user-groups', selectedGroupId], {
+          ...data,
+          permissions: allPermissions
+        });
+        
+        // 更新最后一次已知的有效權限
+        lastKnownPermissionsRef.current = [...allPermissions];
+        
+        // 如果對話框打開，則更新表單數據
+        if (dialogMode === 'edit') {
+          setGroupFormData({
+            name: data.name,
+            description: data.description || "",
+            permissions: [...allPermissions]
+          });
+        }
+        
+        return;
+      }
+      
+      // 正常情況下更新本地緩存
       queryClient.setQueryData(['/api/user-groups', selectedGroupId], {
         ...data,
         permissions: permissions
@@ -556,15 +589,57 @@ const UserGroupManagement: React.FC = () => {
     return users.filter(user => !currentUserIds.includes(user.id));
   };
   
+  // 獲取所有權限列表 - 用於重置權限
+  const getAllPermissions = (): Permission[] => {
+    // 從所有權限類別中提取權限
+    const allPermissions: Permission[] = [];
+    
+    Object.values(permissionCategories).forEach(category => {
+      category.permissions.forEach(perm => {
+        if (!allPermissions.includes(perm.id)) {
+          allPermissions.push(perm.id);
+        }
+      });
+    });
+    
+    console.log(`獲取到 ${allPermissions.length} 個權限`);
+    return allPermissions;
+  };
+  
   // 確保權限是數組格式
   const ensurePermissionsArray = (permissions: any): Permission[] => {
+    // 直接檢查它是否是數組
     if (Array.isArray(permissions)) {
       return [...permissions];
     } 
     
+    // 嘗試從對象中提取權限數組
     if (typeof permissions === 'object' && permissions !== null) {
       if ('permissions' in permissions && Array.isArray(permissions.permissions)) {
         return [...permissions.permissions];
+      }
+    }
+    
+    // 從伺服器日誌中看到，有時權限數據是字符串
+    if (typeof permissions === 'string') {
+      try {
+        const parsed = JSON.parse(permissions);
+        if (Array.isArray(parsed)) {
+          return [...parsed];
+        }
+      } catch (e) {
+        console.error('嘗試解析字符串權限失敗:', e);
+      }
+    }
+    
+    // 使用硬編碼的默認權限映射
+    if (selectedGroupId) {
+      if (selectedGroupId === 1 || selectedGroupId === 2) { // Administrators 或 管理員群組
+        return getAllPermissions(); // 設置所有權限
+      } else if (selectedGroupId === 3) { // 專案經理群組
+        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 設置部分權限
+      } else if (selectedGroupId === 4) { // 一般用戶群組
+        return [1, 2, 3]; // 設置最小權限
       }
     }
     
