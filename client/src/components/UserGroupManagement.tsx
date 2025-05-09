@@ -22,75 +22,70 @@ const permissionCategories = {
   POST_MANAGEMENT: {
     title: "貼文管理",
     permissions: [
-      { id: Permission.VIEW_POSTS, name: "查看貼文", description: "允許查看所有貼文" },
-      { id: Permission.CREATE_POST, name: "創建貼文", description: "允許創建新貼文" },
-      { id: Permission.EDIT_POST, name: "編輯貼文", description: "允許編輯現有貼文" },
-      { id: Permission.DELETE_POST, name: "刪除貼文", description: "允許刪除貼文" },
-      { id: Permission.SCHEDULE_POST, name: "排程貼文", description: "允許設置貼文發布時間" },
-      { id: Permission.PUBLISH_POST, name: "發布貼文", description: "允許將貼文發布到社交媒體" },
+      { id: "VIEW_POSTS", name: "查看貼文", description: "允許查看所有貼文" },
+      { id: "CREATE_POST", name: "創建貼文", description: "允許創建新貼文" },
+      { id: "EDIT_POST", name: "編輯貼文", description: "允許編輯現有貼文" },
+      { id: "DELETE_POST", name: "刪除貼文", description: "允許刪除貼文" },
+      { id: "PUBLISH_POST", name: "發布貼文", description: "允許將貼文發布到社交媒體" },
     ]
   },
   CONTENT_CALENDAR: {
     title: "內容日曆",
     permissions: [
-      { id: Permission.VIEW_POSTS, name: "查看排程貼文", description: "允許查看所有排程貼文" },
-      { id: Permission.CREATE_POST, name: "快速創建", description: "允許快速創建新貼文" },
-      { id: Permission.DRAG_AND_DROP, name: "拖曳調整", description: "允許拖曳調整貼文" },
+      { id: "VIEW_POSTS", name: "查看排程貼文", description: "允許查看所有排程貼文" },
+      { id: "CREATE_POST", name: "快速創建", description: "允許快速創建新貼文" },
     ]
   },
   ANALYTICS: {
     title: "數據分析",
     permissions: [
-      { id: Permission.VIEW_ANALYTICS, name: "查看總覽", description: "允許查看分析總覽" },
-      { id: Permission.EXPORT_ANALYTICS, name: "導出報表", description: "允許導出分析報表" },
+      { id: "VIEW_ANALYTICS", name: "查看總覽", description: "允許查看分析總覽" },
+      { id: "EXPORT_DATA", name: "導出報表", description: "允許導出分析報表" },
     ]
   },
   MARKETING: {
     title: "行銷管理",
     permissions: [
-      { id: Permission.VIEW_MARKETING, name: "查看行銷任務", description: "允許查看行銷任務" },
-      { id: Permission.CREATE_MARKETING, name: "創建行銷任務", description: "允許創建行銷任務" },
-      { id: Permission.EDIT_MARKETING, name: "編輯行銷任務", description: "允許編輯行銷任務" },
-      { id: Permission.DELETE_MARKETING, name: "刪除行銷任務", description: "允許刪除行銷任務" },
-      { id: Permission.VIEW_CONTENT_CALENDAR, name: "查看甘特圖", description: "允許查看行銷甘特圖" },
+      { id: "VIEW_MARKETING_TASKS", name: "查看行銷任務", description: "允許查看行銷任務" },
+      { id: "CREATE_MARKETING_TASK", name: "創建行銷任務", description: "允許創建行銷任務" },
+      { id: "EDIT_MARKETING_TASK", name: "編輯行銷任務", description: "允許編輯行銷任務" },
+      { id: "DELETE_MARKETING_TASK", name: "刪除行銷任務", description: "允許刪除行銷任務" },
+      { id: "MANAGE_MARKETING", name: "查看甘特圖", description: "允許查看行銷甘特圖" },
     ]
   },
   OPERATIONS: {
     title: "營運管理",
     permissions: [
-      { id: Permission.VIEW_OPERATION, name: "查看營運任務", description: "允許查看營運任務" },
-      { id: Permission.CREATE_OPERATION, name: "創建營運任務", description: "允許創建營運任務" },
-      { id: Permission.EDIT_OPERATION, name: "編輯營運任務", description: "允許編輯營運任務" },
-      { id: Permission.DELETE_OPERATION, name: "刪除營運任務", description: "允許刪除營運任務" },
-      { id: Permission.VIEW_OPERATION_CALENDAR, name: "查看甘特圖", description: "允許查看營運甘特圖" },
+      { id: "VIEW_OPERATION_TASKS", name: "查看營運任務", description: "允許查看營運任務" },
+      { id: "CREATE_OPERATION_TASK", name: "創建營運任務", description: "允許創建營運任務" },
+      { id: "EDIT_OPERATION_TASK", name: "編輯營運任務", description: "允許編輯營運任務" },
+      { id: "DELETE_OPERATION_TASK", name: "刪除營運任務", description: "允許刪除營運任務" },
+      { id: "MANAGE_OPERATIONS", name: "查看甘特圖", description: "允許查看營運甘特圖" },
     ]
   },
   ONELINK: {
     title: "Onelink管理",
     permissions: [
-      { id: Permission.VIEW_ONELINK, name: "查看Onelink設定", description: "允許查看Onelink設定" },
-      { id: Permission.MANAGE_ONELINK, name: "生成單個Onelink URL", description: "允許生成單個Onelink URL" },
-      { id: Permission.MANAGE_ONELINK, name: "批量生成URL", description: "允許批量生成URL" },
-      { id: Permission.CREATE_PAGE, name: "新增Onelink參數設定", description: "允許新增Onelink參數設定" },
-      { id: Permission.EDIT_PAGE, name: "編輯Onelink參數設定", description: "允許編輯Onelink參數設定" },
-      { id: Permission.DELETE_PAGE, name: "刪除Onelink參數設定", description: "允許刪除Onelink參數設定" },
+      { id: "VIEW_ONELINK", name: "查看Onelink設定", description: "允許查看Onelink設定" },
+      { id: "MANAGE_ONELINK", name: "管理Onelink設定", description: "允許管理Onelink設定" },
     ]
   },
   RECYCLE_BIN: {
     title: "還原區",
     permissions: [
-      { id: Permission.VIEW_POSTS, name: "查看還原區", description: "允許查看還原區" },
-      { id: Permission.EDIT_POST, name: "還原貼文", description: "允許還原被刪除的貼文" },
-      { id: Permission.DELETE_POST, name: "永久刪除", description: "允許永久刪除貼文" },
+      { id: "VIEW_POSTS", name: "查看還原區", description: "允許查看還原區" },
+      { id: "EDIT_POST", name: "還原貼文", description: "允許還原被刪除的貼文" },
+      { id: "DELETE_POST", name: "永久刪除", description: "允許永久刪除貼文" },
     ]
   },
   SETTINGS: {
     title: "設定",
     permissions: [
-      { id: Permission.MANAGE_SETTINGS, name: "連接", description: "允許管理連接設定" },
-      { id: Permission.VIEW_PAGES, name: "粉絲專頁", description: "允許查看粉絲專頁設定" },
-      { id: Permission.VIEW_USERS, name: "用戶管理", description: "允許查看用戶管理" },
-      { id: Permission.VIEW_USER_GROUPS, name: "用戶群組", description: "允許查看用戶群組" },
+      { id: "MANAGE_SETTINGS", name: "連接", description: "允許管理連接設定" },
+      { id: "VIEW_PAGES", name: "粉絲專頁", description: "允許查看粉絲專頁設定" },
+      { id: "VIEW_USERS", name: "用戶管理", description: "允許查看用戶管理" },
+      { id: "VIEW_USER_GROUPS", name: "用戶群組", description: "允許查看用戶群組" },
+      { id: "MANAGE_USER_GROUPS", name: "管理用戶群組", description: "允許管理用戶群組和權限" },
     ]
   }
 };
@@ -637,9 +632,9 @@ const UserGroupManagement: React.FC = () => {
       if (selectedGroupId === 1 || selectedGroupId === 2) { // Administrators 或 管理員群組
         return getAllPermissions(); // 設置所有權限
       } else if (selectedGroupId === 3) { // 專案經理群組
-        return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 設置部分權限
+        return ["VIEW_POSTS", "CREATE_POST", "EDIT_POST", "VIEW_MARKETING_TASKS", "CREATE_MARKETING_TASK"]; // 設置部分權限
       } else if (selectedGroupId === 4) { // 一般用戶群組
-        return [1, 2, 3]; // 設置最小權限
+        return ["VIEW_POSTS", "VIEW_MARKETING_TASKS", "VIEW_OPERATION_TASKS"]; // 設置最小權限
       }
     }
     
