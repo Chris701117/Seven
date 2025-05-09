@@ -164,43 +164,66 @@ const UserGroupManagement = () => {
   } = useQuery<UserGroup & { users: User[] }>({
     queryKey: ['/api/user-groups', selectedGroupId],
     enabled: selectedGroupId !== null,
-    staleTime: 0, // 不使用緩存，始終獲取最新數據
-    refetchOnWindowFocus: true, // 窗口聚焦時重新獲取數據
+    refetchOnWindowFocus: false, // 關閉窗口聚焦重新獲取，改為手動控制
     onSuccess: (data) => {
       console.log('成功獲取群組詳情:', data);
       console.log('權限類型:', typeof data.permissions);
       console.log('權限數據:', JSON.stringify(data.permissions));
       
-      // 始終確保權限為數組類型
-      if (!Array.isArray(data.permissions)) {
-        console.warn('警告: 獲取到的權限不是數組:', data.permissions);
-        // 嘗試轉換不同格式的權限數據
-        if (typeof data.permissions === 'object' && data.permissions !== null) {
-          if ('permissions' in data.permissions) {
-            const convertedPermissions = (data.permissions as any).permissions;
-            if (Array.isArray(convertedPermissions)) {
-              console.log('已轉換嵌套權限對象到數組格式');
-              // 這裡不直接修改 data，而是在後續處理時考慮這種情況
-            }
-          }
+      // 標準化權限數據格式 - 確保始終為數組
+      let normalizedPermissions: Permission[] = [];
+      
+      if (Array.isArray(data.permissions)) {
+        // 權限是數組，直接使用
+        normalizedPermissions = [...data.permissions];
+        console.log(`獲取到 ${normalizedPermissions.length} 個權限 (數組格式)`);
+      } else if (typeof data.permissions === 'object' && data.permissions !== null) {
+        // 嘗試從嵌套對象中提取權限
+        if ('permissions' in data.permissions && Array.isArray((data.permissions as any).permissions)) {
+          normalizedPermissions = [...(data.permissions as any).permissions];
+          console.log(`從嵌套對象中提取 ${normalizedPermissions.length} 個權限`);
+        } else {
+          console.warn('警告: 權限是對象但沒有有效的permissions數組屬性');
+          normalizedPermissions = [];
         }
       } else {
-        console.log(`獲取到 ${data.permissions.length} 個權限`);
+        console.warn('警告: 獲取到的權限格式無法識別:', data.permissions);
+        normalizedPermissions = [];
       }
-            
-      // 當打開編輯對話框時，將權限設置到表單狀態
+      
+      // 創建帶標準化權限的群組數據
+      const normalizedGroup = {
+        ...data,
+        permissions: normalizedPermissions
+      };
+      
+      // 更新本地緩存，確保視圖顯示正確的數據
+      queryClient.setQueryData(['/api/user-groups', selectedGroupId], normalizedGroup);
+      
+      // 當打開編輯對話框時，設置表單狀態
       if (editGroupDialogOpen) {
-        const permissions = Array.isArray(data.permissions) 
-          ? [...data.permissions] 
-          : (typeof data.permissions === 'object' && data.permissions !== null && 'permissions' in data.permissions) 
-            ? [...(data.permissions as any).permissions] 
-            : [];
-        
-        console.log('設置表單權限:', permissions);
-        setSelectedPermissions(permissions);
+        console.log('設置表單權限:', normalizedPermissions);
+        setSelectedPermissions(normalizedPermissions);
         setGroupName(data.name);
         setGroupDescription(data.description || '');
       }
+      
+      // 在每次獲取數據成功後，確保視圖顯示的權限是正確的
+      // 這可能是修復前端閃爍問題的關鍵
+      setTimeout(() => {
+        if (selectedGroupId) {
+          console.log('確認群組權限數據顯示');
+          const cachedGroup = queryClient.getQueryData<UserGroup>(['/api/user-groups', selectedGroupId]);
+          if (cachedGroup) {
+            // 確保緩存中的權限數據是正確的
+            if (!Array.isArray(cachedGroup.permissions) || 
+                JSON.stringify(cachedGroup.permissions) !== JSON.stringify(normalizedPermissions)) {
+              console.log('緩存中的權限數據不一致，正在更新...');
+              queryClient.setQueryData(['/api/user-groups', selectedGroupId], normalizedGroup);
+            }
+          }
+        }
+      }, 100);
     },
     onError: (error) => {
       console.error('獲取群組詳情失敗:', error);
@@ -1129,8 +1152,26 @@ const UserGroupManagement = () => {
                 <TabsContent value="permissions" className="space-y-6">
                   <div className="space-y-6">
                     {Object.entries(permissionCategories).map(([category, { title, permissions }]) => {
+                      // 安全地獲取權限列表
+                      const groupPermissions = Array.isArray(selectedGroup.permissions) 
+                        ? selectedGroup.permissions
+                        : (typeof selectedGroup.permissions === 'object' && 
+                           selectedGroup.permissions !== null && 
+                           'permissions' in selectedGroup.permissions && 
+                           Array.isArray((selectedGroup.permissions as any).permissions))
+                          ? (selectedGroup.permissions as any).permissions
+                          : [];
+                      
+                      // 顯示調試信息
+                      if (category === 'post_management') {
+                        console.log('權限顯示時的類型:', typeof selectedGroup.permissions);
+                        console.log('權限顯示時的值:', JSON.stringify(selectedGroup.permissions));
+                        console.log('處理後的權限列表:', groupPermissions);
+                      }
+                      
+                      // 過濾出此類別中的權限
                       const categoryPermissions = permissions.filter(p => 
-                        (selectedGroup.permissions as Permission[])?.includes(p.id)
+                        groupPermissions.includes(p.id)
                       );
                       
                       if (categoryPermissions.length === 0) return null;
@@ -1150,20 +1191,32 @@ const UserGroupManagement = () => {
                       );
                     })}
                     
-                    {!(selectedGroup.permissions as Permission[])?.length && (
-                      <div className="text-center py-6 text-gray-500">
-                        <Shield className="h-12 w-12 mx-auto opacity-20 mb-2" />
-                        <p>此群組沒有設置任何權限</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-4"
-                          onClick={() => setEditGroupDialogOpen(true)}
-                        >
-                          設置權限
-                        </Button>
-                      </div>
-                    )}
+                    {(() => {
+                      // 安全地獲取權限列表長度
+                      const permLength = Array.isArray(selectedGroup.permissions)
+                        ? selectedGroup.permissions.length
+                        : (typeof selectedGroup.permissions === 'object' && 
+                           selectedGroup.permissions !== null && 
+                           'permissions' in selectedGroup.permissions && 
+                           Array.isArray((selectedGroup.permissions as any).permissions))
+                          ? (selectedGroup.permissions as any).permissions.length
+                          : 0;
+                          
+                      return !permLength && (
+                        <div className="text-center py-6 text-gray-500">
+                          <Shield className="h-12 w-12 mx-auto opacity-20 mb-2" />
+                          <p>此群組沒有設置任何權限</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-4"
+                            onClick={() => setEditGroupDialogOpen(true)}
+                          >
+                            設置權限
+                          </Button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </TabsContent>
                 
