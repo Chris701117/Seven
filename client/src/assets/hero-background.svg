@@ -1,0 +1,190 @@
+<svg viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 震撼的火焰色天空 -->
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#ea580c;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#d97706;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 建築物陰影 -->
+    <linearGradient id="buildingShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#374151;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#1f2937;stop-opacity:0.9" />
+    </linearGradient>
+    
+    <!-- 機械設備漸層 -->
+    <linearGradient id="machineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 爆炸粉塵效果 -->
+    <radialGradient id="dustEffect" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#d1d5db;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#9ca3af;stop-opacity:0.2" />
+    </radialGradient>
+    
+    <!-- 火花效果 -->
+    <radialGradient id="sparkEffect" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#f59e0b;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:0.3" />
+    </radialGradient>
+  </defs>
+  
+  <!-- 天空背景 -->
+  <rect width="1920" height="1080" fill="url(#skyGradient)"/>
+  
+  <!-- 遠景建築物輪廓 -->
+  <polygon points="0,600 200,500 400,520 600,480 800,500 1000,460 1200,480 1400,440 1600,460 1800,420 1920,440 1920,1080 0,1080" 
+           fill="url(#buildingShadow)" opacity="0.6"/>
+  
+  <!-- 中景建築物 -->
+  <polygon points="100,700 300,650 500,670 700,640 900,660 1100,620 1300,640 1500,600 1700,620 1920,600 1920,1080 100,1080" 
+           fill="url(#buildingShadow)" opacity="0.8"/>
+  
+  <!-- 巨大的正在爆破的建築物 -->
+  <rect x="600" y="200" width="400" height="700" fill="#4b5563" opacity="0.9"/>
+  <rect x="620" y="220" width="360" height="650" fill="#6b7280"/>
+  
+  <!-- 大樓窗戶 -->
+  <rect x="650" y="250" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="720" y="250" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="790" y="250" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="860" y="250" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="930" y="250" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  
+  <rect x="650" y="350" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="720" y="350" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="790" y="350" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="860" y="350" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="930" y="350" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  
+  <rect x="650" y="450" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="720" y="450" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="790" y="450" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="860" y="450" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  <rect x="930" y="450" width="40" height="50" fill="#1f2937" opacity="0.7"/>
+  
+  <!-- 巨大爆破效果 - 建築物中央爆炸 -->
+  <ellipse cx="800" cy="500" rx="200" ry="150" fill="url(#sparkEffect)" opacity="0.9">
+    <animate attributeName="rx" values="200;250;200" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="ry" values="150;200;150" dur="2s" repeatCount="indefinite"/>
+  </ellipse>
+  
+  <!-- 巨大裂縫效果 -->
+  <path d="M620,400 L700,420 L780,400 L860,430 L940,420 L980,450" 
+        stroke="#dc2626" stroke-width="8" fill="none" opacity="1"/>
+  <path d="M630,500 L710,520 L790,500 L870,530 L950,520 L980,550" 
+        stroke="#dc2626" stroke-width="6" fill="none" opacity="0.8"/>
+  <path d="M640,600 L720,620 L800,600 L880,630 L960,620" 
+        stroke="#dc2626" stroke-width="4" fill="none" opacity="0.6"/>
+  
+  <!-- 飛散的建築碎片 -->
+  <polygon points="750,400 770,390 760,410" fill="#6b7280" opacity="0.8">
+    <animateTransform attributeName="transform" type="translate" values="0,0;-50,-30;-80,-50" dur="3s" repeatCount="indefinite"/>
+  </polygon>
+  <polygon points="850,420 870,410 860,430" fill="#6b7280" opacity="0.8">
+    <animateTransform attributeName="transform" type="translate" values="0,0;60,-40;100,-70" dur="2.5s" repeatCount="indefinite"/>
+  </polygon>
+  <polygon points="780,450 800,440 790,460" fill="#6b7280" opacity="0.8">
+    <animateTransform attributeName="transform" type="translate" values="0,0;-30,-60;-50,-100" dur="4s" repeatCount="indefinite"/>
+  </polygon>
+  
+  <!-- 挖土機/破碎機 -->
+  <g transform="translate(150,750)">
+    <!-- 履帶底座 -->
+    <rect x="0" y="80" width="120" height="30" rx="15" fill="url(#machineGradient)"/>
+    <rect x="10" y="85" width="100" height="20" rx="10" fill="#d97706"/>
+    
+    <!-- 主體 -->
+    <rect x="20" y="40" width="80" height="50" rx="5" fill="url(#machineGradient)"/>
+    
+    <!-- 駕駛室 -->
+    <rect x="70" y="20" width="40" height="30" rx="3" fill="#1f2937" opacity="0.8"/>
+    <rect x="75" y="25" width="30" height="20" fill="#3b82f6" opacity="0.3"/>
+    
+    <!-- 破碎臂 -->
+    <rect x="100" y="45" width="60" height="8" rx="4" fill="#d97706" transform="rotate(-30 100 49)"/>
+    <rect x="150" y="25" width="40" height="8" rx="4" fill="#d97706" transform="rotate(-60 150 29)"/>
+    
+    <!-- 破碎頭 -->
+    <polygon points="180,15 200,10 195,25 185,30" fill="#374151" transform="rotate(-60 185 20)"/>
+  </g>
+  
+  <!-- 另一台機械設備 -->
+  <g transform="translate(600,780)">
+    <!-- 履帶底座 -->
+    <rect x="0" y="60" width="100" height="25" rx="12" fill="url(#machineGradient)"/>
+    
+    <!-- 主體 -->
+    <rect x="15" y="30" width="70" height="40" rx="4" fill="url(#machineGradient)"/>
+    
+    <!-- 駕駛室 -->
+    <rect x="55" y="15" width="35" height="25" rx="2" fill="#1f2937" opacity="0.8"/>
+    
+    <!-- 工作臂 -->
+    <rect x="85" y="35" width="50" height="6" rx="3" fill="#d97706" transform="rotate(-20 85 38)"/>
+  </g>
+  
+  <!-- 粉塵雲朵效果 -->
+  <ellipse cx="400" cy="500" rx="80" ry="40" fill="url(#dustEffect)" opacity="0.6"/>
+  <ellipse cx="450" cy="480" rx="60" ry="30" fill="url(#dustEffect)" opacity="0.4"/>
+  <ellipse cx="380" cy="520" rx="50" ry="25" fill="url(#dustEffect)" opacity="0.5"/>
+  
+  <!-- 工地圍欄 -->
+  <rect x="50" y="850" width="8" height="80" fill="#ef4444"/>
+  <rect x="100" y="850" width="8" height="80" fill="#ef4444"/>
+  <rect x="150" y="850" width="8" height="80" fill="#ef4444"/>
+  <rect x="200" y="850" width="8" height="80" fill="#ef4444"/>
+  <rect x="250" y="850" width="8" height="80" fill="#ef4444"/>
+  
+  <!-- 圍欄橫條 -->
+  <rect x="50" y="870" width="208" height="4" fill="#ef4444"/>
+  <rect x="50" y="890" width="208" height="4" fill="#ef4444"/>
+  
+  <!-- 地面碎石 -->
+  <circle cx="120" cy="920" r="3" fill="#6b7280"/>
+  <circle cx="180" cy="940" r="2" fill="#6b7280"/>
+  <circle cx="240" cy="935" r="4" fill="#6b7280"/>
+  <circle cx="160" cy="960" r="2" fill="#6b7280"/>
+  <circle cx="200" cy="955" r="3" fill="#6b7280"/>
+  
+  <!-- 施工標誌 -->
+  <g transform="translate(800,800)">
+    <rect x="0" y="0" width="60" height="60" rx="5" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/>
+    <polygon points="30,15 45,35 15,35" fill="#1f2937"/>
+    <rect x="25" y="40" width="10" height="3" fill="#1f2937"/>
+  </g>
+  
+  <!-- 工程車輛輪廓 -->
+  <g transform="translate(1200,820)">
+    <!-- 車體 -->
+    <rect x="0" y="30" width="100" height="40" rx="5" fill="#374151"/>
+    <!-- 駕駛室 -->
+    <rect x="70" y="10" width="30" height="25" rx="2" fill="#1f2937"/>
+    <!-- 車輪 -->
+    <circle cx="20" r="15" cy="75" fill="#1f2937"/>
+    <circle cx="80" r="15" cy="75" fill="#1f2937"/>
+  </g>
+  
+  <!-- 動態粒子效果 -->
+  <g opacity="0.3">
+    <circle cx="350" cy="480" r="1" fill="#d1d5db">
+      <animate attributeName="cy" values="480;460;480" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="420" cy="500" r="1.5" fill="#d1d5db">
+      <animate attributeName="cy" values="500;475;500" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="380" cy="490" r="1" fill="#d1d5db">
+      <animate attributeName="cy" values="490;470;490" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- 前景裝飾元素 -->
+  <rect x="0" y="900" width="1920" height="180" fill="#374151" opacity="0.4"/>
+  
+</svg>
