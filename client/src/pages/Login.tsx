@@ -84,7 +84,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       // 使用新的參數形式調用apiRequest，直接獲取JSON響應
-      const data = await apiRequest('POST', '/api/auth/login', values);
+      const data = await apiRequest('POST', '/api/login', values);
       
       // 如果需要設置二步驗證
       if (data.requireTwoFactorSetup) {
