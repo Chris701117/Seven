@@ -30,6 +30,19 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
 });
 
+
+app.use(express.json());
+
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'chris' && password === 'Zxc777') {
+    res.json({ success: true, message: '登入成功', token: 'dummy-token' });
+  } else {
+    res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`✅ Server is running at http://localhost:${PORT}`);
 });
