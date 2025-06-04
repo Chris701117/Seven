@@ -11,8 +11,14 @@ export default function AgentChatWidget() {
     setMessages(newMessages);
     setInput('');
 
+    // ✅ 傳送聊天內容給 OpenAI Agent
     const res = await axios.post('/api/agent/chat', {
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+    });
+
+    // ✅ 額外呼叫 agent-command 讓 Agent 有機會控制元件
+    await axios.post('/api/agent-command', {
+      message: input,
     });
 
     setMessages([

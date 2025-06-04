@@ -9,12 +9,20 @@ import ContactSection from "@/components/contact-section";
 import Footer from "@/components/footer";
 import FixedContactButtons from "@/components/fixed-contact-buttons";
 import AgentChatWidget from "@/components/AgentChatWidget";
+import { homeConfig } from '@/config/homeConfig'; // ✅ 載入設定檔
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white text-industrial-blue">
       <Navigation />
       <FixedContactButtons />
+
+      {/* ✅ 由 AI 可修改的區塊 */}
+      <div className="bg-blue-50 text-blue-900 px-6 py-8 text-center">
+        <h1 className="text-3xl font-bold">{homeConfig.title}</h1>
+        <p className="mt-2 text-lg">{homeConfig.description}</p>
+      </div>
+
       <HeroSection />
       <ServicesSection />
       <PortfolioSection />
