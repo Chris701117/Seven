@@ -8,6 +8,7 @@ import SpecialOfferSection from "@/components/special-offer-section";
 import ContactSection from "@/components/contact-section";
 import Footer from "@/components/footer";
 import FixedContactButtons from "@/components/fixed-contact-buttons";
+import AgentChatWidget from "@/components/AgentChatWidget";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
       <SpecialOfferSection />
       <ContactSection />
       <Footer />
+      <AgentChatWidget />
     </div>
   );
 }

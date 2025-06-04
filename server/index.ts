@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import agentRouter from './agent.js';
+app.use('/api/agent', agentRouter);
 
 // Facebook 相關常量定義
 export const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "958057036410330"; // 設置預設值為用戶提供的 ID
