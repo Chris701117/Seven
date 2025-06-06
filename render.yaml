@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: seven
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
