@@ -4,7 +4,9 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: node dist/server.js
+    startCommand: node server.js  # 改成未 bundle 版本，支援 .env
     envVars:
       - key: NPM_CONFIG_PRODUCTION
         value: false
+      - key: OPENAI_API_KEY
+        sync: false  # 從 Render Dashboard ➜ Environment ➜ 變數區 手動設定

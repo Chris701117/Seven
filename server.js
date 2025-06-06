@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,9 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// ✅ 初始化 OpenAI API
-const configuration = new Configuration({ apiKey: OPENAI_API_KEY });
-const openai = new OpenAIApi(configuration);
+// ✅ 初始化新版 OpenAI SDK v4
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ✅ 中介軟體
 app.use(express.json());
@@ -32,7 +32,7 @@ app.post('/api/agent/chat', async (req, res) => {
   const { messages } = req.body;
 
   try {
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { role: 'system', content: '你是一個能協助操作網站內容的 AI 助理。' },
@@ -40,8 +40,7 @@ app.post('/api/agent/chat', async (req, res) => {
       ],
     });
 
-    const reply = completion.data.choices[0].message?.content || '⚠️ 無回應';
-
+    const reply = completion.choices[0]?.message?.content || '⚠️ 無回應';
     res.json({ messages: [reply] });
   } catch (error) {
     console.error('❌ Chat Error:', error.message);
@@ -52,13 +51,10 @@ app.post('/api/agent/chat', async (req, res) => {
 // ✅ 新增控制網站元件的 API
 app.post('/api/agent-command', (req, res) => {
   const { message } = req.body;
-
-  // 簡單範例：當 agent 收到特定字串，就修改首頁標題（此處你可改為觸發某個狀態或變數）
   console.log('🧠 Agent 指令內容：', message);
 
   if (message.includes('修改首頁標題為')) {
     const newTitle = message.split('修改首頁標題為')[1].trim();
-    // 👉 你可以在這裡觸發 WebSocket、寫入 JSON、修改 DOM 等
     console.log('✅ 模擬修改首頁標題為：', newTitle);
   }
 
