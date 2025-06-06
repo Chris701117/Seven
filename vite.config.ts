@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  root: './client', // ✅ 指定專案的前端資料夾
+  root: './client', // ✅ 指定前端資料夾
   plugins: [react()],
   build: {
     outDir: '../dist/public',
@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './client/src'),
+      '@shared': path.resolve(__dirname, './shared'), // ✅ 新增的 alias
     },
   },
 })
