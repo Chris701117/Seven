@@ -149,7 +149,7 @@ export default function Login() {
     setTwoFactorError(false);
     try {
       // 使用apiRequest直接獲取JSON響應
-      await apiRequest('POST', '/api/auth/verify-2fa', {
+      const data = await apiRequest('POST', '/api/auth/verify-2fa', {
         userId,
         code: values.code
       });
@@ -160,7 +160,14 @@ export default function Login() {
         description: '歡迎回來！',
       });
 
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      if (data && data.userId) {
+        queryClient.setQueryData(['/api/auth/me'], {
+          username: data.username,
+          userId: data.userId,
+        });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      }
 
       // 重定向到首頁
       setLocation('/');
@@ -189,7 +196,7 @@ export default function Login() {
     setTwoFactorError(false);
     try {
       // 使用首次登入的二步驗證設置 API，直接獲取JSON響應
-      await apiRequest('POST', '/api/auth/setup-2fa', {
+      const data = await apiRequest('POST', '/api/auth/setup-2fa', {
         userId,
         code: values.code
       });
@@ -201,7 +208,11 @@ export default function Login() {
         variant: 'default'
       });
 
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      if (data && data.user) {
+        queryClient.setQueryData(['/api/auth/me'], data.user);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      }
 
       // 重定向到首頁
       setLocation('/');

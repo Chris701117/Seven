@@ -500,7 +500,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 更新最後登入時間
       await storage.updateUser(userId, { lastLoginAt: new Date() });
       
-      res.json({ message: "驗證成功", userId });
+      res.json({
+        message: "驗證成功",
+        userId,
+        username: user.username
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
