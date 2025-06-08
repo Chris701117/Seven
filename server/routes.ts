@@ -11,8 +11,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { upload, uploadFromUrl, deleteFile, getPublicIdFromUrl } from "./cloudinary";
 import path from "path";
-// 不再使用 bcrypt，改用明文密碼存储
-// import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
 
@@ -56,6 +55,7 @@ declare module "express-session" {
     tiktokConnected?: boolean;
     xConnected?: boolean;
     fbDevMode?: boolean;
+    loginFails?: number;
   }
 }
 
@@ -120,7 +120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secret: process.env.SESSION_SECRET || "secret-key",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === "production" },
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: 'lax',
+      },
     })
   );
   
@@ -173,17 +177,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const { username, password } = await loginSchema.parse(req.body);
+
+      // 檢查過多失敗嘗試
+      const fails = req.session.loginFails || 0;
+      if (fails > 5) {
+        return res.status(429).json({ message: "嘗試次數過多，請稍後再試" });
+      }
+
       const user = await storage.getUserByUsername(username);
 
-      // 檢查用戶是否存在及密碼是否正確
       if (!user) {
+        req.session.loginFails = fails + 1;
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
-      
-      // 直接比較密碼
-      if (password !== user.password) {
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        req.session.loginFails = fails + 1;
         return res.status(401).json({ message: "用戶名或密碼不正確" });
       }
+
+      // 驗證成功重置失敗計數
+      req.session.loginFails = 0;
 
       // 檢查是否已設置二步驗證
       if (!user.twoFactorSecret) {
