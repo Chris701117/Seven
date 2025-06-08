@@ -36,7 +36,7 @@ function simpleAuth(req, res) {
   if (username === 'chris' && password === 'Zxc777') {
     req.session.user = { username };
     req.session.userId = 1;
-    return res.status(200).json({ success: true, username });
+    return res.status(200).json({ success: true, username, userId: 1 });
   } else {
     return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
   }

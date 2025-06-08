@@ -115,7 +115,15 @@ export default function Login() {
           description: '歡迎回來！',
         });
 
-        queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        // 預先更新用戶資料，避免重新導向時仍取得不到登入狀態
+        if (data && data.userId) {
+          queryClient.setQueryData(['/api/auth/me'], {
+            username: data.username,
+            userId: data.userId,
+          });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        }
 
         // 重定向到首頁
         setLocation('/');
