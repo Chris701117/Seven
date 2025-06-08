@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authentication routes
-  app.post("/api/auth/login", async (req, res) => {
+  const loginHandler = async (req: Request, res: Response) => {
     try {
       // 只需要用戶名和密碼的基本驗證
       const loginSchema = z.object({
@@ -244,7 +244,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(500).json({ message: "伺服器錯誤" });
     }
-  });
+  };
+
+  app.post("/api/auth/login", loginHandler);
+  app.post("/api/login", loginHandler);
 
   app.post("/api/auth/register", async (req, res) => {
     try {
