@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "start": "node server.js",
+    "pretest": "npm ci",
     "test": "vitest run"
   },
   "dependencies": {
