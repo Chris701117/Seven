@@ -18,14 +18,18 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 app.use(express.json());
 
 // ✅ 簡易登入 API
-app.post('/api/login', (req, res) => {
+function simpleAuth(req, res) {
   const { username, password } = req.body;
   if (username === 'chris' && password === 'Zxc777') {
     return res.status(200).json({ success: true });
   } else {
     return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
   }
-});
+}
+
+// 支援兩種路徑，避免前端路徑不一致
+app.post('/api/login', simpleAuth);
+app.post('/api/auth/login', simpleAuth);
 
 // ✅ Chat 聊天 API
 app.post('/api/agent/chat', async (req, res) => {
