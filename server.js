@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import session from 'express-session';
 import cors from 'cors';
 import OpenAI from 'openai';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +13,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'chris';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Zxc777';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || bcrypt.hashSync(ADMIN_PASSWORD, 10);
 
 // ✅ 初始化新版 OpenAI SDK v4
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
@@ -26,6 +31,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       sameSite: 'lax',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
     },
   })
 );
@@ -33,11 +40,21 @@ app.use(
 // ✅ 簡易登入 API
 function simpleAuth(req, res) {
   const { username, password } = req.body;
-  if (username === 'chris' && password === 'Zxc777') {
-    req.session.user = { username };
+
+  const attempts = req.session.loginAttempts || 0;
+  if (attempts >= 5) {
+    return res.status(429).json({ success: false, message: '嘗試次數過多，請稍後再試' });
+  }
+
+  const passwordMatch = username === ADMIN_USERNAME && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH);
+
+  if (passwordMatch) {
+    req.session.loginAttempts = 0;
+    req.session.user = { username: ADMIN_USERNAME };
     req.session.userId = 1;
-    return res.status(200).json({ success: true, username, userId: 1 });
+    return res.status(200).json({ success: true, username: ADMIN_USERNAME, userId: 1 });
   } else {
+    req.session.loginAttempts = attempts + 1;
     return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
   }
 }
