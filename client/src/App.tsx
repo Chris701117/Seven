@@ -20,7 +20,7 @@ import { PageProvider } from "./contexts/PageContext";
 import { User } from "@shared/schema";
 
 // 需要登入的路由
-const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing', '/operations', '/onelink', '/recycle-bin'];
+const PROTECTED_ROUTES = ['/', '/dashboard', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing', '/operations', '/onelink', '/recycle-bin'];
 
 function Router() {
   const [location, setLocation] = useLocation();
@@ -58,6 +58,7 @@ function Router() {
       
       {/* 受保護的路由 */}
       <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/calendar" component={ContentCalendar} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/marketing" component={Marketing} />

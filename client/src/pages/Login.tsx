@@ -109,16 +109,24 @@ export default function Login() {
           description: '請輸入Google Authenticator中的驗證碼',
         });
       } else {
-        // 登入成功
+        // 登入成功，提示即將跳轉
         toast({
           title: '登入成功',
-          description: '歡迎回來！',
+          description: '歡迎回來！即將前往儀表板',
         });
 
-        queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        // 預先更新用戶資料，避免重新導向時仍取得不到登入狀態
+        if (data && data.userId) {
+          queryClient.setQueryData(['/api/auth/me'], {
+            username: data.username,
+            userId: data.userId,
+          });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        }
 
-        // 重定向到首頁
-        setLocation('/');
+        // 重定向到儀表板
+        setTimeout(() => setLocation('/dashboard'), 1000);
       }
     } catch (error) {
       // 登入失敗
@@ -146,16 +154,16 @@ export default function Login() {
         code: values.code
       });
       
-      // 驗證成功
+      // 驗證成功，提示即將跳轉
       toast({
         title: '驗證成功',
-        description: '歡迎回來！',
+        description: '歡迎回來！即將前往儀表板',
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
 
-      // 重定向到首頁
-      setLocation('/');
+      // 重定向到儀表板
+      setTimeout(() => setLocation('/dashboard'), 1000);
     } catch (error) {
       // 驗證失敗
       setTwoFactorError(true);
@@ -186,17 +194,17 @@ export default function Login() {
         code: values.code
       });
       
-      // 設置和登入成功
+      // 設置和登入成功，提示即將跳轉
       toast({
         title: '設置成功',
-        description: '二步驗證已成功設置並驗證！',
+        description: '二步驗證設置完成！即將前往儀表板',
         variant: 'default'
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
 
-      // 重定向到首頁
-      setLocation('/');
+      // 重定向到儀表板
+      setTimeout(() => setLocation('/dashboard'), 1000);
     } catch (error) {
       // 設置失敗
       setTwoFactorError(true);

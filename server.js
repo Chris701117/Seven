@@ -2,12 +2,15 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import cors from 'cors';
 import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -16,12 +19,26 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ✅ 中介軟體
 app.use(express.json());
+app.use(cors({ origin: true, credentials: true }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    },
+  })
+);
 
 // ✅ 簡易登入 API
 function simpleAuth(req, res) {
   const { username, password } = req.body;
   if (username === 'chris' && password === 'Zxc777') {
-    return res.status(200).json({ success: true });
+    req.session.user = { username };
+    req.session.userId = 1;
+    return res.status(200).json({ success: true, username, userId: 1 });
   } else {
     return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
   }
@@ -30,6 +47,20 @@ function simpleAuth(req, res) {
 // 支援兩種路徑，避免前端路徑不一致
 app.post('/api/login', simpleAuth);
 app.post('/api/auth/login', simpleAuth);
+
+app.get('/api/auth/me', (req, res) => {
+  if (req.session.user) {
+    res.json({ username: req.session.user.username, userId: req.session.userId });
+  } else {
+    res.status(401).json({ message: '未登入' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.json({ success: true });
+  });
+});
 
 // ✅ Chat 聊天 API
 app.post('/api/agent/chat', async (req, res) => {
