@@ -7,8 +7,10 @@ import agentRouter from './agent.js';
 // Facebook 相關常量定義
 export const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "958057036410330"; // 設置預設值為用戶提供的 ID
 export const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
-export const USE_FIXED_2FA_SECRET = true; // 使用固定的二步驗證密鑰
-export const FIXED_2FA_SECRET = "JBSWY3DPEHPK3PXP"; // 預設固定的二步驗證密鑰，只用於測試環境
+// 二步驗證密鑰是否固定，預設為 false，僅在測試環境可透過環境變數啟用
+export const USE_FIXED_2FA_SECRET = process.env.USE_FIXED_2FA_SECRET === 'true';
+// 固定密鑰僅供測試，可透過環境變數覆蓋
+export const FIXED_2FA_SECRET = process.env.FIXED_2FA_SECRET || 'JBSWY3DPEHPK3PXP';
 
 const app = express();
 
