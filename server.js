@@ -83,7 +83,7 @@ app.post('/api/agent/chat', async (req, res) => {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: '你是一個能協助操作網站內容的 AI 助理。' },
         ...messages,
