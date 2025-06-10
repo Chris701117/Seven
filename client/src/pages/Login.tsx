@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, QrCode, KeyRound, Shield, XCircle, CircleAlert } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -45,6 +46,7 @@ const setupTwoFactorSchema = z.object({
 
 export default function Login() {
   const [_, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
   const [requireTwoFactorSetup, setRequireTwoFactorSetup] = useState(false);
@@ -84,6 +86,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       // 使用新的參數形式調用apiRequest，直接獲取JSON響應
+      // 後端 server.js 使用 /api/login 作為登入路徑
       const data = await apiRequest('POST', '/api/login', values);
       
       // 如果需要設置二步驗證
@@ -111,7 +114,17 @@ export default function Login() {
           title: '登入成功',
           description: '歡迎回來！',
         });
-        
+
+        // 預先更新用戶資料，避免重新導向時仍取得不到登入狀態
+        if (data && data.userId) {
+          queryClient.setQueryData(['/api/auth/me'], {
+            username: data.username,
+            userId: data.userId,
+          });
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        }
+
         // 重定向到首頁
         setLocation('/');
       }
@@ -136,7 +149,7 @@ export default function Login() {
     setTwoFactorError(false);
     try {
       // 使用apiRequest直接獲取JSON響應
-      await apiRequest('POST', '/api/auth/verify-2fa', {
+      const data = await apiRequest('POST', '/api/auth/verify-2fa', {
         userId,
         code: values.code
       });
@@ -146,7 +159,16 @@ export default function Login() {
         title: '驗證成功',
         description: '歡迎回來！',
       });
-      
+
+      if (data && data.userId) {
+        queryClient.setQueryData(['/api/auth/me'], {
+          username: data.username,
+          userId: data.userId,
+        });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      }
+
       // 重定向到首頁
       setLocation('/');
     } catch (error) {
@@ -174,7 +196,7 @@ export default function Login() {
     setTwoFactorError(false);
     try {
       // 使用首次登入的二步驗證設置 API，直接獲取JSON響應
-      await apiRequest('POST', '/api/auth/setup-2fa', {
+      const data = await apiRequest('POST', '/api/auth/setup-2fa', {
         userId,
         code: values.code
       });
@@ -185,7 +207,13 @@ export default function Login() {
         description: '二步驗證已成功設置並驗證！',
         variant: 'default'
       });
-      
+
+      if (data && data.user) {
+        queryClient.setQueryData(['/api/auth/me'], data.user);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      }
+
       // 重定向到首頁
       setLocation('/');
     } catch (error) {

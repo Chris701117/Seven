@@ -20,8 +20,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import fetch from "node-fetch";
-// 不再使用 bcrypt，改用明文密碼存储
-// import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -352,6 +351,7 @@ export class MemStorage implements IStorage {
   private async initSampleData() {
     // 為示例用戶使用明文密碼
     const plainPassword = "password123";
+    const hashedPassword = bcrypt.hashSync(plainPassword, 10);
     
     // 先創建一個管理員群組
     const adminGroup = {
@@ -370,7 +370,7 @@ export class MemStorage implements IStorage {
     const user: User = {
       id: this.userId++,
       username: "demouser",
-      password: plainPassword, // 使用明文密碼
+      password: hashedPassword,
       displayName: "示範用戶",
       email: "demo@example.com",
       role: UserRole.ADMIN,
@@ -734,9 +734,8 @@ export class MemStorage implements IStorage {
     if (!user) {
       return false;
     }
-    
-    // 直接比較明文密碼
-    return password === user.password;
+
+    return bcrypt.compareSync(password, user.password);
   }
   
   async getUserById(id: number): Promise<User | undefined> {
@@ -765,9 +764,12 @@ export class MemStorage implements IStorage {
     // 確保groupId是null而不是undefined
     const groupId = insertUser.groupId || null;
     
-    const user: User = { 
-      ...insertUser, 
-      id, 
+    const hashedPassword = bcrypt.hashSync(insertUser.password, 10);
+
+    const user: User = {
+      ...insertUser,
+      password: hashedPassword,
+      id,
       groupId,
       displayName: insertUser.displayName || null,
       isActive: true,
@@ -921,10 +923,12 @@ export class MemStorage implements IStorage {
     if (!user) {
       throw new Error(`User with id ${userId} not found`);
     }
-    
-    const updatedUser = { 
-      ...user, 
-      password,
+
+    const hashed = bcrypt.hashSync(password, 10);
+
+    const updatedUser = {
+      ...user,
+      password: hashed,
       updatedAt: new Date()
     };
     this.users.set(userId, updatedUser);

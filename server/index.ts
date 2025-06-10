@@ -3,15 +3,19 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import agentRouter from './agent.js';
-app.use('/api/agent', agentRouter);
 
 // Facebook 相關常量定義
 export const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "958057036410330"; // 設置預設值為用戶提供的 ID
 export const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET || "";
-export const USE_FIXED_2FA_SECRET = true; // 使用固定的二步驗證密鑰
-export const FIXED_2FA_SECRET = "JBSWY3DPEHPK3PXP"; // 預設固定的二步驗證密鑰，只用於測試環境
+// 二步驗證密鑰是否固定，預設為 false，僅在測試環境可透過環境變數啟用
+export const USE_FIXED_2FA_SECRET = process.env.USE_FIXED_2FA_SECRET === 'true';
+// 固定密鑰僅供測試，可透過環境變數覆蓋
+export const FIXED_2FA_SECRET = process.env.FIXED_2FA_SECRET || 'JBSWY3DPEHPK3PXP';
 
 const app = express();
+
+// 路由：OpenAI Agent
+app.use('/api/agent', agentRouter);
 
 // 確保了Express能適當解析請求體
 app.use(express.json({ limit: '50mb' }));
@@ -101,8 +105,8 @@ app.get('/api/config/facebook', (req, res) => {
       serveStatic(app);
     }
 
-    // Use port 5000 for Replit workflows or fallback to environment variable
-    const port = 5000;
+    // Use the PORT environment variable or fallback to 5000
+    const port = process.env.PORT ? Number(process.env.PORT) : 5000;
     server.listen(port, "0.0.0.0", () => {
       log(`伺服器已啟動在 port ${port}`);
       const replUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
