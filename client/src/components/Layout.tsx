@@ -7,6 +7,7 @@ import { WebSocketProvider } from "./WebSocketProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { usePageContext } from "../contexts/PageContext";
 import { X } from "lucide-react";
+import AgentChatWidget from "@/components/AgentChatWidget";  // ✅ 新增 impor
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -88,6 +89,8 @@ const Layout = ({ children }: LayoutProps) => {
           </main>
         </div>
         <Toaster />
+        {/* ✅ 全站常駐的 AI 助手浮動按鈕 */}
+        <AgentChatWidget />
       </div>
     </WebSocketProvider>
   );
