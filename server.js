@@ -33,6 +33,9 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // GitHub Octokit
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
+const OWNER  = process.env.GITHUB_OWNER;
+const REPO   = process.env.GITHUB_REPO;
+const BRANCH = process.env.GITHUB_BRANCH || 'main';
 
 // 簡易登入
 function simpleAuth(req, res) {
