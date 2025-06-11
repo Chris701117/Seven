@@ -19,44 +19,44 @@ import Register from "./pages/Register";
 import { PageProvider } from "./contexts/PageContext";
 import { User } from "@shared/schema";
 
-// 需要登入的路由
-const PROTECTED_ROUTES = ['/', '/calendar', '/analytics', '/settings', '/facebook-setup', '/marketing', '/operations', '/onelink', '/recycle-bin'];
+// 新增 /dashboard 路由，並將它加入保護列表
+const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/", "/calendar", "/analytics", "/settings",
+  "/facebook-setup", "/marketing", "/operations",
+  "/onelink", "/recycle-bin"
+];
 
 function Router() {
   const [location, setLocation] = useLocation();
   const { data: user, isLoading } = useQuery<User>({
-    queryKey: ['/api/auth/me'],
+    queryKey: ["/api/auth/me"],
     retry: false,
   });
-  
-  // 檢查是否需要重定向到登入頁面
+
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!isLoading) {
-        const isProtectedRoute = PROTECTED_ROUTES.includes(location);
-        if (isProtectedRoute && !user) {
-          setLocation('/login');
-        } else if ((location === '/login' || location === '/register') && user) {
-          setLocation('/');
-        }
+    if (!isLoading) {
+      const isProtected = PROTECTED_ROUTES.includes(location);
+      if (isProtected && !user) {
+        setLocation("/login");
+      } else if ((location === "/login" || location === "/register") && user) {
+        setLocation("/dashboard");
       }
-    };
-    
-    checkAuth();
+    }
   }, [user, isLoading, location, setLocation]);
 
-  // 在加載時顯示空白頁面
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">正在載入...</div>;
   }
 
   return (
     <Switch>
-      {/* 公開路由 */}
+      {/* Public */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
-      {/* 受保護的路由 */}
+
+      {/* Protected */}
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/" component={Dashboard} />
       <Route path="/calendar" component={ContentCalendar} />
       <Route path="/analytics" component={Analytics} />
@@ -66,8 +66,8 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/facebook-setup" component={FacebookSetupGuide} />
       <Route path="/recycle-bin" component={RecycleBin} />
-      
-      {/* 404 頁面 */}
+
+      {/* 404 */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -83,17 +83,14 @@ function App() {
   );
 }
 
-// 根據路由顯示Layout或直接顯示子組件
 function AppContent() {
   const [location] = useLocation();
-  const isLoginPage = useRoute('/login')[0];
-  const isRegisterPage = useRoute('/register')[0];
-  
-  // 登入和註冊頁面不使用Layout
-  if (isLoginPage || isRegisterPage) {
+  const isLogin = useRoute("/login")[0];
+  const isRegister = useRoute("/register")[0];
+
+  if (isLogin || isRegister) {
     return <Router />;
   }
-  
   return (
     <Layout>
       <Router />

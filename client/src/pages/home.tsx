@@ -9,7 +9,7 @@ import ContactSection from "@/components/contact-section";
 import Footer from "@/components/footer";
 import FixedContactButtons from "@/components/fixed-contact-buttons";
 import AgentChatWidget from "@/components/AgentChatWidget";
-import { homeConfig } from '@/config/homeConfig'; // ✅ 載入設定檔
+import { homeConfig } from "@/config/homeConfig";
 
 export default function Home() {
   return (
@@ -17,7 +17,7 @@ export default function Home() {
       <Navigation />
       <FixedContactButtons />
 
-      {/* ✅ 由 AI 可修改的區塊 */}
+      {/* AI 可動態修改的區塊 */}
       <div className="bg-blue-50 text-blue-900 px-6 py-8 text-center">
         <h1 className="text-3xl font-bold">{homeConfig.title}</h1>
         <p className="mt-2 text-lg">{homeConfig.description}</p>
@@ -31,6 +31,8 @@ export default function Home() {
       <SpecialOfferSection />
       <ContactSection />
       <Footer />
+
+      {/* AI 助理對話框 */}
       <AgentChatWidget />
     </div>
   );

@@ -52,6 +52,18 @@ export default function AgentChatWidget() {
               className="flex-1 border px-2 py-1 rounded"
               placeholder="請輸入訊息..."
             />
+           <input
+             value={input}
+             onChange={(e) => setInput(e.target.value)}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' && input.trim()) {
+                 e.preventDefault();
+                 sendMessage();
+               }
+             }}
+             className="flex-1 border px-2 py-1 rounded"
+             placeholder="請輸入訊息..."
+           />
             <button onClick={sendMessage} className="ml-2 bg-blue-500 text-white px-3 py-1 rounded">
               送出
             </button>
