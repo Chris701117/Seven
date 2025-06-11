@@ -6,6 +6,7 @@ import session from 'express-session';
 import cors from 'cors';
 import OpenAI from 'openai';
 import { Octokit } from '@octokit/rest';
+import fetch from 'node-fetch'; // 用於 web-search 的例子
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -14,113 +15,116 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'secret-key',
+  secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
-  saveUninitialized: false,
-  cookie: { sameSite: 'lax' }
+  saveUninitialized: false
 }));
 
-// 環境變數檢查
-const { OPENAI_API_KEY, GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = process.env;
-if (!OPENAI_API_KEY)  throw new Error('Missing OPENAI_API_KEY');
-if (!GITHUB_TOKEN)    throw new Error('Missing GITHUB_TOKEN');
-if (!GITHUB_OWNER)    throw new Error('Missing GITHUB_OWNER');
-if (!GITHUB_REPO)     throw new Error('Missing GITHUB_REPO');
-const BRANCH = GITHUB_BRANCH || 'main';
+// Init OpenAI & GitHub
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+const OWNER = process.env.GITHUB_OWNER!;
+const REPO  = process.env.GITHUB_REPO!;
+const BRANCH= process.env.GITHUB_BRANCH || 'main';
 
-// OpenAI 客戶端
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-
-// GitHub Octokit
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-const OWNER  = process.env.GITHUB_OWNER;
-const REPO   = process.env.GITHUB_REPO;
-const BRANCH = process.env.GITHUB_BRANCH || 'main';
-
-// 簡易登入
-function simpleAuth(req, res) {
-  const { username, password } = req.body;
-  if (username === 'chris' && password === 'Zxc777') {
-    req.session.user = { username };
-    req.session.userId = 1;
-    return res.json({ success: true, username, userId: 1 });
+// 定義工具 (tool= function calling schema)
+const tools = [
+  {
+    name: 'web_search',
+    description: '用於搜尋最新網頁資訊',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string' } },
+      required: ['query']
+    }
+  },
+  {
+    name: 'edit_file',
+    description: '更新 GitHub 專案中文件內容',
+    parameters: {
+      type: 'object',
+      properties: {
+        filePath: { type: 'string' },
+        newContent: { type: 'string' }
+      },
+      required: ['filePath','newContent']
+    }
+  },
+  {
+    name: 'run_command',
+    description: '在伺服器上執行指定的 shell 命令（謹慎授權）',
+    parameters: {
+      type: 'object',
+      properties: { command: { type: 'string' } },
+      required: ['command']
+    }
   }
-  return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
+];
+
+// Helper: 執行 web search
+async function doWebSearch(query:string) {
+  const resp = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
+  const data = await resp.json();
+  return data.AbstractText || '找不到相關結果';
 }
-app.post('/api/login', simpleAuth);
-app.post('/api/auth/login', simpleAuth);
-app.get('/api/auth/me', (req, res) => {
-  if (req.session.user) {
-    return res.json({ username: req.session.user.username, userId: req.session.userId });
-  }
-  res.status(401).json({ message: '未登入' });
-});
-app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy(() => res.json({ success: true }));
-});
 
-// Chat API
-app.post('/api/agent/chat', async (req, res) => {
+// Helper: 更新 GitHub 檔案
+async function doEditFile(filePath:string, newContent:string) {
+  const { data } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: filePath, ref: BRANCH });
+  const sha = Array.isArray(data) ? data[0].sha : data.sha;
+  await octokit.repos.createOrUpdateFileContents({
+    owner: OWNER, repo: REPO, path: filePath,
+    message: `AI 更新 ${filePath}`, content: Buffer.from(newContent,'utf8').toString('base64'),
+    sha, branch: BRANCH
+  });
+}
+
+// **新**：Responses API Endpoint
+app.post('/api/agent/respond', async (req, res) => {
   const { messages } = req.body;
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+
+  // 第一次呼叫 model
+  let response = await openai.responses.create({
+    model: 'gpt-4o-mini', // 或你有權限的模型
+    messages: [{ role: 'system', content: '你是一個能執行各種工具的智能代理。' }, ...messages],
+    tools
+  });
+
+  // 如果 model 要呼叫工具
+  if (response.choices[0].tool) {
+    const { tool, arguments: argsJson } = response.choices[0];
+    const args = JSON.parse(argsJson!);
+
+    let toolResult = '';
+    if (tool === 'web_search') {
+      toolResult = await doWebSearch(args.query);
+    } else if (tool === 'edit_file') {
+      await doEditFile(args.filePath, args.newContent);
+      toolResult = `已更新檔案 ${args.filePath}`;
+    } else if (tool === 'run_command') {
+      // 謹慎：production 不要開放
+      const { execSync } = await import('child_process');
+      try { toolResult = execSync(args.command).toString(); }
+      catch(e) { toolResult = `執行失敗：${e.message}`; }
+    }
+
+    // 再送一次給 model，讓它把結果跟用戶對話串起來
+    response = await openai.responses.create({
+      model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: '你是一個能協助操作網站內容的 AI 助理。' },
         ...messages,
-      ],
+        { role: 'assistant', content: null, tool, arguments: argsJson },
+        { role: 'tool', name: tool, content: toolResult }
+      ]
     });
-    const reply = completion.choices[0]?.message?.content || '⚠️ 無回應';
-    res.json({ messages: [reply] });
-  } catch (err) {
-    console.error('❌ Chat Error:', err);
-    res.status(500).json({ messages: ['❌ 發生錯誤'] });
   }
+
+  // 最後輸出 model 的回答
+  res.json({ messages: [ response.choices[0].message?.content || '' ] });
 });
 
-// Component control 範例
-app.post('/api/agent-command', (req, res) => {
-  console.log('🧠 Agent 指令內容：', req.body.message);
-  res.json({ success: true });
-});
+// 靜態 & SPA fallback
+app.use(express.static(path.join(__dirname,'dist','public')));
+app.get(/^\/(?!api\/).*/, (_,r) => r.sendFile(path.join(__dirname,'dist','public','index.html')));
 
-// 檔案修改 API
-app.post('/api/agent/file-edit', async (req, res) => {
-  const { filePath, newContent } = req.body;
-  try {
-    // 1. 取 SHA
-    const { data: fileData } = await octokit.repos.getContent({
-      owner: GITHUB_OWNER,
-      repo: GITHUB_REPO,
-      path: filePath,
-      ref: BRANCH
-    });
-    const sha = Array.isArray(fileData) ? fileData[0].sha : fileData.sha;
-
-    // 2. 更新檔案
-    await octokit.repos.createOrUpdateFileContents({
-      owner: GITHUB_OWNER,
-      repo: GITHUB_REPO,
-      path: filePath,
-      message: `AI agent update ${filePath}`,
-      content: Buffer.from(newContent, 'utf8').toString('base64'),
-      sha,
-      branch: BRANCH
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error('❌ File edit error:', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// 靜態檔案 & SPA fallback
-app.use(express.static(path.join(__dirname, 'dist', 'public')));
-app.get(/^\/(?!api\/).*/, (req, res) =>
-  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'))
-);
-
-// 啟動
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+app.listen(process.env.PORT||3000, () => console.log('✅ Server running'));
