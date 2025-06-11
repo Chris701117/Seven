@@ -11,8 +11,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
 const app = express();
-
-// Middlewares
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
 app.use(session({
@@ -22,16 +20,21 @@ app.use(session({
   cookie: { sameSite: 'lax' }
 }));
 
+// 環境變數檢查
+const { OPENAI_API_KEY, GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = process.env;
+if (!OPENAI_API_KEY)  throw new Error('Missing OPENAI_API_KEY');
+if (!GITHUB_TOKEN)    throw new Error('Missing GITHUB_TOKEN');
+if (!GITHUB_OWNER)    throw new Error('Missing GITHUB_OWNER');
+if (!GITHUB_REPO)     throw new Error('Missing GITHUB_REPO');
+const BRANCH = GITHUB_BRANCH || 'main';
+
 // OpenAI 客戶端
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // GitHub Octokit
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const OWNER  = process.env.GITHUB_OWNER!;
-const REPO   = process.env.GITHUB_REPO!;
-const BRANCH = process.env.GITHUB_BRANCH || 'main';
+const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-// 簡易登入 (cookie-based session)
+// 簡易登入
 function simpleAuth(req, res) {
   const { username, password } = req.body;
   if (username === 'chris' && password === 'Zxc777') {
@@ -53,7 +56,7 @@ app.post('/api/auth/logout', (req, res) => {
   req.session.destroy(() => res.json({ success: true }));
 });
 
-// Chat 聊天 API
+// Chat API
 app.post('/api/agent/chat', async (req, res) => {
   const { messages } = req.body;
   try {
@@ -72,31 +75,34 @@ app.post('/api/agent/chat', async (req, res) => {
   }
 });
 
-// Component Control（保留做為範例）
+// Component control 範例
 app.post('/api/agent-command', (req, res) => {
   console.log('🧠 Agent 指令內容：', req.body.message);
   res.json({ success: true });
 });
 
-// —— 新增：檔案修改 API —— 
+// 檔案修改 API
 app.post('/api/agent/file-edit', async (req, res) => {
   const { filePath, newContent } = req.body;
   try {
-    // 1. 取得目前檔案 SHA
+    // 1. 取 SHA
     const { data: fileData } = await octokit.repos.getContent({
-      owner: OWNER, repo: REPO, path: filePath, ref: BRANCH
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
+      path: filePath,
+      ref: BRANCH
     });
     const sha = Array.isArray(fileData) ? fileData[0].sha : fileData.sha;
 
-    // 2. 更新檔案內容
+    // 2. 更新檔案
     await octokit.repos.createOrUpdateFileContents({
-      owner: OWNER,
-      repo: REPO,
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
       path: filePath,
       message: `AI agent update ${filePath}`,
       content: Buffer.from(newContent, 'utf8').toString('base64'),
       sha,
-      branch: BRANCH,
+      branch: BRANCH
     });
 
     res.json({ success: true });
@@ -108,10 +114,10 @@ app.post('/api/agent/file-edit', async (req, res) => {
 
 // 靜態檔案 & SPA fallback
 app.use(express.static(path.join(__dirname, 'dist', 'public')));
-app.get(/^\/(?!api\/).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
-});
+app.get(/^\/(?!api\/).*/, (req, res) =>
+  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'))
+);
 
-// 啟動伺服器
+// 啟動
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
