@@ -6,7 +6,6 @@ import session from 'express-session';
 import cors from 'cors';
 import OpenAI from 'openai';
 import { Octokit } from '@octokit/rest';
-import base64 from 'js-base64';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -42,7 +41,7 @@ app.post('/api/agent/file-edit', async (req, res) => {
       repo: REPO,
       path: filePath,
       message: `AI agent 更新 ${filePath}`,
-      content: base64.encode(patch),
+      content: Buffer.from(patch).toString('base64'),
       sha,
       branch: BRANCH,
     });
