@@ -1,12 +1,22 @@
+# render.yaml
 services:
   - type: web
-    name: seven
-    env: node
-    plan: free
+    name: Seven-web       # 任意唯一的服務名稱
+    env: node             # 指定使用 Node.js 而非 Docker
+    region: singapore     # 跟 UI 選的一致
+    branch: main          # 你想自動 deploy 的 Git 分支
     buildCommand: npm install && npm run build
-    startCommand: node server.js  # 改成未 bundle 版本，支援 .env
+    startCommand: npm start
     envVars:
-      - key: NPM_CONFIG_PRODUCTION
-        value: false
       - key: OPENAI_API_KEY
-        sync: false  # 從 Render Dashboard ➜ Environment ➜ 變數區 手動設定
+        value: sk-你自己的-openai-key
+      - key: GITHUB_TOKEN
+        value: ghp_你自己的-pat-token
+      - key: GITHUB_OWNER
+        value: Chris701117
+      - key: GITHUB_REPO
+        value: Seven
+      - key: GITHUB_BRANCH
+        value: main
+      - key: SESSION_SECRET
+        value: 隨機的一段字串，譬如 `s3cr3t!`
