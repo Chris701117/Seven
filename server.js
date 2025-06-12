@@ -8,103 +8,93 @@ import cors from 'cors';
 import OpenAI from 'openai';
 import { Octokit } from '@octokit/rest';
 
-//
-// ———— 环境变量检查 ————
 const {
   OPENAI_API_KEY,
   GITHUB_TOKEN,
   GITHUB_OWNER,
   GITHUB_REPO,
   GITHUB_BRANCH = 'main',
-  SESSION_SECRET = 'secret-key'
+  SESSION_SECRET = 'secret-key',
+  PORT = 3000
 } = process.env;
 
+// 環境變數檢查
 if (!OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
 if (!GITHUB_TOKEN)   throw new Error('Missing GITHUB_TOKEN');
 if (!GITHUB_OWNER)   throw new Error('Missing GITHUB_OWNER');
 if (!GITHUB_REPO)    throw new Error('Missing GITHUB_REPO');
 
-//
-// ———— 准备 Express ————
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
-const app        = express();
-const PORT       = process.env.PORT || 3000;
 
+const app = express();
 app.use(express.json());
 app.use(cors({ origin: true, credentials: true }));
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  cookie: { sameSite: 'lax' },
 }));
 
-//
-// ———— OpenAI & GitHub 客户端 ————
+// OpenAI & Octokit 初始化
 const openai  = new OpenAI({ apiKey: OPENAI_API_KEY });
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-//
-// ———— 简易聊天接口 ————
+/** 簡易聊天 API (略) **/
 app.post('/api/agent/chat', async (req, res) => {
-  const { messages } = req.body;
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: '你是一個能協助操作網站內容的 AI 助理。' },
-        ...messages
-      ],
-    });
-    const reply = completion.choices?.[0]?.message?.content ?? '⚠️ 無回應';
-    return res.json({ messages: [reply] });
-  } catch (err) {
-    console.error('❌ Chat Error:', err);
-    return res.status(500).json({ messages: ['❌ 發生錯誤'] });
-  }
+  /* 你現有的 chat/completions 邏輯 */
 });
 
-//
-// ———— 文件编辑接口 ————
-app.post('/api/agent/file-edit', async (req, res) => {
-  const { filePath, newContent } = req.body;
+/** 新增：讀取檔案內容 **/
+app.get('/api/agent/file-fetch', async (req, res) => {
+  const filePath = String(req.query.path || '');
+  if (!filePath) return res.status(400).json({ error: '需要 path 參數' });
+
   try {
-    // 1. 读原文件获取 sha
-    const { data: fileData } = await octokit.repos.getContent({
+    const { data } = await octokit.repos.getContent({
       owner: GITHUB_OWNER,
       repo: GITHUB_REPO,
       path: filePath,
       ref: GITHUB_BRANCH,
     });
-    const sha = Array.isArray(fileData) ? fileData[0].sha : fileData.sha;
+    const sha = Array.isArray(data) ? data[0].sha : data.sha;
+    const content = Buffer.from(data.content, 'base64').toString('utf8');
+    res.json({ sha, content });
+  } catch (err) {
+    console.error('file-fetch error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    // 2. 更新文件
+/** 新增：更新檔案內容 **/
+app.post('/api/agent/file-edit', async (req, res) => {
+  const { filePath, content, sha } = req.body;
+  if (!filePath || !content || !sha) {
+    return res.status(400).json({ error: '需要 filePath、content、sha 三個參數' });
+  }
+
+  try {
     await octokit.repos.createOrUpdateFileContents({
       owner: GITHUB_OWNER,
       repo: GITHUB_REPO,
       path: filePath,
-      message: `AI Agent 更新 ${filePath}`,
-      content: Buffer.from(newContent, 'utf-8').toString('base64'),
+      message: `AI Agent 🚀 更新 ${filePath}`,
+      content: Buffer.from(content, 'utf8').toString('base64'),
       sha,
       branch: GITHUB_BRANCH,
     });
-
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
-    console.error('File edit error:', err);
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('file-edit error:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-//
-// ———— 提供靜態檔案（前端 build） & SPA fallback ————
-app.use(express.static(path.join(__dirname, 'dist', 'public')));
+// 靜態檔案 & SPA fallback
+app.use(express.static(path.join(__dirname, 'dist','public')));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist','public','index.html'));
 });
 
-//
-// ———— 启动 ————
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
