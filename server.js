@@ -1,4 +1,4 @@
-// server.js
+// server.js (已合併登入功能和 GitHub 檔案編輯功能)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -15,7 +15,10 @@ const {
   GITHUB_REPO,
   GITHUB_BRANCH = 'main',
   SESSION_SECRET = 'secret-key',
-  PORT = 3000
+  PORT = 3000,
+  // 為了安全性，我們將從環境變數讀取帳號密碼
+  ADMIN_USERNAME = 'chris',
+  ADMIN_PASSWORD = 'Zxc777'
 } = process.env;
 
 // 環境變數檢查
@@ -41,12 +44,68 @@ app.use(session({
 const openai  = new OpenAI({ apiKey: OPENAI_API_KEY });
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-/** 簡易聊天 API (略) **/
-app.post('/api/agent/chat', async (req, res) => {
-  /* 你現有的 chat/completions 邏輯 */
+// --- ✅ 登入/登出/身份驗證 API (從舊版還原) ---
+function simpleAuth(req, res) {
+  const { username, password } = req.body;
+  
+  // 檢查前端送來的帳號密碼是否與環境變數中設定的相符
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    req.session.user = { username };
+    // 您可以根據需要自訂 user ID
+    req.session.userId = 1; 
+    return res.status(200).json({ success: true, username, userId: req.session.userId });
+  } else {
+    return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
+  }
+}
+
+// 支援多種可能的登入路徑
+app.post('/api/login', simpleAuth);
+app.post('/api/auth/login', simpleAuth);
+
+// 檢查登入狀態
+app.get('/api/auth/me', (req, res) => {
+  if (req.session.user) {
+    res.json({ username: req.session.user.username, userId: req.session.userId });
+  } else {
+    res.status(401).json({ message: '未登入' });
+  }
 });
 
-/** 新增：讀取檔案內容 **/
+// 登出
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: '登出失敗' });
+    }
+    res.json({ success: true });
+  });
+});
+// --- 登入功能區塊結束 ---
+
+
+/** 簡易聊天 API **/
+app.post('/api/agent/chat', async (req, res) => {
+    // 這裡使用您新版的 chat/completions 邏輯
+    const { messages } = req.body;
+    try {
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [
+                { role: 'system', content: '你是一個能協助操作網站內容的 AI 助理。' },
+                ...messages
+            ]
+        });
+        const reply = completion.choices[0]?.message?.content || '⚠️ 無回應';
+        res.json({ messages: [reply] });
+    } catch(err) {
+        console.error('Chat error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+/** 讀取檔案內容 **/
 app.get('/api/agent/file-fetch', async (req, res) => {
   const filePath = String(req.query.path || '');
   if (!filePath) return res.status(400).json({ error: '需要 path 參數' });
@@ -58,7 +117,9 @@ app.get('/api/agent/file-fetch', async (req, res) => {
       path: filePath,
       ref: GITHUB_BRANCH,
     });
+    // @ts-ignore
     const sha = Array.isArray(data) ? data[0].sha : data.sha;
+    // @ts-ignore
     const content = Buffer.from(data.content, 'base64').toString('utf8');
     res.json({ sha, content });
   } catch (err) {
@@ -67,10 +128,10 @@ app.get('/api/agent/file-fetch', async (req, res) => {
   }
 });
 
-/** 新增：更新檔案內容 **/
+/** 更新檔案內容 **/
 app.post('/api/agent/file-edit', async (req, res) => {
   const { filePath, content, sha } = req.body;
-  if (!filePath || !content || !sha) {
+  if (!filePath || content === undefined || !sha) {
     return res.status(400).json({ error: '需要 filePath、content、sha 三個參數' });
   }
 
