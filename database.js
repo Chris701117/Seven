@@ -1,4 +1,4 @@
-// database.js (Turso 雲端資料庫版本)
+// database.js (最終強制更新版)
 import { createClient } from '@libsql/client';
 import bcrypt from 'bcrypt';
 
@@ -7,7 +7,6 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// 程式啟動時，檢查並建立資料表
 async function initializeDb() {
   try {
     await db.batch([
@@ -23,34 +22,29 @@ async function initializeDb() {
 }
 
 async function setupDefaultAdmin() {
-  // 檢查 '管理員' 角色是否存在，不存在則建立
-  let { rows: roleRows } = await db.execute({ sql: "SELECT id FROM roles WHERE name = ?", args: ["管理員"] });
-  let adminRoleId;
+  const adminUsername = 'admin';
+  const defaultPassword = 'supersecretpassword123';
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-  if (roleRows.length === 0) {
+  let { rows: roleRows } = await db.execute({ sql: "SELECT id FROM roles WHERE name = ?", args: ["管理員"] });
+  let adminRoleId = roleRows[0]?.id;
+
+  if (!adminRoleId) {
     const result = await db.execute({ sql: "INSERT INTO roles (name) VALUES (?)", args: ["管理員"] });
     adminRoleId = result.lastInsertRowid;
-    console.log("✅ 預設 '管理員' 角色已建立。");
-  } else {
-    adminRoleId = roleRows[0].id;
   }
 
-  // 檢查 'admin' 使用者是否存在，不存在則建立
-  const { rows: userRows } = await db.execute({ sql: "SELECT id FROM users WHERE username = ?", args: ["admin"] });
-  if (userRows.length === 0) {
-    const defaultPassword = 'supersecretpassword123'; // 使用一個更安全的預設密碼
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-    await db.execute({
-      sql: "INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?)",
-      args: ["admin", hashedPassword, adminRoleId]
-    });
-    console.log(`✅ 預設管理員 'admin' 已建立，預設密碼為: ${defaultPassword}`);
+  const { rows: userRows } = await db.execute({ sql: "SELECT id FROM users WHERE username = ?", args: [adminUsername] });
+  if (userRows.length > 0) {
+    // 如果 admin 存在，強制更新密碼
+    await db.execute({ sql: "UPDATE users SET password_hash = ? WHERE username = ?", args: [hashedPassword, adminUsername] });
+    console.log(`✅ 偵測到 admin 帳號，已強制將其密碼更新為最新的預設值。`);
   } else {
-    console.log("✅ 預設管理員 'admin' 已存在。");
+    // 如果 admin 不存在，建立他
+    await db.execute({ sql: "INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?)", args: [adminUsername, hashedPassword, adminRoleId] });
+    console.log(`✅ 預設管理員 'admin' 已建立，密碼已設定。`);
   }
 }
 
-// 立即執行初始化
 initializeDb();
-
 export default db;

@@ -49,40 +49,51 @@ app.use(session({
 const openai  = new OpenAI({ apiKey: OPENAI_API_KEY });
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-// --- ✅ 全新升級的身份驗證 API (使用資料庫並檢查 IP) ---
+// 在 server.js 中，替換掉舊的登入 API
 app.post('/api/auth/login', (req, res) => {
-  // 步驟 1: 撈取所有 IP 規則
+  console.log('--- [DEBUG] New Login Attempt ---');
+  const userIp = req.ip;
+  console.log(`[DEBUG] Requesting User IP: ${userIp}`);
+
   db.all("SELECT ip_address FROM ip_rules", [], (err, rules) => {
     if (err) {
-      console.error("查詢 IP 規則時出錯:", err);
+      console.error("[DEBUG] 查詢 IP 規則時出錯:", err);
       return res.status(500).json({ success: false, message: '伺服器內部錯誤' });
     }
 
     const allowedIps = rules.map(rule => rule.ip_address);
-    const userIp = req.ip;
+    console.log(`[DEBUG] Allowed IPs from DB: [${allowedIps.join(', ')}]`);
 
-    // 步驟 2: 如果有設定規則 (白名單不是空的)，就進行比對
     if (allowedIps.length > 0 && !allowedIps.includes(userIp)) {
-      console.warn(`登入被阻擋：來源 IP ${userIp} 不在白名單中。`);
+      console.warn(`[DEBUG] LOGIN BLOCKED: IP ${userIp} not in whitelist.`);
       return res.status(403).json({ success: false, message: '此 IP 位址不被允許登入' });
     }
+    console.log(`[DEBUG] IP Check Passed.`);
 
-    // 步驟 3: 如果 IP 檢查通過 (或無規則)，才進行帳號密碼驗證
     const { username, password } = req.body;
+    console.log(`[DEBUG] Attempting login for user: ${username}`);
+
     db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
       if (err) {
-        console.error(err);
+        console.error('[DEBUG] 查詢使用者時出錯:', err);
         return res.status(500).json({ success: false, message: '伺服器錯誤' });
       }
+      
       if (!user) {
+        console.warn(`[DEBUG] LOGIN FAILED: User '${username}' not found.`);
         return res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
       }
       
+      console.log(`[DEBUG] User '${username}' found in DB. Comparing password...`);
       const match = await bcrypt.compare(password, user.password_hash);
+      console.log(`[DEBUG] Password comparison result (match): ${match}`);
+      
       if (match) {
+        console.log(`[DEBUG] LOGIN SUCCESS: Password matches for user '${username}'.`);
         req.session.user = { username: user.username, userId: user.id, roleId: user.role_id };
         res.status(200).json({ success: true, username: user.username, userId: user.id });
       } else {
+        console.warn(`[DEBUG] LOGIN FAILED: Password does not match for user '${username}'.`);
         res.status(401).json({ success: false, message: '帳號或密碼錯誤' });
       }
     });
