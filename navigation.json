@@ -1,6 +1,6 @@
 [
-  { "name": "首頁", "path": "/" },
-  { "name": "關於我們", "path": "/about" },
-  { "name": "產品介紹", "path": "/products" },
-  { "name": "聯絡我們", "path": "/contact" }
+  {
+    "name": "七七七後台",
+    "path": "/admin"
+  }
 ]
