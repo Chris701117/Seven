@@ -6,7 +6,7 @@ export default defineConfig({
   root: './client', // ✅ 指定前端資料夾
   plugins: [react()],
   build: {
-    outDir: '../dist/public',
+    outDir: '../public',
     emptyOutDir: true,
   },
   resolve: {

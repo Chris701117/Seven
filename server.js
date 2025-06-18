@@ -210,7 +210,7 @@ async function handleRunPolling(res, threadId, runId) {
 
 // --- ✅ 靜態檔案服務 (最終路徑修正) ---
 // 根據 vite.config.ts 的設定，最終的正確路徑是往上一層，再進入 dist/public
-const distPath = path.join(__dirname, '..', 'dist', 'public');
+const distPath = path.join(__dirname, '..', 'public');
 app.use(express.static(distPath));
 
 // 所有未匹配的 GET 請求都導向 index.html
