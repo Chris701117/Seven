@@ -1,4 +1,4 @@
-// server.js (最終、完整、已修復路徑版)
+// server.js (最終、完整、統一版)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -208,9 +208,9 @@ async function handleRunPolling(res, threadId, runId) {
   }
 }
 
-// --- ✅ 靜態檔案服務 (最終路徑修正) ---
-// 根據 vite.config.ts 的設定，最終的正確路徑是往上一層，再進入 dist/public
-const distPath = path.join(__dirname, '..', 'public');
+// --- ✅ 靜態檔案服務 (最終統一版) ---
+// 假設 dist 資料夾與 server.js 位於同一層級
+const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
 // 所有未匹配的 GET 請求都導向 index.html
@@ -219,7 +219,7 @@ app.get('*', (req, res) => {
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error("無法提供 index.html:", err);
-      res.status(500).send("伺服器錯誤：找不到前端應用程式的進入點。請檢查伺服器日誌。");
+      res.status(500).send("伺服器錯誤：找不到前端應用程式的進入點。");
     }
   });
 });
