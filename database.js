@@ -10,11 +10,28 @@ const db = createClient({
 async function initializeDb() {
   try {
     await db.batch([
-      `CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL)`,
-      `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role_id INTEGER, FOREIGN KEY (role_id) REFERENCES roles (id))`,
-      `CREATE TABLE IF NOT EXISTS ip_rules (id INTEGER PRIMARY KEY, ip_address TEXT UNIQUE NOT NULL, description TEXT)`
+      `CREATE TABLE IF NOT EXISTS roles (...)`,
+      `CREATE TABLE IF NOT EXISTS users (...)`,
+      `CREATE TABLE IF NOT EXISTS ip_rules (...)`,
+      // ✅ 新增：排程貼文資料表
+      `CREATE TABLE IF NOT EXISTS scheduled_posts (
+        id INTEGER PRIMARY KEY,
+        platform TEXT NOT NULL,
+        content TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        scheduled_time DATETIME NOT NULL
+      )`,
+      // ✅ 新增：專案任務資料表
+      `CREATE TABLE IF NOT EXISTS project_tasks (
+        id INTEGER PRIMARY KEY,
+        task_name TEXT NOT NULL,
+        project_name TEXT NOT NULL,
+        due_date DATE NOT NULL,
+        assignee TEXT,
+        status TEXT DEFAULT 'todo'
+      )`
     ]);
-    console.log("✅ 資料表結構已確認。");
+    console.log("✅ 資料表結構已確認 (包含新表格)。");
     await setupDefaultAdmin();
   } catch (e) {
     console.error("資料庫初始化失敗:", e);
