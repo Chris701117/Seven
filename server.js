@@ -208,9 +208,8 @@ async function handleRunPolling(res, threadId, runId) {
   }
 }
 
-
 // --- ✅ 靜態檔案服務 (最終統一版) ---
-// 由於啟動前必會建置，server.js 和 dist 資料夾現在必定在同一層級
+// 由於 server.js 和 dist 資料夾現在都在專案根目錄，路徑非常簡單
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 

@@ -1,20 +1,21 @@
-// vite.config.ts (最終統一版)
+// vite.config.ts (最終修正版)
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  // 我們不再需要 root 設定，讓 vite 從專案根目錄運作
+  // ✅ 我們將 root 設定加回來，明確告訴 Vite 前端專案的家在 'client' 資料夾
+  root: './client', 
   plugins: [react()],
   build: {
-    // 標準化輸出目錄為 'dist'
-    outDir: 'dist',
+    // ✅ 輸出路徑是相對於 root 的，所以 'dist' 會被建立在專案根目錄下
+    outDir: '../dist',
     emptyOutDir: true,
   },
   resolve: {
     alias: {
-      // 由於 root 是根目錄，這裡的路徑也需要對應調整
-      '@': path.resolve(__dirname, './client/src'),
+      // 由於 root 是 client，這裡的路徑要從 client/src 開始
+      '@': path.resolve(__dirname, './client/src'), 
       '@shared': path.resolve(__dirname, './shared'),
     },
   },
