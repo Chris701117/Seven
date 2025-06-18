@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  // 我們不再指定 root，讓 vite 從專案根目錄運作
+  // 我們不再需要 root 設定，讓 vite 從專案根目錄運作
   plugins: [react()],
   build: {
-    // 我們將輸出目錄標準化為 'dist'，這是最常見的設定
+    // 標準化輸出目錄為 'dist'
     outDir: 'dist',
     emptyOutDir: true,
   },

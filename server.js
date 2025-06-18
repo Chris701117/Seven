@@ -208,8 +208,9 @@ async function handleRunPolling(res, threadId, runId) {
   }
 }
 
+
 // --- ✅ 靜態檔案服務 (最終統一版) ---
-// 假設 dist 資料夾與 server.js 位於同一層級
+// 由於啟動前必會建置，server.js 和 dist 資料夾現在必定在同一層級
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 

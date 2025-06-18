@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "start": "node server.js",
-    "pretest": "npm ci",
-    "test": "vitest run"
-  },
+   "dev": "vite",
+   "build": "vite build",
+   "start": "npm run build && node server.js",
+   "pretest": "npm ci",
+   "test": "vitest run"
+},
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "@libsql/client": "^0.15.9",
