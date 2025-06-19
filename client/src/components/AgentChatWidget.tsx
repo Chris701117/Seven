@@ -1,8 +1,14 @@
-// client/src/components/AgentChatWidget.tsx (已加入自動聚焦)
+// client/src/components/AgentChatWidget.tsx (已整合 Cloudinary 上傳功能)
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { Paperclip } from 'lucide-react'; // 匯入 Paperclip 圖示
 
 type Msg = { role: 'user' | 'assistant'; content: string };
+
+// 從環境變數讀取 Cloudinary 設定
+// 請確保您的前端建置工具 (Vite) 已設定好能讀取這些變數
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AgentChatWidget() {
   const [open, setOpen] = useState(false);
@@ -13,6 +19,7 @@ export default function AgentChatWidget() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 自動捲動到最新訊息
   useEffect(() => {
@@ -24,8 +31,49 @@ export default function AgentChatWidget() {
     if (open && !isLoading) {
       inputRef.current?.focus();
     }
-  }, [open, isLoading]); // ✅ 當 open 或 isLoading 狀態改變時觸發
+  }, [open, isLoading]);
 
+  // 處理檔案上傳的函式
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 檢查 Cloudinary 設定是否存在
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      console.error("Cloudinary 環境變數未設定！");
+      setMessages(prev => [...prev, { role: 'assistant', content: '❌ 檔案上傳功能未設定，請聯繫管理員。' }]);
+      return;
+    }
+
+    setIsLoading(true);
+    setMessages(prev => [...prev, { role: 'assistant', content: `正在上傳檔案：${file.name}...` }]);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        formData
+      );
+      
+      const fileUrl = response.data.secure_url;
+      const successMessage = `✅ 檔案上傳成功！連結為：${fileUrl}\n現在您可以針對這個檔案提問了。`;
+      setMessages(prev => [...prev, { role: 'assistant', content: successMessage }]);
+      // 將 URL 貼到輸入框，方便使用者直接發送
+      setInput(prev => `${prev} ${fileUrl}`.trim());
+
+    } catch (error) {
+      console.error("Cloudinary upload failed:", error);
+      setMessages(prev => [...prev, { role: 'assistant', content: '❌ 檔案上傳失敗。' }]);
+    } finally {
+      setIsLoading(false);
+      if(fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // 送出文字訊息給後端
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -58,11 +106,88 @@ export default function AgentChatWidget() {
         { role: 'assistant', content: '❌ 發生錯誤，請稍後重試' }
       ]);
     } finally {
-      setIsLoading(false); // ✅ 在 finally 中設定 isLoading，確保聚焦邏輯正確
+      setIsLoading(false);
     }
   };
 
   return (
-    // ... (此處的 JSX 結構完全不變)
+    <div className="fixed bottom-4 right-4 z-50">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110"
+      >
+        AI Agent
+      </button>
+
+      {open && (
+        <div className="bg-white w-80 h-96 border rounded-lg shadow-xl flex flex-col mt-2">
+          {/* 訊息列表 */}
+          <div className="flex-1 p-3 overflow-y-auto text-sm space-y-3">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-[80%] px-3 py-2 rounded-lg break-words ${m.role === 'user' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-gray-800'}`
+                  }
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                  <div className="bg-gray-200 text-gray-500 px-3 py-2 rounded-lg animate-pulse">
+                    正在思考中...
+                  </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* 輸入區 */}
+          <div className="p-2 border-t flex space-x-2 items-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden" // 將原生 input 隱藏
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50"
+              title="上傳檔案"
+              disabled={isLoading}
+            >
+              <Paperclip size={18} />
+            </button>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !isLoading) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              className="flex-1 border px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="輸入訊息..."
+              disabled={isLoading}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || isLoading}
+              className="bg-blue-500 text-white px-4 py-1 rounded-md disabled:opacity-50 hover:bg-blue-600"
+            >
+              送出
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
