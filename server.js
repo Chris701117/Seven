@@ -8,7 +8,7 @@ import cors from 'cors';
 import OpenAI from 'openai';
 import { Octokit } from '@octokit/rest';
 import bcrypt from 'bcrypt';
-import db from './database.js';
+import { db, initializeDb } from './database.js';
 import axios from 'axios';
 import fs from 'fs/promises';
 
