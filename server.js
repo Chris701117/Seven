@@ -1,4 +1,4 @@
-// server.js (最終優化版)
+// server.js (已整合圖片視覺能力)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -8,14 +8,22 @@ import cors from 'cors';
 import OpenAI from 'openai';
 import { Octokit } from '@octokit/rest';
 import bcrypt from 'bcrypt';
-import { db, initializeDb } from './database.js'; // ✅ 修改 import 方式
+import db from './database.js';
 import axios from 'axios';
 import fs from 'fs/promises';
 
 // --- 環境變數 ---
 const {
-  OPENAI_API_KEY, ASSISTANT_ID, GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH = 'main',
-  SESSION_SECRET = 'secret-key', PORT = 3000, FACEBOOK_PAGE_ID, FACEBOOK_PAGE_ACCESS_TOKEN,
+  OPENAI_API_KEY,
+  ASSISTANT_ID,
+  GITHUB_TOKEN,
+  GITHUB_OWNER,
+  GITHUB_REPO,
+  GITHUB_BRANCH = 'main',
+  SESSION_SECRET = 'secret-key',
+  PORT = 3000,
+  FACEBOOK_PAGE_ID,
+  FACEBOOK_PAGE_ACCESS_TOKEN,
   EDITABLE_FILE_EXTENSIONS,
 } = process.env;
 
@@ -69,11 +77,72 @@ app.get('/api/auth/me', (req, res) => req.session.user ? res.json(req.session.us
 app.post('/api/auth/logout', (req, res) => req.session.destroy(err => err ? res.status(500).json({ success: false, message: '登出失敗' }) : res.json({ success: true })));
 
 // --- ✅ 核心工具箱 (Tools) ---
-const tools = { /* ... 這裡的內容完全不變，省略以保持簡潔 ... */ };
+const tools = {
+  // --- 網站基礎管理 ---
+  getWebsiteTitle: async () => { /* ... */ },
+  updateWebsiteTitle: async ({ newTitle }) => { /* ... */ },
+  // ... 其他所有工具函式 ...
+  getRealtimeGameMetrics: async () => { /* ... */ },
+  listFiles: async ({ directoryPath }) => { /* ... */ },
+  readFileContent: async ({ filePath }) => { /* ... */ },
+  updateFileContent: async ({ filePath, newContent }) => { /* ... */ },
+};
 
-// --- ✅ 聊天 API ---
-app.post('/api/agent/chat', async (req, res) => { /* ... 內容不變 ... */ });
-async function handleRunPolling(res, threadId, runId) { /* ... 內容不變 ... */ }
+// --- ✅ 聊天 API (已升級，支援圖片 URL 解析) ---
+app.post('/api/agent/chat', async (req, res) => {
+  if (!req.session.user) return res.status(403).json({ error: '未授權，請先登入' });
+  
+  const { message, threadId: clientThreadId } = req.body;
+
+  if (!message || typeof message !== 'string' || message.trim() === '') {
+    return res.status(400).json({ error: '請求的格式不正確，必須包含 "message" 欄位。' });
+  }
+
+  let threadId = clientThreadId;
+  
+  try {
+    if (!threadId) {
+      const thread = await openai.beta.threads.create();
+      threadId = thread.id;
+    }
+
+    // --- 圖片 URL 解析與格式轉換邏輯 ---
+    const imageUrlRegex = /(https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|webp))/gi;
+    const imageUrls = message.match(imageUrlRegex) || [];
+    const textContent = message.replace(imageUrlRegex, '').trim();
+    const contentPayload = [];
+    
+    if (textContent) {
+      contentPayload.push({ type: 'text', text: textContent });
+    }
+    for (const url of imageUrls) {
+      contentPayload.push({ type: 'image_url', image_url: { url: url } });
+    }
+    if (contentPayload.length === 0) {
+        return res.status(400).json({ error: '傳送的訊息內容為空。' });
+    }
+    // --- 圖片處理邏輯結束 ---
+
+    await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: contentPayload, // 使用新建立的、包含圖片格式的 payload
+    });
+
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id: ASSISTANT_ID,
+    });
+
+    await handleRunPolling(res, threadId, run.id);
+
+  } catch (err) {
+    console.error('[AGENT-ERROR] /api/agent/chat 主處理流程發生嚴重錯誤:', err);
+    res.status(500).json({ error: '與 AI 助理溝通時發生嚴重錯誤' });
+  }
+});
+
+async function handleRunPolling(res, threadId, runId) {
+  // ... 內容不變，與上一版相同 ...
+}
 
 // --- ✅ 靜態檔案服務 ---
 const distPath = path.join(__dirname, 'dist');
@@ -88,12 +157,5 @@ app.get('*', (req, res) => {
   });
 });
 
-// --- ✅ 伺服器啟動與資料庫初始化 (新流程) ---
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-  console.log("伺服器已成功啟動，現在開始在背景進行資料庫初始化...");
-  
-  initializeDb().then(() => {
-    console.log("✅ 資料庫初始化與檢查完畢。");
-  });
-});
+// --- 伺服器啟動 ---
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
