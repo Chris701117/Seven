@@ -1,4 +1,4 @@
-// server.js (最終、完整、遊戲營運中心版)
+// server.js (已加入 listFiles 和 createNewPage 工具)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -10,6 +10,7 @@ import { Octokit } from '@octokit/rest';
 import bcrypt from 'bcrypt';
 import db from './database.js';
 import axios from 'axios';
+import fs from 'fs/promises'; // 新增：Node.js 內建的檔案系統模組
 
 // --- 環境變數 ---
 const {
@@ -76,17 +77,69 @@ app.post('/api/auth/logout', (req, res) => req.session.destroy(err => err ? res.
 
 // --- ✅ 核心工具箱 (Tools) ---
 const tools = {
-  // --- 網站基礎管理 ---
-  getWebsiteTitle: async () => { /* ... */ },
-  updateWebsiteTitle: async ({ newTitle }) => { /* ... */ },
-  getNavigationMenu: async () => { /* ... */ },
-  updateNavigationMenu: async ({ menuItems }) => { /* ... */ },
-  createPermissionGroup: async ({ roleName }) => { /* ... */ },
-  createUserAccount: async ({ username, password, roleName }) => { /* ... */ },
-  addLoginIpRestriction: async ({ ipAddress, description }) => { /* ... */ },
-  listUsers: async () => { /* ... */ },
-  
-  // --- 社群與營銷工具 ---
+  // 網站基礎管理
+  getWebsiteTitle: async () => {
+    try {
+      const { data } = await octokit.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'site-config.json' });
+      const content = Buffer.from(data.content, 'base64').toString('utf8');
+      return JSON.stringify(JSON.parse(content));
+    } catch (error) { return JSON.stringify({ success: false, error: "讀取網站標題失敗" }); }
+  },
+  updateWebsiteTitle: async ({ newTitle }) => {
+    try {
+      const { data } = await octokit.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'site-config.json' });
+      const newContent = Buffer.from(JSON.stringify({ title: newTitle }, null, 2)).toString('base64');
+      await octokit.repos.createOrUpdateFileContents({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'site-config.json', message: `AI Agent 🚀 更新網站標題`, content: newContent, sha: data.sha, branch: GITHUB_BRANCH });
+      return JSON.stringify({ success: true, message: `標題已更新為 "${newTitle}"` });
+    } catch (error) { return JSON.stringify({ success: false, error: '更新網站標題失敗' }); }
+  },
+  getNavigationMenu: async () => {
+    try {
+      const { data } = await octokit.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'navigation.json' });
+      const content = Buffer.from(data.content, 'base64').toString('utf8');
+      return JSON.stringify(JSON.parse(content));
+    } catch (error) { return JSON.stringify({ success: false, error: "讀取導覽列設定失敗" }); }
+  },
+  updateNavigationMenu: async ({ menuItems }) => {
+    try {
+      const { data } = await octokit.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'navigation.json' });
+      const newContent = Buffer.from(JSON.stringify(menuItems, null, 2)).toString('base64');
+      await octokit.repos.createOrUpdateFileContents({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'navigation.json', message: `AI Agent 🚀 更新導覽列結構`, content: newContent, sha: data.sha, branch: GITHUB_BRANCH });
+      return JSON.stringify({ success: true, message: '導覽列已更新' });
+    } catch (error) { return JSON.stringify({ success: false, error: '更新導覽列失敗' }); }
+  },
+  // 使用者與權限管理
+  createPermissionGroup: async ({ roleName }) => {
+    return db.execute({ sql: "INSERT INTO roles (name) VALUES (?)", args: [roleName] })
+      .then(result => JSON.stringify({ success: true, roleId: result.lastInsertRowid, roleName }))
+      .catch(err => JSON.stringify({ success: false, error: '建立權限組失敗，可能名稱已存在。' }));
+  },
+  createUserAccount: async ({ username, password, roleName }) => {
+    const roleResult = await db.execute({ sql: "SELECT id FROM roles WHERE name = ?", args: [roleName] });
+    if (roleResult.rows.length === 0) return JSON.stringify({ success: false, error: `找不到名為 "${roleName}" 的權限組。` });
+    const roleId = roleResult.rows[0].id;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    return db.execute({ sql: "INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?)", args: [username, hashedPassword, roleId] })
+      .then(result => JSON.stringify({ success: true, userId: result.lastInsertRowid, username }))
+      .catch(err => JSON.stringify({ success: false, error: '建立使用者失敗，可能名稱已存在。' }));
+  },
+  addLoginIpRestriction: async ({ ipAddress, description }) => {
+    return db.execute({ sql: 'INSERT INTO ip_rules (ip_address, description) VALUES (?, ?)', args: [ipAddress, description || ''] })
+        .then(() => JSON.stringify({ success: true, ipAddress }))
+        .catch(() => JSON.stringify({ success: false, error: "新增 IP 失敗，可能已存在。" }));
+  },
+  listUsers: async () => {
+    return db.execute("SELECT u.id, u.username, r.name as role FROM users u LEFT JOIN roles r ON u.role_id = r.id")
+        .then(result => JSON.stringify({ success: true, users: result.rows }))
+        .catch(() => JSON.stringify({ success: false, error: "查詢使用者列表失敗。" }));
+  },
+  // 遊戲營運工具
+  planGameEvent: async ({ eventName, startTime, endTime, targetAudience, rewardMechanism }) => { /* ... */ },
+  getEventPerformanceReport: async ({ eventName }) => { /* ... */ },
+  segmentPlayersByBehavior: async ({ segmentDescription }) => { /* ... */ },
+  sendTargetedPushNotification: async ({ segmentId, messageTitle, messageBody }) => { /* ... */ },
+  getRealtimeGameMetrics: async () => { /* ... */ },
+  // 社群與營銷工具
   postToFacebookPage: async ({ message, link }) => { /* ... */ },
   getFacebookLatestPostInsights: async () => { /* ... */ },
   generateSocialMediaPost: async ({ platform, topic, tone = '中性的' }) => { /* ... */ },
@@ -98,82 +151,41 @@ const tools = {
   generateContentFromTopic: async ({ topic, platforms }) => { /* ... */ },
   createContentCalendar: async () => { return JSON.stringify({ success: false, error: "此功能尚在開發中。" }) },
 
-  // --- ✅ 新增：遊戲營運核心工具 ---
-  planGameEvent: async ({ eventName, startTime, endTime, targetAudience, rewardMechanism }) => {
-    console.log(`AGENT ACTION: 正在規劃新的遊戲活動 "${eventName}"`);
-    // 在真實世界中，這裡會將活動細節寫入 `game_events` 資料表
+  // --- ✅ 新增：賦予 AI 眼睛與手 ---
+  listFiles: async ({ directoryPath }) => {
+    console.log(`AGENT ACTION: 正在列出目錄 "${directoryPath}" 中的檔案`);
     try {
-      // 模擬寫入資料庫
-      await db.execute({
-          sql: "INSERT INTO project_tasks (task_name, project_name, due_date, status) VALUES (?, ?, ?, 'todo')",
-          args: [`規劃活動 - ${eventName}`, '遊戲活動', endTime.split('T')[0]]
-      });
-      return JSON.stringify({ success: true, eventId: Math.floor(Math.random() * 1000), message: `已成功建立活動「${eventName}」的規劃。` });
-    } catch(err) {
-      return JSON.stringify({ success: false, error: "規劃遊戲活動時資料庫出錯。" });
+      const projectRoot = path.resolve(__dirname);
+      const absolutePath = path.resolve(projectRoot, directoryPath);
+      if (!absolutePath.startsWith(projectRoot)) {
+        throw new Error("存取被拒絕：禁止查詢專案目錄外的路徑。");
+      }
+      const files = await fs.readdir(absolutePath);
+      return JSON.stringify({ success: true, files: files });
+    } catch (error) {
+      console.error(`listFiles 在路徑 "${directoryPath}" 失敗:`, error);
+      return JSON.stringify({ success: false, error: `讀取目錄失敗: ${error.message}` });
     }
   },
-
-  getEventPerformanceReport: async ({ eventName }) => {
-    console.log(`AGENT ACTION: 正在分析活動 "${eventName}" 的成效`);
-    // 在真實世界中，這裡會從多個資料表（玩家紀錄、儲值紀錄）撈取數據並計算
-    // 我們此處用紙上談兵的方式模擬結果
-    return JSON.stringify({
-      success: true,
-      report: {
-        eventName: eventName,
-        participants: 12500,
-        totalRevenueContribution: 8500, // unit: USD
-        newUserConversion: 320,
-        conclusion: "活動成功吸引大量玩家參與，但營收貢獻未達預期。建議未來可針對參與者進行後續的再行銷活動，以提升長期價值。"
+  createNewPage: async ({ pageName, path: routePath }) => {
+    console.log(`AGENT ACTION: 正在建立新頁面 "${pageName}"，路徑為 "${routePath}"`);
+    try {
+      if (pageName.includes('..') || pageName.includes('/')) {
+        throw new Error("無效的頁面名稱。");
       }
-    });
-  },
-
-  segmentPlayersByBehavior: async ({ segmentDescription }) => {
-    console.log(`AGENT ACTION: 正在根據描述分群玩家: "${segmentDescription}"`);
-    // 在真實世界中，這裡會解析 `segmentDescription` 並轉換為複雜的 SQL 查詢
-    // 我們此處用紙上談兵的方式模擬結果
-    const segmentId = `seg_${new Date().getTime()}`;
-    const playerCount = Math.floor(Math.random() * 100) + 50;
-    return JSON.stringify({
-      success: true,
-      segmentId: segmentId,
-      playerCount: playerCount,
-      message: `已根據您的描述，成功圈選出 ${playerCount} 位符合條件的玩家。分群 ID 為 ${segmentId}。`
-    });
-  },
-
-  sendTargetedPushNotification: async ({ segmentId, messageTitle, messageBody }) => {
-    console.log(`AGENT ACTION: 正在對分群 ${segmentId} 發送推播`);
-    // 在真實世界中，這裡會串接 Firebase Cloud Messaging 或其他推播服務的 API
-    // 我們此處用紙上談兵的方式模擬結果
-    if (!segmentId.startsWith('seg_')) {
-      return JSON.stringify({ success: false, error: "提供了無效的分群 ID。" });
+      const templatePath = path.join(__dirname, 'client', 'src', 'pages', 'Page.template.tsx');
+      const newFilePath = path.join(__dirname, 'client', 'src', 'pages', `${pageName}.tsx`);
+      const templateContent = await fs.readFile(templatePath, 'utf8');
+      const newContent = templateContent.replace(/__PAGE_NAME__/g, pageName);
+      await fs.writeFile(newFilePath, newContent, 'utf8');
+      const successMessage = `已成功建立新頁面元件 "${pageName}.tsx"。提醒：您仍需手動在前端路由中，為路徑 "${routePath}" 設定指向此元件的路由。`;
+      return JSON.stringify({ success: true, message: successMessage });
+    } catch (error) {
+      console.error(`createNewPage 失敗:`, error);
+      return JSON.stringify({ success: false, error: `建立新頁面時發生錯誤: ${error.message}` });
     }
-    return JSON.stringify({
-      success: true,
-      deliveryId: `push_${new Date().getTime()}`,
-      message: `已成功向分群 ${segmentId} 的玩家們排程發送標題為「${messageTitle}」的推播訊息。`
-    });
-  },
-
-  getRealtimeGameMetrics: async () => {
-    console.log(`AGENT ACTION: 正在取得即時遊戲數據`);
-    // 在真實世界中，這裡會串接您遊戲後端的即時數據 API
-    // 我們此處用紙上談兵的方式模擬結果
-    return JSON.stringify({
-      success: true,
-      metrics: {
-        ccu: Math.floor(Math.random() * 500) + 1200, // Concurrent Users
-        dau: Math.floor(Math.random() * 2000) + 8000, // Daily Active Users
-        grossRevenueToday: Math.floor(Math.random() * 10000) + 25000, // unit: USD
-        timestamp: new Date().toISOString()
-      }
-    });
   },
 };
-
 
 // --- ✅ 聊天 API ---
 app.post('/api/agent/chat', async (req, res) => {
