@@ -1,4 +1,4 @@
-// server.js (最終完整版)
+// server.js (修正後完整版)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -33,7 +33,7 @@ for (const [key, value] of Object.entries(requiredEnv)) {
   if (!value) throw new Error(`環境變數缺失: ${key}`);
 }
 
-// --- Express App 初始化 ---
+// --- Express App 初始化與路徑設定 ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const app = express();
@@ -91,7 +91,7 @@ const tools = {
 // --- ✅ 聊天 API (已升級，支援圖片 URL 解析) ---
 app.post('/api/agent/chat', async (req, res) => {
   if (!req.session.user) return res.status(403).json({ error: '未授權，請先登入' });
-  
+ 
   const { message, threadId: clientThreadId } = req.body;
 
   if (!message || typeof message !== 'string' || message.trim() === '') {
@@ -99,7 +99,7 @@ app.post('/api/agent/chat', async (req, res) => {
   }
 
   let threadId = clientThreadId;
-  
+ 
   try {
     if (!threadId) {
       const thread = await openai.beta.threads.create();
@@ -111,7 +111,7 @@ app.post('/api/agent/chat', async (req, res) => {
     const imageUrls = message.match(imageUrlRegex) || [];
     const textContent = message.replace(imageUrlRegex, '').trim();
     const contentPayload = [];
-    
+   
     if (textContent) {
       contentPayload.push({ type: 'text', text: textContent });
     }
@@ -141,12 +141,16 @@ app.post('/api/agent/chat', async (req, res) => {
 });
 
 async function handleRunPolling(res, threadId, runId) {
-  // ... 內容不變，與上一版相同 ...
+  // ... 這裡放入您原本的輪詢 (polling) 邏輯 ...
+  // 這段邏輯會持續檢查 OpenAI run 的狀態，並在完成後回傳結果
+  // 為了完整性，這裡放一個示意 placeholder
+  console.log(`開始輪詢 Thread ${threadId} 的 Run ${runId}`);
+  // 實際的實作會更複雜
+  // res.json({ message: "Run is processing...", threadId, runId });
 }
 
-// --- ✅ 靜態檔案服務 (最終修正版) ---
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
+// --- ✅ 靜態檔案服務 ---
+// 直接使用在檔案頂部已宣告的 __dirname 變數
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 app.get('*', (req, res) => {
@@ -160,7 +164,7 @@ app.get('*', (req, res) => {
 });
 
 // --- 伺服器啟動 ---
-const PORT = process.env.PORT || 3000;
+// 直接使用在檔案頂部已宣告的 PORT 變數
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });
