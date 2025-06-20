@@ -1,12 +1,10 @@
-// client/src/components/AgentChatWidget.tsx (已整合 Cloudinary 上傳功能)
+// client/src/components/AgentChatWidget.tsx (最終體驗優化版)
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Paperclip } from 'lucide-react'; // 匯入 Paperclip 圖示
+import { Paperclip } from 'lucide-react';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-// 從環境變數讀取 Cloudinary 設定
-// 請確保您的前端建置工具 (Vite) 已設定好能讀取這些變數
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -21,26 +19,22 @@ export default function AgentChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 自動捲動到最新訊息
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
-  // 開啟或送出訊息後，自動聚焦輸入框
+  // ✅ 開啟或送出訊息後，自動聚焦輸入框
   useEffect(() => {
     if (open && !isLoading) {
       inputRef.current?.focus();
     }
-  }, [open, isLoading]);
+  }, [open, isLoading]); 
 
-  // 處理檔案上傳的函式
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // 檢查 Cloudinary 設定是否存在
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-      console.error("Cloudinary 環境變數未設定！");
       setMessages(prev => [...prev, { role: 'assistant', content: '❌ 檔案上傳功能未設定，請聯繫管理員。' }]);
       return;
     }
@@ -57,13 +51,10 @@ export default function AgentChatWidget() {
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
         formData
       );
-      
       const fileUrl = response.data.secure_url;
       const successMessage = `✅ 檔案上傳成功！連結為：${fileUrl}\n現在您可以針對這個檔案提問了。`;
       setMessages(prev => [...prev, { role: 'assistant', content: successMessage }]);
-      // 將 URL 貼到輸入框，方便使用者直接發送
       setInput(prev => `${prev} ${fileUrl}`.trim());
-
     } catch (error) {
       console.error("Cloudinary upload failed:", error);
       setMessages(prev => [...prev, { role: 'assistant', content: '❌ 檔案上傳失敗。' }]);
@@ -73,7 +64,6 @@ export default function AgentChatWidget() {
     }
   };
 
-  // 送出文字訊息給後端
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -88,17 +78,12 @@ export default function AgentChatWidget() {
         message: userMessageContent,
         threadId: threadId,
       };
-
       const chatRes = await axios.post('/api/agent/chat', requestBody);
-      
       const reply = chatRes.data.message || '⚠️ 無回應';
-      
       if (chatRes.data.threadId) {
         setThreadId(chatRes.data.threadId);
       }
-
       setMessages([...newMsgs, { role: 'assistant', content: reply }]);
-
     } catch (err) {
       console.error(err);
       setMessages(prev => [
@@ -112,28 +97,15 @@ export default function AgentChatWidget() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110"
-      >
+      <button onClick={() => setOpen(v => !v)} className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110">
         AI Agent
       </button>
-
       {open && (
         <div className="bg-white w-80 h-96 border rounded-lg shadow-xl flex flex-col mt-2">
-          {/* 訊息列表 */}
           <div className="flex-1 p-3 overflow-y-auto text-sm space-y-3">
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div 
-                  className={`max-w-[80%] px-3 py-2 rounded-lg break-words ${m.role === 'user' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-200 text-gray-800'}`
-                  }
-                >
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-lg break-words ${m.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
                   {m.content}
                 </div>
               </div>
@@ -147,42 +119,13 @@ export default function AgentChatWidget() {
             )}
             <div ref={messagesEndRef} />
           </div>
-
-          {/* 輸入區 */}
           <div className="p-2 border-t flex space-x-2 items-center">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              className="hidden" // 將原生 input 隱藏
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50"
-              title="上傳檔案"
-              disabled={isLoading}
-            >
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 hover:text-blue-600 disabled:opacity-50" title="上傳檔案" disabled={isLoading}>
               <Paperclip size={18} />
             </button>
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !isLoading) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              className="flex-1 border px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="輸入訊息..."
-              disabled={isLoading}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              className="bg-blue-500 text-white px-4 py-1 rounded-md disabled:opacity-50 hover:bg-blue-600"
-            >
+            <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !isLoading) { e.preventDefault(); sendMessage(); } }} className="flex-1 border px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="輸入訊息..." disabled={isLoading} />
+            <button onClick={sendMessage} disabled={!input.trim() || isLoading} className="bg-blue-500 text-white px-4 py-1 rounded-md disabled:opacity-50 hover:bg-blue-600">
               送出
             </button>
           </div>

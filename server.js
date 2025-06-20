@@ -1,4 +1,4 @@
-// server.js (已整合圖片視覺能力)
+// server.js (最終完整版)
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
@@ -144,7 +144,9 @@ async function handleRunPolling(res, threadId, runId) {
   // ... 內容不變，與上一版相同 ...
 }
 
-// --- ✅ 靜態檔案服務 ---
+// --- ✅ 靜態檔案服務 (最終修正版) ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 app.get('*', (req, res) => {
@@ -152,10 +154,13 @@ app.get('*', (req, res) => {
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error("無法提供 index.html:", err);
-      res.status(500).send("伺服器錯誤：找不到前端應用程式的進入點。");
+      res.status(500).send("伺服器錯誤：找不到前端應用程式。");
     }
   });
 });
 
 // --- 伺服器啟動 ---
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+});
